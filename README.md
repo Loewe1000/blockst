@@ -11,7 +11,6 @@
 - ✅ **Deutsche Beschriftungen:** Alle Blöcke in deutscher Sprache
 
 ## Installation
-
 Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 
 ```typst
@@ -31,7 +30,7 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ]
 ```
 
-![Beispiel 1](examples/example-01.png)
+![Beispiel 1](examples/example-1.png)
 
 ### Beispiel 2: Bedingung mit Tastendruck
 
@@ -45,7 +44,7 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ]
 ```
 
-![Beispiel 2](examples/example-02.png)
+![Beispiel 2](examples/example-2.png)
 
 ### Beispiel 3: Variablen verwenden
 
@@ -57,7 +56,7 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ]
 ```
 
-![Beispiel 3](examples/example-03.png)
+![Beispiel 3](examples/example-3.png)
 
 ### Beispiel 4: Listen befüllen
 
@@ -71,7 +70,7 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ]
 ```
 
-![Beispiel 4](examples/example-04.png)
+![Beispiel 4](examples/example-4.png)
 
 ### Beispiel 5: Verschachtelte Bedingungen
 
@@ -89,7 +88,7 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ]
 ```
 
-![Beispiel 5](examples/example-05.png)
+![Beispiel 5](examples/example-5.png)
 
 ### Beispiel 6: Operatoren verwenden
 
@@ -100,7 +99,7 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ]
 ```
 
-![Beispiel 6](examples/example-06.png)
+![Beispiel 6](examples/example-6.png)
 
 ### Beispiel 7: Farbkollision erkennen
 
@@ -119,7 +118,7 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ]
 ```
 
-![Beispiel 7](examples/example-07.png)
+![Beispiel 7](examples/example-7.png)
 
 ### Beispiel 8: Eigene Blöcke definieren
 
@@ -138,7 +137,7 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ]
 ```
 
-![Beispiel 8](examples/example-08.png)
+![Beispiel 8](examples/example-8.png)
 
 ## Verfügbare Kategorien
 
