@@ -2,6 +2,13 @@
 
 **Blockst** ist ein Typst-Paket, das es ermöglicht, Scratch-Programmierblöcke direkt in Typst-Dokumenten zu erstellen. Perfekt für Programmier-Tutorials, Bildungsmaterialien und Dokumentationen von visuellen Programmierkonzepten.
 
+> **⚠️ Work in Progress**  
+> Dieses Projekt befindet sich noch in aktiver Entwicklung. Die Blöcke sind funktional, aber es gibt noch Raum für Verbesserungen bei der pixel-genauen Anpassung an die Original-Scratch-Blöcke. **Hilfe ist herzlich willkommen!** Besonders bei:
+> - 🎨 Feintuning der Block-Geometrie und Farben
+> - 🌍 Lokalisierung in weitere Sprachen (aktuell: Deutsch)
+> - 📚 Ergänzung fehlender Blöcke oder Features
+> - 🐛 Bug-Reports und Feedback
+
 ## Features
 
 - ✅ **Alle Scratch-Kategorien:** Bewegung, Aussehen, Klang, Ereignisse, Steuerung, Fühlen, Operatoren, Variablen, Listen und eigene Blöcke
@@ -212,7 +219,17 @@ Dieses Projekt steht unter der MIT-Lizenz.
 
 ## Beitragen
 
-Beiträge, Issues und Feature-Requests sind willkommen! Erstelle einfach ein Issue oder einen Pull Request auf GitHub.
+**Beiträge sind herzlich willkommen!** 🎉
+
+Dieses Projekt ist ein Work in Progress, und wir freuen uns über jede Unterstützung:
+
+- 🐛 **Bug-Reports:** Wenn etwas nicht funktioniert oder die Blöcke nicht korrekt dargestellt werden
+- 🎨 **Design-Verbesserungen:** Hilf dabei, die Blöcke noch näher an die Original-Scratch-Blöcke anzupassen
+- 🌍 **Lokalisierung:** Übersetze die Blöcke in weitere Sprachen (Englisch, Französisch, Spanisch, etc.)
+- 📚 **Dokumentation:** Erweitere die Beispiele, schreibe Tutorials oder verbessere die README
+- ✨ **Features:** Füge fehlende Blöcke hinzu oder schlage neue Funktionen vor
+
+Erstelle einfach ein Issue oder einen Pull Request auf GitHub!
 
 ---
 
