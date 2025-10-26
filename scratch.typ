@@ -561,8 +561,9 @@
     height: if type == "definiere" { 1.5 * block-height } else { auto },
     [
       #context [
-        #let height = measure(body).height
-        #stack(dir: ltr, box(body, height: if height < block-height { 0.75 * block-height } else { auto }))
+        #let content-height = measure(body).height
+        #let min-height = 0.75 * block-height
+        #box(body, height: calc.max(content-height, min-height))
       ]
     ],
   ))
@@ -1040,6 +1041,18 @@
     dropdown-content: dropdown-content,
   )
 }
+
+// Parameter-Reporter (pink) für eigene Block-Parameter
+// Nutzung: #parameter("Anzahl")
+// Verwendet die gleichen Insets wie eigene-eingabe() für konsistente Höhe
+#let parameter(name) = context {
+  let options = scratch-block-options.get()
+  let colors = get-colors-from-options(options)
+  let stroke-thickness = get-stroke-from-options(options)
+  
+  pill-round(name, fill: colors.eigene.primary, stroke: colors.eigene.tertiary + stroke-thickness)
+}
+
 // ------------------------------------------------
 // 13) Kontrollstrukturen (Grundgerüst + Blöcke)
 // ------------------------------------------------
@@ -2269,6 +2282,73 @@
       ),
     ),
   )
+}
+
+// Visuelle Listen-Darstellung (wie im Scratch-Monitor)
+#let liste(name: "Liste", items: ()) = context {
+  let options = scratch-block-options.get()
+  let colors = get-colors-from-options(options)
+  let stroke-thickness = get-stroke-from-options(options)
+  
+  // Berechne Länge
+  let len = items.len()
+  
+  box(
+    fill: rgb("#E5F0FF"),
+    stroke: (paint: rgb("#9ABFDB"), thickness: 1pt),
+    radius: 5pt,
+    inset: 5pt,
+  )[
+    #set text(size: 9pt, font: "Helvetica Neue", weight: 500)
+    // Kopfzeile mit Namen
+    #box(
+      fill: rgb("#E5F0FF"),
+      width: 100%,
+      align(center)[
+        #text(fill: rgb("#4C4C4C"), weight: 600, name)
+      ]
+    )
+    
+    #v(3pt)
+    
+    // Listenelemente
+    #for (index, item) in items.enumerate() {
+      box(
+        fill: colors.listen.primary,
+        stroke: (paint: colors.listen.tertiary, thickness: stroke-thickness),
+        radius: 2pt,
+        inset: (x: 8pt, y: 4pt),
+        width: 100%,
+      )[
+        #grid(
+          columns: (auto, 1fr),
+          column-gutter: 8pt,
+          align: (left, left),
+          text(fill: rgb("#575E75"), weight: 600, str(index + 1)),
+          text(fill: white, item),
+        )
+      ]
+      if index < len - 1 { v(2pt) }
+    }
+    
+    #v(3pt)
+    
+    // Fußzeile mit Länge
+    #box(
+      fill: rgb("#E5F0FF"),
+      width: 100%,
+      align(center)[
+        #grid(
+          columns: (auto, auto, auto),
+          column-gutter: 5pt,
+          align: horizon,
+          text(fill: rgb("#4C4C4C"), size: 8pt, "+"),
+          text(fill: rgb("#4C4C4C"), size: 8pt, [Länge: #len]),
+          text(fill: rgb("#4C4C4C"), size: 8pt, "="),
+        )
+      ]
+    )
+  ]
 }
 
 // ------------------------------------------------
