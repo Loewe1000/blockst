@@ -1,97 +1,126 @@
-#import "scratch.typ": *
+#import "lib.typ": blockst, scratch
 
 #set page(height: auto, width: auto, margin: 1cm)
 #set text(font: "Helvetica Neue")
 
 = Beispiel 1: Endlosschleife
-#ereignis-grüne-flagge([
-  #wiederhole(
-    anzahl: 100,
-    body: gehe-schritt(schritt: 10),
-  )
-])
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #wiederhole(anzahl: 100)[
+      #gehe()
+    ]
+  ]
+]
 
 #pagebreak()
 
 = Beispiel 2: Bedingung mit Tastendruck
-#ereignis-taste("Leertaste", [
-  #falls(
-    taste-gedrückt(taste: "Pfeil nach oben"),
-    dann: gehe-schritt(schritt: 10),
-    sonst: drehe-dich-um(richtung: "rechts", grad: 15),
-  )
-])
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-taste-gedrueckt("Leertaste")[
+    #falls-sonst(
+      taste-gedrueckt("Pfeil nach oben"),
+      [#gehe()],
+      [#drehe-rechts()],
+    )
+  ]
+]
 
 #pagebreak()
 
 = Beispiel 3: Variable ändern
-#ereignis-figur-angeklickt([
-  #setze-variable-auf(name: "Punkte", wert: 0)
-  #ändere-variable-um(name: "Punkte", wert: 10)
-  #zeige-variable(name: "Punkte")
-])
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-diese-figur-angeklickt[
+    #setze-variable("Punkte", 0)
+    #aendere-variable("Punkte", 10)
+    #zeige-variable("Punkte")
+  ]
+]
 
 #pagebreak()
 
 = Beispiel 4: Liste befüllen
-#ereignis-grüne-flagge([
-  #lösche-alles-aus(liste: "Namen")
-  #füge-zu-hinzu(wert: "Anna", liste: "Namen")
-  #füge-zu-hinzu(wert: "Ben", liste: "Namen")
-  #füge-zu-hinzu(wert: "Clara", liste: "Namen")
-  #zeige-liste(liste: "Namen")
-])
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #entferne-alles-aus-liste("Namen")
+    #fuege-zu-liste-hinzu("Anna", "Namen")
+    #fuege-zu-liste-hinzu("Ben", "Namen")
+    #fuege-zu-liste-hinzu("Clara", "Namen")
+    #zeige-liste("Namen")
+  ]
+]
 
 #pagebreak()
 
 = Beispiel 5: Verschachtelte Bedingung
-#ereignis-grüne-flagge([
-  #falls(
-    und(
-      größer-als(maus-x-position(), 0),
-      kleiner-als(maus-y-position(), 100),
-      nested: true,
-    ),
-    dann: sage(text: "Maus im Bereich!"),
-    sonst: sage(text: "Außerhalb"),
-  )
-])
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #falls-sonst(
+      und(
+        groesser-als(maus-x(), 0),
+        kleiner-als(maus-y(), 100),
+      ),
+      [#sage-fuer-sekunden("Maus im Bereich!", sekunden: 2)],
+      [#sage-fuer-sekunden("Außerhalb", sekunden: 2)],
+    )
+  ]
+]
 
 #pagebreak()
 
 = Beispiel 6: Operatoren nutzen
 Demonstration von Operator-Blöcken (nur visuelle Darstellung).
 
-#ereignis-grüne-flagge([
-  #setze-variable-auf(name: "Ergebnis", wert: plus(arg1: mal(arg1: 3, arg2: 2), arg2: 5))
-  #sage(text: variable("Ergebnis"))
-])
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #setze-variable("Ergebnis", addiere(multipliziere(3, 2), 5))
+    #sage-fuer-sekunden(eigene-eingabe("Ergebnis"), sekunden: 2)
+  ]
+]
 
 #pagebreak()
 
 = Beispiel 7: Farbkollision
-#ereignis-grüne-flagge([
-  #wiederhole(anzahl: 50, body: [
-    #gehe-schritt(schritt: 5)
-    #falls(
-      wird-farbe-berührt(color: rgb("#FF0000")),
-      dann: drehe-dich-um(richtung: "rechts", grad: 180),
-    )
-  ])
-])
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #wiederhole(anzahl: 50)[
+      #gehe()
+      #falls(
+        wird-farbe-beruehrt(rgb("#FF0000")),
+        [#drehe-rechts(grad: 180)],
+      )
+    ]
+  ]
+]
 
 #pagebreak()
 
-= Beispiel 8: Eigener Block
-#let mein-block = eigener-block("Springe", none, "mal")
-
-#definiere(mein-block)[
-  #wiederhole(
-    anzahl: variable("Anzahl"),
-    body: ändere-y-um(schritt: 10),
-  )
+= Beispiel 8: Eigener Block mit Parametern
+#blockst[
+  #import scratch.de: *
+  
+  #let springe = eigener-block("Springe", (name: "Anzahl"), "mal")
+  
+  #definiere(springe)[
+    #wiederhole(anzahl: parameter("Anzahl"))[
+      #aendere-y(dy: 10)
+    ]
+  ]
+  
+  #wenn-gruene-flagge-geklickt[
+    #springe(5)
+  ]
 ]
-
-#ereignis-grüne-flagge([
-  #mein-block(dark: false, 5)
-])

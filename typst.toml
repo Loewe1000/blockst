@@ -1,0 +1,7 @@
+[package]
+name = "informatik"
+version = "0.0.2"
+entrypoint = "lib.typ"
+
+description = "Package for informatik things"
+license = "MIT"

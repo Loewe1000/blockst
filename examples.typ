@@ -1,4 +1,4 @@
-#import "scratch.typ": *
+#import "lib.typ": blockst, scratch
 
 #set page(height: auto, width: auto, margin: 1cm)
 #set text(font: "Helvetica Neue")
@@ -6,166 +6,56 @@
 = Beispiel 1: Interaktives Quiz-Programm
 Ein einfaches Quiz, das Fragen stellt, Antworten prüft und den Punktestand verwaltet.
 
-#ereignis-grüne-flagge([
-  #setze-variable-auf(name: "Punkte", wert: 0)
-  #verstecke-variable(name: "Punkte")
-  #sage(text: "Quiz startet!", sekunden: 2)
-  #frage(text: "Was ist 7 × 8?")
-  #falls(
-    gleich(antwort(), 56),
-    dann: [
-      #ändere-variable-um(name: "Punkte", wert: 1)
-      #sage(text: "Richtig!", sekunden: 2)
-    ],
-    sonst: sage(text: "Falsch! Es war 56.", sekunden: 2),
-  )
-  #frage(text: "Hauptstadt von Frankreich?")
-  #falls(
-    gleich(antwort(), "Paris"),
-    dann: [
-      #ändere-variable-um(name: "Punkte", wert: 1)
-      #sage(text: "Sehr gut!", sekunden: 2)
-    ],
-    sonst: sage(text: "Falsch! Es ist Paris.", sekunden: 2),
-  )
-  #sage(text: "Quiz beendet! Punkte anzeigen")
-  #zeige-variable(name: "Punkte")
-])
-
-#pagebreak()
-
-= Beispiel 2: Kollisionserkennung mit Farbsensor
-Die Figur läuft vorwärts und dreht sich um, sobald sie eine rote Wand berührt.
-
-#ereignis-taste("Leertaste", [
-  #wiederhole(anzahl: 200, body: [
-    #falls(
-      wird-farbe-berührt(color: rgb("#FF0000")),
-      dann: [
-        #drehe-dich-um(richtung: "rechts", grad: 180)
-        #gehe-schritt(schritt: 5)
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #setze-variable("Punkte", 0)
+    #verstecke-variable("Punkte")
+    #sage-fuer-sekunden("Quiz startet!", sekunden: 2)
+    #frage("Was ist 7 × 8?")
+    #falls-sonst(
+      gleich(antwort(), 56),
+      [
+        #aendere-variable("Punkte", 1)
+        #sage-fuer-sekunden("Richtig!", sekunden: 2)
       ],
-      sonst: gehe-schritt(schritt: 3),
+      [#sage-fuer-sekunden("Falsch! Es war 56.", sekunden: 2)],
     )
-  ])
-])
-
-#pagebreak()
-
-= Beispiel 3: Sortier-Algorithmus (Bubble Sort Visualisierung)
-Zeigt schrittweise, wie eine Liste sortiert wird.
-
-#ereignis-figur-angeklickt([
-  #lösche-alles-aus(liste: "Zahlen")
-  #füge-zu-hinzu(wert: 64, liste: "Zahlen")
-  #füge-zu-hinzu(wert: 34, liste: "Zahlen")
-  #füge-zu-hinzu(wert: 25, liste: "Zahlen")
-  #füge-zu-hinzu(wert: 12, liste: "Zahlen")
-  #füge-zu-hinzu(wert: 22, liste: "Zahlen")
-  #zeige-liste(liste: "Zahlen")
-  #sage(text: "Unsortierte Liste!", sekunden: 2)
-  #setze-variable-auf(name: "n", wert: länge-von-liste("Zahlen"))
-  #wiederhole(anzahl: variable("n"), body: [
-    #setze-variable-auf(name: "i", wert: 1)
-    #wiederhole(anzahl: minus(arg1: variable("n"), arg2: 1), body: [
-      #falls(
-        größer-als(
-          element-von(index: variable("i"), liste: "Zahlen"),
-          element-von(index: plus(arg1: variable("i"), arg2: 1), liste: "Zahlen"),
-        ),
-        dann: [
-          #setze-variable-auf(name: "temp", wert: element-von(index: variable("i"), liste: "Zahlen"))
-          #ersetze-element-von-durch(
-            index: variable("i"),
-            liste: "Zahlen",
-            wert: element-von(index: plus(arg1: variable("i"), arg2: 1), liste: "Zahlen"),
-          )
-          #ersetze-element-von-durch(index: plus(arg1: variable("i"), arg2: 1), liste: "Zahlen", wert: variable("temp"))
-        ],
-      )
-      #ändere-variable-um(name: "i", wert: 1)
-    ])
-  ])
-  #sage(text: "Liste sortiert!", sekunden: 2)
-])
-
-#pagebreak()
-
-= Beispiel 4: Namens-Generator mit Zufallselementen
-Erstellt zufällige Fantasienamen aus Silben-Listen.
-
-#ereignis-figur-angeklickt([
-  #lösche-alles-aus(liste: "Silben")
-  #füge-zu-hinzu(wert: "Dra", liste: "Silben")
-  #füge-zu-hinzu(wert: "Fen", liste: "Silben")
-  #füge-zu-hinzu(wert: "Kor", liste: "Silben")
-  #füge-zu-hinzu(wert: "Mel", liste: "Silben")
-  #setze-variable-auf(
-    name: "Name",
-    wert: verbinde(
-      element-von(index: zufallszahl(von: 1, bis: länge-von-liste("Silben")), liste: "Silben"),
-      element-von(index: zufallszahl(von: 1, bis: länge-von-liste("Silben")), liste: "Silben"),
-    ),
-  )
-  #sage(text: verbinde("Dein Heldenname: ", variable("Name")))
-])
-
-#pagebreak()
-
-= Beispiel 5: Countdown-Timer
-Ein visueller Timer, der von 10 herunterzählt.
-
-#ereignis-grüne-flagge([
-  #setze-variable-auf(name: "Zeit", wert: 10)
-  #zeige-variable(name: "Zeit")
-  #wiederhole(anzahl: 10, body: [
-    #sage(text: variable("Zeit"), sekunden: 1)
-    #ändere-variable-um(name: "Zeit", wert: -1)
-  ])
-  #sage(text: "Zeit abgelaufen!")
-  #verstecke-variable(name: "Zeit")
-])
-
-#pagebreak()
-
-= Beispiel 6: Eigener Block für Polygon-Zeichnung
-Wiederverwendbarer Block zum Zeichnen von Vielecken.
-
-#let polygon-block = eigener-block("Zeichne", none, "Polygon")
-
-#definiere(polygon-block)[
-  #wiederhole(anzahl: variable("Ecken"), body: [
-    #gehe-schritt(schritt: 50)
-    #drehe-dich-um(richtung: "rechts", grad: geteilt(arg1: 360, arg2: variable("Ecken")))
-  ])
+    #frage("Hauptstadt von Frankreich?")
+    #falls-sonst(
+      gleich(antwort(), "Paris"),
+      [
+        #aendere-variable("Punkte", 1)
+        #sage-fuer-sekunden("Sehr gut!", sekunden: 2)
+      ],
+      [#sage-fuer-sekunden("Falsch! Es ist Paris.", sekunden: 2)],
+    )
+    #sage-fuer-sekunden("Quiz beendet! Punkte anzeigen", sekunden: 2)
+    #zeige-variable("Punkte")
+  ]
 ]
-
-#ereignis-grüne-flagge([
-  #polygon-block(dark: false, 6)
-  #drehe-dich-um(richtung: "rechts", grad: 30)
-  #polygon-block(dark: false, 5)
-])
-
 
 #pagebreak()
 
 = Beispiel 2: Kollisionserkennung mit Farbsensor
 Die Figur läuft vorwärts und dreht sich um, sobald sie eine rote Wand berührt.
 
-#ereignis[Wenn Leertaste gedrückt][
-  #wiederhole(
-    anzahl: 200,
-    body: block[
-      #falls(
-        wird-farbe-berührt(color: rgb("#FF0000")),
-        dann: block[
-          #drehe-dich-um(richtung: "rechts", grad: 180)
-          #gehe-schritt(schritt: 5)
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-taste-gedrueckt("Leertaste")[
+    #wiederhole(anzahl: 200)[
+      #falls-sonst(
+        wird-farbe-beruehrt(rgb("#FF0000")),
+        [
+          #drehe-rechts(grad: 180)
+          #gehe(schritte: 5)
         ],
-        sonst: gehe-schritt(schritt: 3),
+        [#gehe(schritte: 3)],
       )
-    ],
-  )
+    ]
+  ]
 ]
 
 #pagebreak()
@@ -173,44 +63,43 @@ Die Figur läuft vorwärts und dreht sich um, sobald sie eine rote Wand berührt
 = Beispiel 3: Sortier-Algorithmus (Bubble Sort Visualisierung)
 Zeigt schrittweise, wie eine Liste sortiert wird.
 
-#ereignis[Wenn Figur angeklickt][
-  #lösche-alles-aus(liste: "Zahlen")
-  #füge-zu-hinzu(wert: 64, liste: "Zahlen")
-  #füge-zu-hinzu(wert: 34, liste: "Zahlen")
-  #füge-zu-hinzu(wert: 25, liste: "Zahlen")
-  #füge-zu-hinzu(wert: 12, liste: "Zahlen")
-  #füge-zu-hinzu(wert: 22, liste: "Zahlen")
-  #zeige-liste(liste: "Zahlen")
-  #sage(text: "Unsortierte Liste!", sekunden: 2)
-  #setze-variable-auf(name: "n", wert: länge-von-liste("Zahlen"))
-  #wiederhole(
-    anzahl: variable("n"),
-    body: block[
-      #setze-variable-auf(name: "i", wert: 1)
-      #wiederhole(
-        anzahl: minus(arg1: variable("n"), arg2: 1),
-        body: block[
-          #falls(
-            größer-als(
-              element-von(index: variable("i"), liste: "Zahlen"),
-              element-von(index: plus(arg1: variable("i"), arg2: 1), liste: "Zahlen"),
-            ),
-            dann: block[
-              #setze-variable-auf(name: "temp", wert: element-von(index: variable("i"), liste: "Zahlen"))
-              #ersetze-element-von-durch(
-                index: variable("i"),
-                liste: "Zahlen",
-                wert: element-von(index: plus(arg1: variable("i"), arg2: 1), liste: "Zahlen"),
-              )
-              #ersetze-element-von-durch(index: plus(arg1: variable("i"), arg2: 1), liste: "Zahlen", wert: variable("temp"))
-            ],
-          )
-          #ändere-variable-um(name: "i", wert: 1)
-        ],
-      )
-    ],
-  )
-  #sage(text: "Liste sortiert!", sekunden: 2)
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-diese-figur-angeklickt[
+    #entferne-alles-aus-liste("Zahlen")
+    #fuege-zu-liste-hinzu(64, "Zahlen")
+    #fuege-zu-liste-hinzu(34, "Zahlen")
+    #fuege-zu-liste-hinzu(25, "Zahlen")
+    #fuege-zu-liste-hinzu(12, "Zahlen")
+    #fuege-zu-liste-hinzu(22, "Zahlen")
+    #zeige-liste("Zahlen")
+    #sage-fuer-sekunden("Unsortierte Liste!", sekunden: 2)
+    #setze-variable("n", laenge-von-liste("Zahlen"))
+    #wiederhole(anzahl: eigene-eingabe("n"))[
+      #setze-variable("i", 1)
+      #wiederhole(anzahl: subtrahiere(eigene-eingabe("n"), 1))[
+        #falls-sonst(
+          groesser-als(
+            element-von-liste(eigene-eingabe("i"), "Zahlen"),
+            element-von-liste(addiere(eigene-eingabe("i"), 1), "Zahlen"),
+          ),
+          [
+            #setze-variable("temp", element-von-liste(eigene-eingabe("i"), "Zahlen"))
+            #ersetze-element(
+              eigene-eingabe("i"),
+              "Zahlen",
+              element-von-liste(addiere(eigene-eingabe("i"), 1), "Zahlen"),
+            )
+            #ersetze-element(addiere(eigene-eingabe("i"), 1), "Zahlen", eigene-eingabe("temp"))
+          ],
+          [],
+        )
+        #aendere-variable("i", 1)
+      ]
+    ]
+    #sage-fuer-sekunden("Liste sortiert!", sekunden: 2)
+  ]
 ]
 
 #pagebreak()
@@ -218,20 +107,24 @@ Zeigt schrittweise, wie eine Liste sortiert wird.
 = Beispiel 4: Namens-Generator mit Zufallselementen
 Erstellt zufällige Fantasienamen aus Silben-Listen.
 
-#ereignis[Wenn Figur angeklickt][
-  #lösche-alles-aus(liste: "Silben")
-  #füge-zu-hinzu(wert: "Dra", liste: "Silben")
-  #füge-zu-hinzu(wert: "Fen", liste: "Silben")
-  #füge-zu-hinzu(wert: "Kor", liste: "Silben")
-  #füge-zu-hinzu(wert: "Mel", liste: "Silben")
-  #setze-variable-auf(
-    name: "Name",
-    wert: verbinde(
-      element-von(index: zufallszahl(von: 1, bis: länge-von-liste("Silben")), liste: "Silben"),
-      element-von(index: zufallszahl(von: 1, bis: länge-von-liste("Silben")), liste: "Silben"),
-    ),
-  )
-  #sage(text: verbinde("Dein Heldenname: ", variable("Name")))
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-diese-figur-angeklickt[
+    #entferne-alles-aus-liste("Silben")
+    #fuege-zu-liste-hinzu("Dra", "Silben")
+    #fuege-zu-liste-hinzu("Fen", "Silben")
+    #fuege-zu-liste-hinzu("Kor", "Silben")
+    #fuege-zu-liste-hinzu("Mel", "Silben")
+    #setze-variable(
+      "Name",
+      verbinde(
+        element-von-liste(zufallszahl(von: 1, bis: laenge-von-liste("Silben")), "Silben"),
+        element-von-liste(zufallszahl(von: 1, bis: laenge-von-liste("Silben")), "Silben"),
+      ),
+    )
+    #sage(verbinde("Dein Heldenname: ", eigene-eingabe("Name")))
+  ]
 ]
 
 #pagebreak()
@@ -239,18 +132,19 @@ Erstellt zufällige Fantasienamen aus Silben-Listen.
 = Beispiel 5: Countdown-Timer
 Ein visueller Timer, der von 10 herunterzählt.
 
-#ereignis[Wenn Flagge angeklickt][
-  #setze-variable-auf(name: "Zeit", wert: 10)
-  #zeige-variable(name: "Zeit")
-  #wiederhole(
-    anzahl: 10,
-    body: block[
-      #sage(text: variable("Zeit"), sekunden: 1)
-      #ändere-variable-um(name: "Zeit", wert: -1)
-    ],
-  )
-  #sage(text: "Zeit abgelaufen!")
-  #verstecke-variable(name: "Zeit")
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #setze-variable("Zeit", 10)
+    #zeige-variable("Zeit")
+    #wiederhole(anzahl: 10)[
+      #sage-fuer-sekunden(eigene-eingabe("Zeit"), sekunden: 1)
+      #aendere-variable("Zeit", -1)
+    ]
+    #sage("Zeit abgelaufen!")
+    #verstecke-variable("Zeit")
+  ]
 ]
 
 #pagebreak()
@@ -258,20 +152,21 @@ Ein visueller Timer, der von 10 herunterzählt.
 = Beispiel 6: Eigener Block für Polygon-Zeichnung
 Wiederverwendbarer Block zum Zeichnen von Vielecken.
 
-#let polygon-block = eigener-block("Zeichne", none, "Polygon")
-
-#definiere(polygon-block)[
-  #wiederhole(
-    anzahl: variable("Ecken"),
-    body: block[
-      #gehe-schritt(schritt: 50)
-      #drehe-dich-um(richtung: "rechts", grad: geteilt(arg1: 360, arg2: variable("Ecken")))
-    ],
-  )
-]
-
-#ereignis[Wenn Flagge angeklickt][
-  #polygon-block(dark: false, 6)
-  #drehe-dich-um(richtung: "rechts", grad: 30)
-  #polygon-block(dark: false, 5)
+#blockst[
+  #import scratch.de: *
+  
+  #let polygon-block = eigener-block("Zeichne", none, "Polygon")
+  
+  #definiere(polygon-block)[
+    #wiederhole(anzahl: parameter("Ecken"))[
+      #gehe(schritte: 50)
+      #drehe-rechts(grad: dividiere(360, parameter("Ecken")))
+    ]
+  ]
+  
+  #wenn-gruene-flagge-geklickt[
+    #polygon-block(6)
+    #drehe-rechts(grad: 30)
+    #polygon-block(5)
+  ]
 ]

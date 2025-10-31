@@ -5,7 +5,7 @@
 > **⚠️ Work in Progress**  
 > Dieses Projekt befindet sich noch in aktiver Entwicklung. Die Blöcke sind funktional, aber es gibt noch Raum für Verbesserungen bei der pixel-genauen Anpassung an die Original-Scratch-Blöcke. **Hilfe ist herzlich willkommen!** Besonders bei:
 > - 🎨 Feintuning der Block-Geometrie und Farben
-> - 🌍 Lokalisierung in weitere Sprachen (aktuell: Deutsch)
+> - 🌍 Lokalisierung in weitere Sprachen (aktuell: Deutsch & Englisch)
 > - 📚 Ergänzung fehlender Blöcke oder Features
 > - 🐛 Bug-Reports und Feedback
 
@@ -15,13 +15,15 @@
 - ✅ **Originalgetreue Farben:** Normal- und High-Contrast-Modi
 - ✅ **Verschachtelte Strukturen:** Schleifen, Bedingungen (falls-dann-sonst), eigene Blöcke
 - ✅ **Reporter & Operatoren:** Ovale und runde Pills, Diamant-Bedingungen
-- ✅ **Deutsche Beschriftungen:** Alle Blöcke in deutscher Sprache
+- ✅ **Mehrsprachig:** Deutsche und englische Blöcke verfügbar
+- ✅ **Moderne API:** Schema-basiertes Rendering mit sauberer Sprachabstraktion
 
 ## Installation
-Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
+
+Kopiere die Dateien in dein Projekt-Verzeichnis und importiere das Paket:
 
 ```typst
-#import "scratch.typ": *
+#import "lib.typ": blockst, scratch
 ```
 
 ## Schnellstart
@@ -29,11 +31,14 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ### Beispiel 1: Einfache Bewegung
 
 ```typst
-#ereignis[Wenn Flagge angeklickt][
-  #wiederhole(
-    anzahl: 100,
-    loop-body: gehe-schritt(schritt: 10),
-  )
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #wiederhole(anzahl: 100)[
+      #gehe()
+    ]
+  ]
 ]
 ```
 
@@ -42,12 +47,16 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ### Beispiel 2: Bedingung mit Tastendruck
 
 ```typst
-#ereignis[Wenn Leertaste gedrückt][
-  #falls(
-    taste-gedrückt(taste: "Pfeil nach oben"),
-    dann-body: gehe-schritt(schritt: 10),
-    sonst-body: drehe-dich-um(richtung: "rechts", grad: 15),
-  )
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-taste-gedrueckt("Leertaste")[
+    #falls-sonst(
+      taste-gedrueckt("Pfeil nach oben"),
+      [#gehe()],
+      [#drehe-rechts()],
+    )
+  ]
 ]
 ```
 
@@ -56,10 +65,14 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ### Beispiel 3: Variablen verwenden
 
 ```typst
-#ereignis[Wenn Figur angeklickt][
-  #setze-variable-auf(name: "Punkte", wert: 0)
-  #ändere-variable-um(name: "Punkte", wert: 10)
-  #zeige-variable(name: "Punkte")
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-diese-figur-angeklickt[
+    #setze-variable("Punkte", 0)
+    #aendere-variable("Punkte", 10)
+    #zeige-variable("Punkte")
+  ]
 ]
 ```
 
@@ -68,12 +81,16 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ### Beispiel 4: Listen befüllen
 
 ```typst
-#ereignis[Wenn Flagge angeklickt][
-  #lösche-alles-aus(liste: "Namen")
-  #füge-zu-hinzu(wert: "Anna", liste: "Namen")
-  #füge-zu-hinzu(wert: "Ben", liste: "Namen")
-  #füge-zu-hinzu(wert: "Clara", liste: "Namen")
-  #zeige-liste(liste: "Namen")
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #entferne-alles-aus-liste("Namen")
+    #fuege-zu-liste-hinzu("Anna", "Namen")
+    #fuege-zu-liste-hinzu("Ben", "Namen")
+    #fuege-zu-liste-hinzu("Clara", "Namen")
+    #zeige-liste("Namen")
+  ]
 ]
 ```
 
@@ -82,16 +99,19 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ### Beispiel 5: Verschachtelte Bedingungen
 
 ```typst
-#ereignis[Wenn Flagge angeklickt][
-  #falls(
-    und(
-      größer-als(maus-x-position(), 0),
-      kleiner-als(maus-y-position(), 100),
-      nested: true
-    ),
-    dann-body: sage(text: "Maus im Bereich!"),
-    sonst-body: sage(text: "Außerhalb"),
-  )
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #falls-sonst(
+      und(
+        groesser-als(maus-x(), 0),
+        kleiner-als(maus-y(), 100),
+      ),
+      [#sage-fuer-sekunden("Maus im Bereich!", sekunden: 2)],
+      [#sage-fuer-sekunden("Außerhalb", sekunden: 2)],
+    )
+  ]
 ]
 ```
 
@@ -100,9 +120,13 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ### Beispiel 6: Operatoren verwenden
 
 ```typst
-#ereignis[Wenn Flagge angeklickt][
-  #setze-variable-auf(name: "Ergebnis", wert: plus(mal(3, 4), 5))
-  #sage(text: variable("Ergebnis"))
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #setze-variable("Ergebnis", addiere(multipliziere(3, 2), 5))
+    #sage-fuer-sekunden(eigene-eingabe("Ergebnis"), sekunden: 2)
+  ]
 ]
 ```
 
@@ -111,17 +135,18 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ### Beispiel 7: Farbkollision erkennen
 
 ```typst
-#ereignis[Wenn Flagge angeklickt][
-  #wiederhole(
-    anzahl: 50,
-    loop-body: block[
-      #gehe-schritt(schritt: 5)
+#blockst[
+  #import scratch.de: *
+  
+  #wenn-gruene-flagge-geklickt[
+    #wiederhole(anzahl: 50)[
+      #gehe()
       #falls(
-        wird-farbe-berührt(color: rgb("#FF0000")),
-        dann-body: drehe-dich-um(richtung: "rechts", grad: 180),
+        wird-farbe-beruehrt(rgb("#FF0000")),
+        [#drehe-rechts(grad: 180)],
       )
-    ],
-  )
+    ]
+  ]
 ]
 ```
 
@@ -130,87 +155,195 @@ Kopiere die Datei `scratch.typ` in dein Projekt-Verzeichnis und importiere sie:
 ### Beispiel 8: Eigene Blöcke definieren
 
 ```typst
-#let mein-block = eigener-block("Springe", none, "mal")
-
-#definiere(mein-block)[
-  #wiederhole(
-    anzahl: variable("Anzahl"),
-    loop-body: ändere-y-um(schritt: 10),
-  )
-]
-
-#ereignis[Wenn Flagge angeklickt][
-  #mein-block(dark: false, 5)
+#blockst[
+  #import scratch.de: *
+  
+  #let mein-block = eigener-block("Springe 5 mal")
+  
+  #definiere(mein-block)[
+    #wiederhole(anzahl: 5)[
+      #aendere-y(dy: 10)
+    ]
+  ]
+  
+  #wenn-gruene-flagge-geklickt[
+    #mein-block
+  ]
 ]
 ```
 
 ![Beispiel 8](examples/example-8.png)
 
+## API-Übersicht
+
+### Container-Funktion
+
+```typst
+#blockst[
+  #import scratch.de: *  // Für deutsche Blöcke
+  // oder
+  #import scratch.en: *  // Für englische Blöcke
+  
+  // Dein Scratch-Code hier
+]
+```
+
+### Globale Einstellungen
+
+```typst
+#set-blockst(
+  theme: "normal",      // oder "high-contrast"
+  scale: 100%,          // Skalierung der Blöcke
+)
+```
+
 ## Verfügbare Kategorien
 
-### 🔵 Bewegung
-- `gehe-zu(x, y)`, `gleite-in-zu(sek, x, y)`, `gehe(zu)`, `gleite-in(sek, zu)`
-- `drehe-dich(zu)`, `drehe-dich-um(richtung, grad)`, `setze-Richtung-auf(grad)`
-- `gehe-schritt(schritt)`, `ändere-x-um(schritt)`, `setze-x-auf(x)`, `ändere-y-um(schritt)`, `setze-y-auf(y)`
-- `pralle-vom-rand-ab()`
+### 🔵 Bewegung (Motion)
+- `gehe(schritte: 10)` – Gehe Schritte
+- `drehe-rechts(grad: 15)`, `drehe-links(grad: 15)` – Drehe um Grade
+- `gehe-zu(x: 0, y: 0)`, `gehe-zu-position(zu)` – Gehe zu Position
+- `gleite-zu(sekunden: 1, x: 0, y: 0)` – Gleite zu Position
+- `setze-richtung(richtung: 90)`, `drehe-dich-zu(zu)` – Setze Richtung
+- `aendere-x(dx: 10)`, `setze-x(x: 0)` – Ändere/Setze X
+- `aendere-y(dy: 10)`, `setze-y(y: 0)` – Ändere/Setze Y
+- `pralle-vom-rand-ab()` – Pralle vom Rand ab
 
-### 🟣 Aussehen
-- `sage(text, sekunden)`, `denke(text, sekunden)`
-- `wechsle-zu-kostüm(kostüm)`, `wechsle-zum-nächsten-kostüm()`
-- `wechsle-zu-bühnenbild(bild)`, `wechsle-zum-nächsten-bühnenbild()`
-- `ändere-größe-um(wert)`, `setze-größe-auf(wert)`
-- `ändere-effekt(effekt, um)`, `setze-effekt(effekt, auf)`, `schalte-grafikeffekte-aus()`
-- `zeige-dich()`, `verstecke-dich()`
-- Reporter: `kostüm(eigenschaft)`, `bühnenbild(eigenschaft)`, `größe()`
+### 🟣 Aussehen (Looks)
+- `sage(nachricht)`, `sage-fuer-sekunden(nachricht, sekunden: 2)` – Sage etwas
+- `denke(nachricht)`, `denke-fuer-sekunden(nachricht, sekunden: 2)` – Denke etwas
+- `wechsle-zu-kostuem(kostuem)`, `naechstes-kostuem()` – Kostüm wechseln
+- `zeige-dich()`, `verstecke-dich()` – Zeige/Verstecke Figur
 
-### 🟡 Ereignisse
-- `ereignis[Label][Body]` – Startet eine Block-Sequenz
+### 🟡 Ereignisse (Events)
+- `wenn-gruene-flagge-geklickt[body]` – Wenn grüne Flagge angeklickt
+- `wenn-taste-gedrueckt(taste)[body]` – Wenn Taste gedrückt
+- `wenn-diese-figur-angeklickt[body]` – Wenn Figur angeklickt
 
-### 🟠 Steuerung
-- `wiederhole(anzahl, loop-body)` – Schleife mit festgelegter Anzahl
-- `falls(bedingung, dann-body, sonst-body)` – If-else-Verzweigung
+### 🟠 Steuerung (Control)
+- `wiederhole(anzahl: 10)[body]` – Wiederhole n-mal
+- `wiederhole-fortlaufend[body]` – Wiederhole fortlaufend
+- `falls(bedingung)[body]` – Falls (nur dann)
+- `falls-sonst(bedingung, dann, sonst)` – Falls-dann-sonst
 
-### 🔷 Fühlen
-- `frage(text)`, `setze-ziehbarkeit-auf(modus)`, `setze-stoppuhr-zurück()`
-- Reporter: `entfernung-von(objekt)`, `antwort()`, `maus-x-position()`, `maus-y-position()`, `stoppuhr()`, `von-bühne(eigenschaft, objekt)`, `zeit(einheit)`, `tage-seit-2000()`, `benutzername()`
-- Bedingungen: `taste-gedrückt(taste, nested)`, `maustaste-gedrückt(nested)`, `wird-mauszeiger-berührt(nested)`, `wird-farbe-berührt(color, nested)`, `farbe-berührt(color, nested)`
+### 🔷 Fühlen (Sensing)
+- `frage(frage)` – Frage und warte
+- `antwort()` – Antwort (Reporter)
+- `taste-gedrueckt(taste)` – Taste gedrückt? (Bedingung)
+- `maus-x()`, `maus-y()` – Maus-Position (Reporter)
+- `wird-beruehrt(objekt)` – Wird berührt? (Bedingung)
+- `wird-farbe-beruehrt(farbe)` – Wird Farbe berührt? (Bedingung)
 
-### 🟢 Operatoren
-- Arithmetik: `plus(arg1, arg2)`, `minus(arg1, arg2)`, `mal(arg1, arg2)`, `geteilt(arg1, arg2)`, `modulo(arg1, arg2)`
-- Vergleiche: `größer-als(arg1, arg2, nested)`, `kleiner-als(arg1, arg2, nested)`, `gleich(arg1, arg2, nested)`
-- Logik: `und(arg1, arg2, nested)`, `oder(arg1, arg2, nested)`, `nicht(arg1, nested)`
-- Text: `verbinde(text1, text2)`, `zeichen(position, von)`, `länge-von(text)`, `enthält(text, zeichen, nested)`
-- Mathematik: `zufallszahl(von, bis)`, `gerundet(zahl)`, `betrag-von(operation, zahl)`
+### 🟢 Operatoren (Operators)
+- Arithmetik: `addiere(zahl1, zahl2)`, `subtrahiere(zahl1, zahl2)`, `multipliziere(zahl1, zahl2)`, `dividiere(zahl1, zahl2)`
+- Vergleiche: `groesser-als(op1, op2)`, `kleiner-als(op1, op2)`, `gleich(op1, op2)`
+- Logik: `und(op1, op2)`, `oder(op1, op2)`, `nicht(operand)`
+- Text: `verbinde(string1, string2)`, `zeichen-von(position, text)`, `laenge-von(text)`, `enthaelt(text1, text2)`
+- Mathematik: `zufallszahl(von: 1, bis: 10)`, `runde(zahl)`, `modulo(zahl1, zahl2)`, `mathematik(operator, zahl)`
 
-### 🟠 Variablen
-- `setze-variable-auf(name, wert)`, `ändere-variable-um(name, wert)`
-- `zeige-variable(name)`, `verstecke-variable(name)`
-- Reporter: `variable(name)`
+### 🟠 Variablen (Variables)
+- `setze-variable(variable, wert)` – Setze Variable auf Wert
+- `aendere-variable(variable, wert)` – Ändere Variable um Wert
+- `zeige-variable(variable)`, `verstecke-variable(variable)` – Zeige/Verstecke Variable
+- Reporter: `eigene-eingabe(text)` – Variable als Reporter
 
-### 🟠 Listen
-- `füge-zu-hinzu(wert, liste)`, `lösche-aus(index, liste)`, `lösche-alles-aus(liste)`
-- `füge-bei-in-ein(wert, index, liste)`, `ersetze-element-von-durch(index, liste, wert)`
-- Reporter: `element-von(index, liste)`, `nummer-von-in(wert, liste)`, `länge-von-liste(liste)`
-- Bedingung: `liste-enthält(liste, wert, nested)`
-- `zeige-liste(liste)`, `verstecke-liste(liste)`
+### 🟠 Listen (Lists)
+- `fuege-zu-liste-hinzu(element, liste)` – Füge zu Liste hinzu
+- `entferne-aus-liste(index, liste)` – Entferne aus Liste
+- `entferne-alles-aus-liste(liste)` – Lösche alle aus Liste
+- `fuege-bei-ein(element, index, liste)` – Füge bei Index ein
+- `ersetze-element(index, liste, element)` – Ersetze Element
+- Reporter: `element-von-liste(index, liste)`, `nummer-von-element(element, liste)`, `laenge-von-liste(liste)`
+- Bedingung: `liste-enthaelt(liste, element)`
+- `zeige-liste(liste)`, `verstecke-liste(liste)` – Zeige/Verstecke Liste
 
-### 🩷 Eigene Blöcke
-- `eigener-block(body)` – Erstellt einen eigenen Anweisungsblock
-- `eigene-eingabe(text)` – Weißer Platzhalter für Argumente
-- `definiere(label)[body]` – Definitionsblock (ähnlich wie Ereignis)
+### 🩷 Eigene Blöcke (Custom Blocks)
+
+Es gibt zwei Wege, eigene Blöcke zu erstellen:
+
+#### Variante 1: Einfacher Block ohne Parameter
+```typst
+#blockst[
+  #import scratch.de: *
+  
+  #let mein-block = eigener-block("Springe 5 mal")
+  
+  #definiere(mein-block)[
+    #wiederhole(anzahl: 5)[
+      #aendere-y(dy: 10)
+    ]
+  ]
+  
+  #wenn-gruene-flagge-geklickt[
+    #mein-block
+  ]
+]
+```
+
+#### Variante 2: Block mit mehreren Parametern
+```typst
+#blockst[
+  #import scratch.de: *
+  
+  #let zeichne = eigener-block("zeichne", (name: "n"), "-Eck in der ", (name: "Größe"))
+  
+  #definiere(zeichne)[
+    #wiederhole(anzahl: parameter("n"))[
+      #gehe(schritte: parameter("Größe"))
+      #drehe-rechts(grad: dividiere(360, parameter("n")))
+    ]
+  ]
+  
+  #wenn-gruene-flagge-geklickt[
+    #zeichne(6, 50)  // Sechseck mit Größe 50
+    #zeichne(4, 30)  // Viereck mit Größe 30
+  ]
+]
+```
+
+**Verfügbare Funktionen:**
+- `eigener-block(...)` – Erstellt einen eigenen Block mit beliebig vielen Parametern
+- `definiere(label)[body]` – Definitionsblock für eigene Blöcke
+- `parameter(name)` – Liest den Wert eines Parameters im eigenen Block
+- `eigene-eingabe(text)` – Variable/Input als Reporter
 
 ## Erweiterte Beispiele
 
 Für umfangreichere Beispiele siehe:
-- `examples.typ` – Komplexe Algorithmen (Quiz, Bubble Sort, Timer, etc.)
-- `examples-short.typ` – Kurze, prägnante Beispiele
+- `examples.typ` – Komplexe Algorithmen (Quiz, Bubble Sort, Timer, Polygon-Zeichnung) auf Deutsch
+- `examples-short.typ` – Kurze, prägnante Beispiele für alle Kategorien auf Deutsch
+- `examples-short-en.typ` – Kurze Beispiele auf Englisch
 
-## High-Contrast-Modus
+## Konfiguration
 
-Um den High-Contrast-Modus zu aktivieren, setze in `scratch.typ`:
+### Theme ändern
 
 ```typst
-#let high-contrast = true
+#set-blockst(theme: "high-contrast")  // oder "normal"
+```
+
+### Skalierung anpassen
+
+```typst
+#set-blockst(scale: 80%)  // Verkleinere auf 80%
+```
+
+## Mehrsprachigkeit
+
+Das Paket unterstützt mehrere Sprachen:
+
+```typst
+// Deutsche Blöcke
+#blockst[
+  #import scratch.de: *
+  #wenn-gruene-flagge-geklickt[...]
+]
+
+// Englische Blöcke
+#blockst[
+  #import scratch.en: *
+  #when-green-flag-clicked[...]
+]
 ```
 
 ## Lizenz
@@ -225,7 +358,7 @@ Dieses Projekt ist ein Work in Progress, und wir freuen uns über jede Unterstü
 
 - 🐛 **Bug-Reports:** Wenn etwas nicht funktioniert oder die Blöcke nicht korrekt dargestellt werden
 - 🎨 **Design-Verbesserungen:** Hilf dabei, die Blöcke noch näher an die Original-Scratch-Blöcke anzupassen
-- 🌍 **Lokalisierung:** Übersetze die Blöcke in weitere Sprachen (Englisch, Französisch, Spanisch, etc.)
+- 🌍 **Lokalisierung:** Übersetze die Blöcke in weitere Sprachen
 - 📚 **Dokumentation:** Erweitere die Beispiele, schreibe Tutorials oder verbessere die README
 - ✨ **Features:** Füge fehlende Blöcke hinzu oder schlage neue Funktionen vor
 
