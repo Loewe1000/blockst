@@ -52,11 +52,13 @@
 // Sprachmodule als Sub-Module
 #import "lang/de.typ" as de
 #import "lang/en.typ" as en
+#import "lang/fr.typ" as fr
 
 // Scratch-Namespace mit Sprachmodulen
 #let scratch = (
   de: de,
   en: en,
+  fr: fr,
 )
 
 // Scratch-Blöcke: Legacy-Import (für Abwärtskompatibilität)
