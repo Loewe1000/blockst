@@ -45,20 +45,20 @@
 
 #let wenn-nachricht-empfangen(nachricht, body) = block(
   "event.when_message_received",
-  args: (message: nachricht),
+  args: (message1: nachricht),
   lang-code: "de",
   body: body,
 )
 
 #let sende-nachricht(nachricht) = block(
   "event.broadcast",
-  args: (message: nachricht),
+  args: (message2: nachricht),
   lang-code: "de",
 )
 
 #let sende-nachricht-und-warte(nachricht) = block(
   "event.broadcast_and_wait",
-  args: (message: nachricht),
+  args: (message2: nachricht),
   lang-code: "de",
 )
 
@@ -467,7 +467,7 @@
 
 #let taste-gedrueckt(taste) = block(
   "sensing.key_pressed",
-  args: (key: taste),
+  args: (key2: taste),
   lang-code: "de",
 )
 
@@ -567,7 +567,7 @@
 
 #let zufallszahl(von: 1, bis: 10) = block(
   "operator.random",
-  args: (from: von, to: bis),
+  args: (from: von, to2: bis),
   lang-code: "de",
 )
 
@@ -744,6 +744,64 @@
 #let verstecke-liste(liste) = block(
   "data.hide_list",
   args: (list: liste),
+  lang-code: "de",
+)
+
+// =====================
+// (Malstift) Pen
+// =====================
+
+#let losche-alles() = block(
+  "pen.erase_all",
+  args: (:),
+  lang-code: "de",
+)
+  
+#let hinterlasse-abdruck() = block(
+  "pen.stamp",
+  args: (:),
+  lang-code: "de",
+)
+
+#let schalte-stift-ein() = block(
+  "pen.down",
+  args: (:),
+  lang-code: "de",
+)
+
+#let schalte-stift-aus() = block(
+  "pen.up",
+  args: (:),
+  lang-code: "de",
+)
+  
+#let setze-stiftfarbe-auf(color) = block(
+  "pen.set_color",
+  args: (color:color),
+  lang-code: "de",
+)
+
+#let andere-stift(component:"color",value:10) = block(
+  "pen.change_component_by",
+  args: (component:component,value:value),
+  lang-code: "de",
+)
+
+#let setze-stift(component:"color",value:50) = block(
+  "pen.set_component",
+  args: (component:component,value:value),
+  lang-code: "de",
+)
+
+#let andere-stiftdicke(value:1) = block(
+  "pen.change_size_by",
+  args: (value:value),
+  lang-code: "de",
+)
+
+#let setze-stiftdicke(value:1) = block(
+  "pen.set_size_to",
+  args: (value:value),
   lang-code: "de",
 )
 
