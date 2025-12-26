@@ -2,7 +2,7 @@
 // All Scratch blocks with English function names
 
 #import "../core.typ": block
-#import "../scratch.typ": eigener-block as eigener-block-alt, definiere as definiere-alt, parameter
+#import "../scratch.typ": eigener-block as eigener-block-alt, definiere-en as definiere-alt, parameter
 
 // =====================
 // EVENTS
@@ -45,20 +45,20 @@
 
 #let when-message-received(message, body) = block(
   "event.when_message_received",
-  args: (message: message),
+  args: (message1: message),
   lang-code: "en",
   body: body,
 )
 
 #let broadcast(message) = block(
   "event.broadcast",
-  args: (message: message),
+  args: (message2: message),
   lang-code: "en",
 )
 
 #let broadcast-and-wait(message) = block(
   "event.broadcast_and_wait",
-  args: (message: message),
+  args: (message2: message),
   lang-code: "en",
 )
 
@@ -475,7 +475,7 @@
 
 #let key-pressed(key) = block(
   "sensing.key_pressed",
-  args: (key: key),
+  args: (key2: key),
   lang-code: "en",
 )
 
@@ -575,7 +575,7 @@
 
 #let pick-random(from: 1, to: 10) = block(
   "operator.random",
-  args: (from: from, to: to),
+  args: (from: from, to2: to),
   lang-code: "en",
 )
 
@@ -756,6 +756,65 @@
 )
 
 // =====================
+// Pen
+// =====================
+
+
+#let pen-erase-all() = block(
+  "pen.erase_all",
+  args: (:),
+  lang-code: "en",
+)
+
+#let pen-stamp() = block(
+  "pen.stamp",
+  args: (:),
+  lang-code: "en",
+)
+
+#let pen-down() = block(
+  "pen.down",
+  args: (:),
+  lang-code: "en",
+)
+
+#let pen-up() = block(
+  "pen.up",
+  args: (:),
+  lang-code: "en",
+)
+
+#let pen-set-color(color) = block(
+  "pen.set_color",
+  args: (color:color),
+  lang-code: "en",
+)
+
+#let pen-change-component-by(component:"color",value:10) = block(
+  "pen.change_component_by",
+  args: (component:component,value:value),
+  lang-code: "en",
+)
+
+#let pen-set-component-to(component:"color",value:50) = block(
+  "pen.set_component",
+  args: (component:component,value:value),
+  lang-code: "en",
+)
+
+#let pen-change-size-by(value:1) = block(
+  "pen.change_size_by",
+  args: (value:value),
+  lang-code: "en",
+)
+
+#let pen-set-size-to(value:1) = block(
+  "pen.set_size_to",
+  args: (value:value),
+  lang-code: "en",
+)
+
+// =====================
 // CUSTOM BLOCKS
 // =====================
 // CUSTOM BLOCKS
@@ -769,6 +828,11 @@
 
 // Custom block with parameters (old API from scratch.typ)
 #let custom-block(..args) = eigener-block-alt(..args)
+// #let custom-block(..args) = block(
+//   "custom.define",
+//   args:(..args),
+//   lang-code:"en",
+// )
 
 // Define block (old API from scratch.typ)
 #let define(label, ..children) = definiere-alt(label, ..children)
