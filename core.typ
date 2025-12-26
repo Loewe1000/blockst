@@ -25,27 +25,32 @@
   let stroke-thickness = get-stroke-from-options(scratch-block-options.get())
   
   // Dropdown-Felder (typischerweise Strings in Rechteck-Pills)
-  let dropdown-keys = ("to", "scene", "costume", "backdrop", "effect", "sound", "key", "object", "property", "timeunit", "layer", "direction", "variable", "list", "clone", "option", "mode", "style", "element", "operator")
-  
+  let dropdown-keys = ("key", "scene", "element", "message1" , "style", "effect", "property", "layer", "direction", "option", "mode", "timeunit", "operator", "variable", "list")
+
+  let dropdown-keys2 = ("message2", "to", "towards", "costume", "backdrop", "sound", "clone", "object", "key2","component")
   
   // inline: true für Reporter/Bedingungen, inline: false für Stack-Blöcke
   let use-inline = shape in ("reporter", "boolean")
 
   if key in dropdown-keys and type(value) == str {
     pill-rect(value, fill: colors.primary, stroke: colors.tertiary + stroke-thickness, dropdown: true, inline: use-inline)
+  } else if key in dropdown-keys2 and type(value) == str {
+    pill-reporter(value, fill: colors.secondary, stroke: colors.tertiary + stroke-thickness, dropdown: true, inline: use-inline)
   } else if key in ("color", "color1", "color2") {
     pill-color("        ", fill: value)
   } else {
     zahl-oder-content(value, colors)
   }
+  
 }
 
 // Hilfsfunktion: Ersetze Platzhalter in Templates - UNIVERSELLE VERSION
 #let fill-template(template, args, colors, shape: none) = {
   // Icon-Definitionen aus scratch.typ
-  let flag-icon = box(baseline: 20%, image(icons.green-flag, width: 1em, height: 1em))
+  let flag-icon = box(baseline: 20%,inset:(bottom:2.5pt), image(icons.green-flag, width: 1.3em, height: 1.4em))
   let arrow-right = box(baseline: 20%, image(icons.rotate-right, width: 1.5em, height: 1.5em))
   let arrow-left = box(baseline: 20%, image(icons.rotate-left, width: 1.5em, height: 1.5em))
+  let pen = h(.1em)+box(baseline: 20%, image(icons.pen, width: 2.2em, height: 2.2em))+h(.5em)+box(baseline:20%,line(angle:90deg,length: 2em,stroke:.6pt+rgb("#0da57a")))
   
   // Einfache Templates ohne Platzhalter
   if not template.contains("{") {
@@ -118,6 +123,8 @@
       parts.push(arrow-right)
     } else if placeholder == "arrow-left" {
       parts.push(arrow-left)
+    } else if placeholder == "pen" {
+      parts.push(pen)
     } else if placeholder in args {
       parts.push(make-pill(placeholder, args.at(placeholder), colors, shape: shape))
     } else {
@@ -201,6 +208,8 @@
     colors.listen
   } else if category == "eigene" {
     colors.eigene
+  } else if category == "malstift" {
+    colors.malstift
   } else { 
     colors.steuerung 
   }
@@ -213,20 +222,20 @@
   // Control blocks mit speziellen Formen
   if id == "control.if_else" {
     let condition = if "condition" in args { args.condition } else { bedingung(colorschema: colors.operatoren, []) }
-    return falls(condition, dann: body, sonst: else-body)
+    return falls(condition, dann: body, sonst: else-body,lang-code:l)
   } else if id == "control.repeat" {
     let times = if "times" in args { args.times } else { 10 }
-    return wiederhole(anzahl: times, body: body)
+    return wiederhole(anzahl: times, body: body,lang-code:l)
   } else if id == "control.forever" {
-    return wiederhole-fortlaufend(body)
+    return wiederhole-fortlaufend(body,lang-code:l)
   } else if id == "control.if" {
     let condition = if "condition" in args { args.condition } else { bedingung(colorschema: colors.operatoren, []) }
-    return falls(condition, dann: body)
+    return falls(condition, dann: body,lang-code:l)
   } else if id == "control.repeat_until" {
     let condition = if "condition" in args { args.condition } else { bedingung(colorschema: colors.operatoren, []) }
-    return wiederhole-bis(condition, body: body)
+    return wiederhole-bis(condition, body: body,lang-code:l)
   } else if id == "control.start_as_clone" {
-    return wenn-ich-als-klon-entstehe(body)
+    return wenn-ich-als-klon-entstehe(body,lang-code:l)
   }
   
   // Custom block definition
@@ -263,6 +272,8 @@
       variablen-reporter(content)
     } else if category == "listen" {
       listen-reporter(content)
+    } else if category == "malstift" {
+      malstift-reporter(content)
     } else if category == "eigene" {
       eigene-reporter(content)
     } else {
@@ -296,12 +307,15 @@
       scratch-block(
         colorschema: color,
         type: "anweisung",
+        dy: block-offset-y,
         content,
       )
     } else if category == "variablen" {
       variablen(content)
     } else if category == "listen" {
       listen(content)
+    } else if category == "malstift" {
+      malstift(content)
     } else if category == "eigene" {
       eigene(content)
     } else {
