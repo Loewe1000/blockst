@@ -5,17 +5,17 @@
 > **⚠️ Work in Progress**  
 > Dieses Projekt befindet sich noch in aktiver Entwicklung. Die Blöcke sind funktional, aber es gibt noch Raum für Verbesserungen bei der pixel-genauen Anpassung an die Original-Scratch-Blöcke. **Hilfe ist herzlich willkommen!** Besonders bei:
 > - 🎨 Feintuning der Block-Geometrie und Farben
-> - 🌍 Lokalisierung in weitere Sprachen (aktuell: Deutsch & Englisch)
+> - 🌍 Lokalisierung in weitere Sprachen (aktuell: Deutsch & Englisch & "French")
 > - 📚 Ergänzung fehlender Blöcke oder Features
 > - 🐛 Bug-Reports und Feedback
 
 ## Features
 
-- ✅ **Alle Scratch-Kategorien:** Bewegung, Aussehen, Klang, Ereignisse, Steuerung, Fühlen, Operatoren, Variablen, Listen und eigene Blöcke
+- ✅ **Alle Scratch-Kategorien:** Bewegung, Aussehen, Klang, Ereignisse, Steuerung, Fühlen, Operatoren, Variablen, Listen, Malstift und eigene Blöcke
 - ✅ **Originalgetreue Farben:** Normal- und High-Contrast-Modi
 - ✅ **Verschachtelte Strukturen:** Schleifen, Bedingungen (falls-dann-sonst), eigene Blöcke
 - ✅ **Reporter & Operatoren:** Ovale und runde Pills, Diamant-Bedingungen
-- ✅ **Mehrsprachig:** Deutsche und englische Blöcke verfügbar
+- ✅ **Mehrsprachig:** Deutsche und englische und "French" Blöcke verfügbar
 - ✅ **Moderne API:** Schema-basiertes Rendering mit sauberer Sprachabstraktion
 
 ## Installation
@@ -183,6 +183,8 @@ Kopiere die Dateien in dein Projekt-Verzeichnis und importiere das Paket:
   #import scratch.de: *  // Für deutsche Blöcke
   // oder
   #import scratch.en: *  // Für englische Blöcke
+  // oder
+  #import scratch.fr: *  // Für "French" Blöcke
   
   // Dein Scratch-Code hier
 ]
@@ -192,7 +194,7 @@ Kopiere die Dateien in dein Projekt-Verzeichnis und importiere das Paket:
 
 ```typst
 #set-blockst(
-  theme: "normal",      // oder "high-contrast"
+  theme: "normal",      // oder "high-contrast" oder "print"
   scale: 100%,          // Skalierung der Blöcke
 )
 ```
@@ -257,6 +259,17 @@ Kopiere die Dateien in dein Projekt-Verzeichnis und importiere das Paket:
 - Bedingung: `liste-enthaelt(liste, element)`
 - `zeige-liste(liste)`, `verstecke-liste(liste)` – Zeige/Verstecke Liste
 
+### Malstift (Pen)
+- `losche-alles()`
+- `hinterlasse-abdruck()`
+- `schalte-stift-ein()`
+- `schalte-stift-aus()`
+- `setze-stiftfarbe-auf(color)`
+- `andere-stift(component:"color",value:10)`
+- `setze-stift(component:"color",value:50)`
+- `andere-stiftdicke(value:1)`
+- `setze-stiftdicke(value:1)`
+
 ### 🩷 Eigene Blöcke (Custom Blocks)
 
 Es gibt zwei Wege, eigene Blöcke zu erstellen:
@@ -313,13 +326,14 @@ Für umfangreichere Beispiele siehe:
 - `examples.typ` – Komplexe Algorithmen (Quiz, Bubble Sort, Timer, Polygon-Zeichnung) auf Deutsch
 - `examples-short.typ` – Kurze, prägnante Beispiele für alle Kategorien auf Deutsch
 - `examples-short-en.typ` – Kurze Beispiele auf Englisch
+- `examples-short-fr.typ` – Kurze Beispiele auf "French"
 
 ## Konfiguration
 
 ### Theme ändern
 
 ```typst
-#set-blockst(theme: "high-contrast")  // oder "normal"
+#set-blockst(theme: "high-contrast")  // oder "normal" oder "print"
 ```
 
 ### Skalierung anpassen
@@ -343,6 +357,13 @@ Das Paket unterstützt mehrere Sprachen:
 #blockst[
   #import scratch.en: *
   #when-green-flag-clicked[...]
+]
+// "French" Blöcke
+#blockst[
+  #import scratch.fr: *
+  #when-green-flag-clicked[...]
+  // ou
+  #quand-drapeau[...]
 ]
 ```
 
