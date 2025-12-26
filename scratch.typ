@@ -31,6 +31,7 @@
 //  19) Listen
 //  20) Eigene Blöcke
 //  21) Operatoren
+//  22) Malstift
 // ================================================================
 
 // ------------------------------------------------
@@ -64,8 +65,11 @@
 // 2) Assets & Icons
 // ------------------------------------------------
 #let icons = (
+  pen: bytes(
+    "<svg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"><title>pen-icon</title><g stroke=\"#575E75\" fill=\"none\" fill-rule=\"evenodd\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8.753 34.602l-4.25 1.78 1.783-4.237c1.218-2.892 2.907-5.423 5.03-7.538L31.066 4.93c.846-.842 2.65-.41 4.032.967 1.38 1.375 1.816 3.173.97 4.015L16.318 29.59c-2.123 2.116-4.664 3.8-7.565 5.012\" fill=\"#FFF\"/><path d=\"M29.41 6.11s-4.45-2.378-8.202 5.772c-1.734 3.766-4.35 1.546-4.35 1.546\"/><path d=\"M36.42 8.825c0 .463-.14.873-.432 1.164l-9.335 9.3c.282-.29.41-.668.41-1.12 0-.874-.507-1.963-1.406-2.868-1.362-1.358-3.147-1.8-4.002-.99L30.99 5.01c.844-.84 2.65-.41 4.035.96.898.904 1.396 1.982 1.396 2.855M10.515 33.774c-.573.302-1.157.57-1.764.83L4.5 36.382l1.786-4.235c.258-.604.53-1.186.833-1.757.69.183 1.448.625 2.108 1.282.66.658 1.102 1.412 1.287 2.102\" fill=\"#4C97FF\"/><path d=\"M36.498 8.748c0 .464-.14.874-.433 1.165l-19.742 19.68c-2.13 2.11-4.673 3.793-7.572 5.01L4.5 36.38l.974-2.316 1.925-.808c2.898-1.218 5.44-2.9 7.57-5.01l19.743-19.68c.292-.292.432-.702.432-1.165 0-.646-.27-1.4-.78-2.122.25.172.5.377.737.614.898.905 1.396 1.983 1.396 2.856\" fill=\"#575E75\" opacity=\".15\"/><path d=\"M18.45 12.83c0 .5-.404.905-.904.905s-.905-.405-.905-.904c0-.5.407-.903.906-.903.5 0 .904.404.904.904z\" fill=\"#575E75\"/></g></svg>",
+  ),
   dropdown-arrow: bytes(
-    "<svg id=\"Layer_1\" data-name=\"Layer 1\" xmlns=\"http://www.w3.org/2000/svg\" width=\"12.71\" height=\"8.79\" viewBox=\"0 0 12.71 8.79\"><title>dropdown-arrow</title><g opacity=\"0.1\"><path d=\"M12.71,2.44A2.41,2.41,0,0,1,12,4.16L8.08,8.08a2.45,2.45,0,0,1-3.45,0L0.72,4.16A2.42,2.42,0,0,1,0,2.44,2.48,2.48,0,0,1,.71.71C1,0.47,1.43,0,6.36,0S11.75,0.46,12,.71A2.44,2.44,0,0,1,12.71,2.44Z\" fill=\"#231f20\"/></g><path d=\"M6.36,7.79a1.43,1.43,0,0,1-1-.42L1.42,3.45a1.44,1.44,0,0,1,0-2c0.56-.56,9.31-0.56,9.87,0a1.44,1.44,0,0,1,0,2L7.37,7.37A1.43,1.43,0,0,1,6.36,7.79Z\" fill=\"#fff\"/></svg>",
+    "<svg id=\"Layer_1\" data-name=\"Layer 1\" xmlns=\"http://www.w3.org/2000/svg\" width=\"12.71\" height=\"8.79\" viewBox=\"0 0 12.71 8.79\"><title>dropdown-arrow</title><g opacity=\"0.2\"><path d=\"M12.71,2.44A2.41,2.41,0,0,1,12,4.16L8.08,8.08a2.45,2.45,0,0,1-3.45,0L0.72,4.16A2.42,2.42,0,0,1,0,2.44,2.48,2.48,0,0,1,.71.71C1,0.47,1.43,0,6.36,0S11.75,0.46,12,.71A2.44,2.44,0,0,1,12.71,2.44Z\" fill=\"#231f20\"/></g><path d=\"M6.36,7.79a1.43,1.43,0,0,1-1-.42L1.42,3.45a1.44,1.44,0,0,1,0-2c0.56-.56,9.31-0.56,9.87,0a1.44,1.44,0,0,1,0,2L7.37,7.37A1.43,1.43,0,0,1,6.36,7.79Z\" fill=\"#fff\"/></svg>",
   ),
   rotate-right: bytes(
     "<svg id=\"rotate-counter-clockwise\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><style>.cls-1{fill:#3d79cc;}.cls-2{fill:#fff;}</style></defs><title>rotate-counter-clockwise</title><path class=\"cls-1\" d=\"M22.68,12.2a1.6,1.6,0,0,1-1.27.63H13.72a1.59,1.59,0,0,1-1.16-2.58l1.12-1.41a4.82,4.82,0,0,0-3.14-.77,4.31,4.31,0,0,0-2,.8,4.25,4.25,0,0,0-1.34,1.73,5.06,5.06,0,0,0,.54,4.62A5.58,5.58,0,0,0,12,17.74h0a2.26,2.26,0,0,1-.16,4.52A10.25,10.25,0,0,1,3.74,18,10.14,10.14,0,0,1,2.25,8.78,9.7,9.7,0,0,1,5.08,4.64,9.92,9.92,0,0,1,9.66,2.5a10.66,10.66,0,0,1,7.72,1.68l1.08-1.35a1.57,1.57,0,0,1,1.24-.6,1.6,1.6,0,0,1,1.54,1.21l1.7,7.37A1.57,1.57,0,0,1,22.68,12.2Z\"/><path class=\"cls-2\" d=\"M21.38,11.83H13.77a.59.59,0,0,1-.43-1l1.75-2.19a5.9,5.9,0,0,0-4.7-1.58,5.07,5.07,0,0,0-4.11,3.17A6,6,0,0,0,7,15.77a6.51,6.51,0,0,0,5,2.92,1.31,1.31,0,0,1-.08,2.62,9.3,9.3,0,0,1-7.35-3.82A9.16,9.16,0,0,1,3.17,9.12,8.51,8.51,0,0,1,5.71,5.4,8.76,8.76,0,0,1,9.82,3.48a9.71,9.71,0,0,1,7.75,2.07l1.67-2.1a.59.59,0,0,1,1,.21L22,11.08A.59.59,0,0,1,21.38,11.83Z\"/></svg>",
@@ -105,7 +109,7 @@
   text-color: rgb("#FFFFFF"),
   bewegung: (primary: rgb("#4C97FF"), secondary: rgb("#4280D7"), tertiary: rgb("#3373CC"), quaternary: rgb("#3373CC")),
   aussehen: (primary: rgb("#9966FF"), secondary: rgb("#855CD6"), tertiary: rgb("#774DCB"), quaternary: rgb("#774DCB")),
-  klang: (primary: rgb("#CF63CF"), secondary: rgb("#C94FC9"), tertiary: rgb("#BD42BD"), quaternary: rgb("#BD42BD")),
+  klang: (primary: rgb("#CF63CF"), secondary: rgb("#C94FC9"), tertiary: rgb("#BD42BD"), quaternary: rgb("#BD42BD")),// or A63FA6 for tertiary ?
   ereignisse: (primary: rgb("#FFBF00"), secondary: rgb("#E6AC00"), tertiary: rgb("#CC9900"), quaternary: rgb("#CC9900")),
   steuerung: (primary: rgb("#FFAB19"), secondary: rgb("#EC9C13"), tertiary: rgb("#CF8B17"), quaternary: rgb("#CF8B17")),
   fühlen: (primary: rgb("#5CB1D6"), secondary: rgb("#47A8D1"), tertiary: rgb("#2E8EB8"), quaternary: rgb("#2E8EB8")),
@@ -113,6 +117,23 @@
   variablen: (primary: rgb("#FF8C1A"), secondary: rgb("#FF8000"), tertiary: rgb("#DB6E00"), quaternary: rgb("#DB6E00")),
   listen: (primary: rgb("#FF661A"), secondary: rgb("#FF5500"), tertiary: rgb("#E64D00"), quaternary: rgb("#E64D00")),
   eigene: (primary: rgb("#FF6680"), secondary: rgb("#FF4D6A"), tertiary: rgb("#FF3355"), quaternary: rgb("#FF3355")),
+  malstift:(primary: rgb("#0FBD8C"), secondary: rgb("#0DA57A"), tertiary: rgb("#0B8E69"), quaternary: rgb("#0B8E69")),
+)
+
+// "Print" Variante
+#let colors-print = (
+  text-color: rgb("#000000"),
+  bewegung: (primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
+  aussehen: (primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
+  klang: (primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
+  ereignisse: (primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
+  steuerung: (primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
+  fühlen: (primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
+  operatoren: (primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
+  variablen: (primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
+  listen: (primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
+  eigene: (primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
+  malstift:(primary: rgb("#FFFFFF"), secondary: gray, tertiary: rgb("#000000"), quaternary: blue),
 )
 
 // Hoher Kontrast Variante (Offizielle Scratch High-Contrast-Farben)
@@ -128,6 +149,7 @@
   variablen: (primary: rgb("#FFA54C"), secondary: rgb("#FFCC99"), tertiary: rgb("#DB6E00"), quaternary: rgb("#FFE5CC")),
   listen: (primary: rgb("#FF9966"), secondary: rgb("#FFCAB0"), tertiary: rgb("#E64D00"), quaternary: rgb("#FFDDCC")),
   eigene: (primary: rgb("#FF99AA"), secondary: rgb("#FFCCD5"), tertiary: rgb("#FF3355"), quaternary: rgb("#FFE5EA")),
+  malstift:(primary: rgb("#13ECAF"), secondary: rgb("#75F0CD"), tertiary: rgb("#0B8E69"), quaternary: rgb("#A3F5DE")),
 )
 
 // ------------------------------------------------
@@ -137,6 +159,8 @@
 #let get-colors-from-options(options) = {
   if options.theme == "high-contrast" {
     colors-high-contrast
+  } else if options.theme == "print" {
+    colors-print
   } else {
     colors-normal
   }
@@ -147,6 +171,8 @@
     options.stroke-width
   } else if options.theme == "high-contrast" {
     1.0pt
+  } else if options.theme == "print" {
+    0.8pt
   } else {
     0.5pt
   }
@@ -247,7 +273,10 @@
     // Weiße Pills brauchen dunkle Schrift
     if colors == colors-high-contrast {
       black // Schwarz bei high-contrast
-    } else {
+    } else if colors == colors-print {
+      black // Schwarz bei high-contrast
+    }
+    else {
       rgb("#575E75") // Dunkelgrau bei normal
     }
   } else {
@@ -337,7 +366,7 @@
   inset: if inline {
     (x: pill-inset-x, y: 0.7 * pill-inset-y)
   } else {
-    (x: 0.4 * pill-inset-x, y: 0.7 * pill-inset-y)
+    (x: 0.7 * pill-inset-x, y: 0.7 * pill-inset-y)
   },
   height: if inline { 100% } else { auto },
   dropdown: dropdown,
@@ -697,7 +726,7 @@
 }
 
 // ------------------------------------------------
-// 10) Kategorie-Wrapper (bewegung, aussehen, klang, fühlen, steuerung, variablen, listen, eigene)
+// 10) Kategorie-Wrapper (bewegung, aussehen, klang, fühlen, steuerung, variablen, listen, malstift, eigene)
 // ------------------------------------------------
 #let bewegung(body) = context {
   let options = scratch-block-options.get()
@@ -778,6 +807,18 @@
 
   scratch-block(
     colorschema: colors.listen,
+    type: "anweisung",
+    dy: block-offset-y,
+    body,
+  )
+}
+
+#let malstift(body) = context {
+  let options = scratch-block-options.get()
+  let colors = get-colors-from-options(options)
+
+  scratch-block(
+    colorschema: colors.malstift,
     type: "anweisung",
     dy: block-offset-y,
     body,
@@ -931,14 +972,14 @@
 }
 
 // Wenn ich als Klon entstehe (Ereignis-Form mit Steuerung-Farben)
-#let wenn-ich-als-klon-entstehe(children) = context {
+#let wenn-ich-als-klon-entstehe(children, lang-code:"de") = context {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
 
   scratch-block(
     colorschema: colors.steuerung,
     type: "ereignis",
-    [Wenn ich als Klon entstehe],
+    if lang-code == "de" [Wenn ich als Klon entstehe] else if lang-code == "en" [when I start as a clone] else if lang-code == "fr" [quand je commence comme un clone],
     children,
   )
 }
@@ -1051,6 +1092,18 @@
 
   reporter(
     colorschema: colors.listen,
+    body,
+    dropdown-content: dropdown-content,
+  )
+}
+
+// malstift-Reporter
+#let malstift-reporter(body, dropdown-content: none) = context {
+  let options = scratch-block-options.get()
+  let colors = get-colors-from-options(options)
+
+  reporter(
+    colorschema: colors.malstift,
     body,
     dropdown-content: dropdown-content,
   )
@@ -1188,43 +1241,43 @@
 }
 
 // Wiederhole n-mal
-#let wiederhole(anzahl: 10, body: none) = context {
+#let wiederhole(anzahl: 10, body: none,lang-code:"de") = context {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
 
   conditional-block(
-    [#stack(dir: ltr, spacing: 1.5mm, "wiederhole", zahl-oder-content(anzahl, colors.steuerung), "mal")],
+    [#stack(dir: ltr, spacing: 1.5mm, if lang-code == "de" {"wiederhole"} else if lang-code == "en" {"repeat"} else if lang-code == "fr" {"répéter"}, zahl-oder-content(anzahl, colors.steuerung), if lang-code == "de" {"mal"} else if lang-code == "en" {"        "} else if lang-code == "fr" {"fois "} )],
     first-body: body,
   )
 }
 
 // Wiederhole bis Bedingung
-#let wiederhole-bis(bdg, body: none) = context {
+#let wiederhole-bis(bdg, body: none,lang-code:"de") = context {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
 
   conditional-block(
-    [#stack(dir: ltr, spacing: 1.5mm, "wiederhole bis", if bdg != [] { bdg } else { bedingung(colorschema: colors.steuerung, []) })],
+    [#stack(dir: ltr, spacing: 1.5mm, if lang-code == "de" {"wiederhole bis"} else if lang-code == "en" {"repeat until"} else if lang-code == "fr" {"répéter jusqu'à"}, if bdg != [] { bdg } else { bedingung(colorschema: colors.steuerung, []) })],
     first-body: body,
   )
 }
 
 // Wiederhole fortlaufend (Endlosschleife)
-#let wiederhole-fortlaufend(body) = conditional-block(
-  [#stack(dir: ltr, spacing: 1.5mm, "wiederhole fortlaufend")],
+#let wiederhole-fortlaufend(body,lang-code:"de") = conditional-block(
+  [#stack(dir: ltr, spacing: 1.5mm, if lang-code == "de" {"wiederhole fortlaufend"} else if lang-code == "en" {"forever"} else if lang-code == "fr" {"répéter indéfiniment"})],
   first-body: body,
   bottom-notch: false,
 )
 
 // Falls-Dann-Sonst Block
-#let falls(bdg, dann: none, sonst: none, dann-end: false, sonst-end: false) = context {
+#let falls(bdg, dann: none, sonst: none, dann-end: false, sonst-end: false,lang-code:"de") = context {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
 
   conditional-block(
-    [#stack(dir: ltr, spacing: 1.5mm, "falls", if bdg != [] { bdg } else { bedingung(colorschema: colors.steuerung, []) }, ", dann")],
+    [#stack(dir: ltr, spacing: 1.5mm, if lang-code == "de" {"falls"} else if lang-code == "en" {"if   "} else if lang-code == "fr" {"si  "}, if bdg != [] { bdg } else { bedingung(colorschema: colors.steuerung, []) }, if lang-code == "de" {", dann"} else if lang-code == "en" {"then"} else if lang-code == "fr" {" alors"})],
     first-body: dann,
-    middle-label: if sonst != none { [#stack(dir: ltr, spacing: 1.5mm, "sonst")] } else { none },
+    middle-label: if sonst != none { [#stack(dir: ltr, spacing: 1.5mm, if lang-code == "de" {"sonst"}  else if lang-code == "en" {"else"} else if lang-code == "fr" {"sinon"})] } else { none },
     second-body: sonst,
     block-type: "falls",
     first-inset-notch: not sonst-end,
@@ -2383,7 +2436,6 @@
     )
   ]
 }
-
 // ------------------------------------------------
 // 20) Eigene Blöcke
 // ------------------------------------------------
@@ -2452,6 +2504,42 @@
       dir: ltr,
       spacing: 1.5mm,
       "Definiere",
+      block-label(dark: true),
+    ),
+    ..children,
+  )
+}
+
+#let definiere-en(block-label, ..children) = context {
+  let options = scratch-block-options.get()
+  let colors = get-colors-from-options(options)
+
+  scratch-block(
+    colorschema: colors.eigene,
+    type: "definiere",
+    dy: 2.5 * corner-radius,
+    stack(
+      dir: ltr,
+      spacing: 1.5mm,
+      "Define",
+      block-label(dark: true),
+    ),
+    ..children,
+  )
+}
+
+#let definiere-fr(block-label, ..children) = context {
+  let options = scratch-block-options.get()
+  let colors = get-colors-from-options(options)
+
+  scratch-block(
+    colorschema: colors.eigene,
+    type: "definiere",
+    dy: 2.5 * corner-radius,
+    stack(
+      dir: ltr,
+      spacing: 1.5mm,
+      "Définir",
       block-label(dark: true),
     ),
     ..children,
@@ -2778,5 +2866,82 @@
     fill: colors.operatoren.primary,
     text-color: colors.text-color,
     stroke: colors.operatoren.tertiary + stroke-thickness,
+  )
+}
+
+// ------------------------------------------------
+// 22) malstift Blöcke
+// ------------------------------------------------
+
+#let losche_alles() = malstift(
+  stack(dir: ltr, spacing: 1.5mm, image(icons.pen), "lösche alles"),
+)
+
+#let hinterlasse_abdruck() = malstift(
+  stack(dir: ltr, spacing: 1.5mm, image(icons.pen), "hinterlasse Abdruck"),
+)
+#let schalte_stift_ein() = malstift(
+  stack(dir: ltr, spacing: 1.5mm, image(icons.pen), "schalte Stift ein"),
+)
+#let schalte_stift_aus() = malstift(
+  stack(dir: ltr, spacing: 1.5mm, image(icons.pen), "schalte Stift aus"),
+)
+#let setze_stiftbarbe(color:blue) = malstift(
+  stack(dir: ltr, spacing: 1.5mm, image(icons.pen), "setze Stiftfarbe auf", pill-color("         ", fill: color)),
+)
+
+#let andere_stift(sek: 10, zu: "Farbe") = context {
+  let options = scratch-block-options.get()
+  let colors = get-colors-from-options(options)
+  let stroke-thickness = get-stroke-from-options(options)
+
+  bewegung(
+    stack(dir: ltr, spacing: 1.5mm, image(icons.pen), "ändere Stift", pill-reporter(
+      inline: true,
+      zu,
+      fill: colors.malstift.secondary,
+      stroke: colors.malstift.tertiary + stroke-thickness,
+      text-color: colors.text-color,
+      dropdown: true,
+    ), "um", 
+    zahl-oder-content(sek, colors.malstift)),
+  )
+}
+
+#let setze_stift(sek: 10, zu: "Farbe") = context {
+  let options = scratch-block-options.get()
+  let colors = get-colors-from-options(options)
+  let stroke-thickness = get-stroke-from-options(options)
+
+  bewegung(
+    stack(dir: ltr, spacing: 1.5mm, image(icons.pen), "setze Stift", pill-reporter(
+      inline: true,
+      zu,
+      fill: colors.malstift.secondary,
+      stroke: colors.malstift.tertiary + stroke-thickness,
+      text-color: colors.text-color,
+      dropdown: true,
+    ), "auf", 
+    zahl-oder-content(sek, colors.malstift)),
+  )
+}
+#let andere_stiftdicke(sek: 1) = context {
+  let options = scratch-block-options.get()
+  let colors = get-colors-from-options(options)
+  let stroke-thickness = get-stroke-from-options(options)
+
+  bewegung(
+    stack(dir: ltr, spacing: 1.5mm, image(icons.pen), "ändere Stiftdicke um", 
+    zahl-oder-content(sek, colors.malstift)),
+  )
+}
+#let setze_stiftdicke(sek: 1) = context {
+  let options = scratch-block-options.get()
+  let colors = get-colors-from-options(options)
+  let stroke-thickness = get-stroke-from-options(options)
+
+  bewegung(
+    stack(dir: ltr, spacing: 1.5mm, image(icons.pen), "setze Stiftdicke auf", 
+    zahl-oder-content(sek, colors.malstift)),
   )
 }
