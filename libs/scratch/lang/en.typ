@@ -1,8 +1,7 @@
 // lang/en.typ — English aliases (Complete)
 // All Scratch blocks with English function names
 
-#import "../core.typ": block
-#import "../scratch.typ": eigener-block as eigener-block-alt, definiere-en as definiere-alt, parameter
+#import "../core.typ": block, custom-block as render-custom-block, parameter
 
 // =====================
 // EVENTS
@@ -45,20 +44,20 @@
 
 #let when-message-received(message, body) = block(
   "event.when_message_received",
-  args: (message1: message),
+  args: (message: message),
   lang-code: "en",
   body: body,
 )
 
 #let broadcast(message) = block(
   "event.broadcast",
-  args: (message2: message),
+  args: (message: message),
   lang-code: "en",
 )
 
 #let broadcast-and-wait(message) = block(
   "event.broadcast_and_wait",
-  args: (message2: message),
+  args: (message: message),
   lang-code: "en",
 )
 
@@ -357,6 +356,64 @@
 )
 
 // =====================
+// PEN
+// =====================
+
+#let erase-all() = block(
+  "pen.clear",
+  args: (:),
+  lang-code: "en",
+)
+
+#let stamp() = block(
+  "pen.stamp",
+  args: (:),
+  lang-code: "en",
+)
+
+#let pen-down() = block(
+  "pen.pen_down",
+  args: (:),
+  lang-code: "en",
+)
+
+#let pen-up() = block(
+  "pen.pen_up",
+  args: (:),
+  lang-code: "en",
+)
+
+#let set-pen-color-to(color) = block(
+  "pen.set_pen_color_to_color",
+  args: (color: color),
+  lang-code: "en",
+)
+
+#let change-pen-param-by(param, value: 10) = block(
+  "pen.change_pen_param_by",
+  args: (param: param, value: value),
+  lang-code: "en",
+)
+
+#let set-pen-param-to(param, value: 50) = block(
+  "pen.set_pen_param_to",
+  args: (param: param, value: value),
+  lang-code: "en",
+)
+
+#let change-pen-size-by(size: 1) = block(
+  "pen.change_pen_size_by",
+  args: (size: size),
+  lang-code: "en",
+)
+
+#let set-pen-size-to(size: 1) = block(
+  "pen.set_pen_size_to",
+  args: (size: size),
+  lang-code: "en",
+)
+
+// =====================
 // CONTROL
 // =====================
 
@@ -475,7 +532,7 @@
 
 #let key-pressed(key) = block(
   "sensing.key_pressed",
-  args: (key2: key),
+  args: (key: key),
   lang-code: "en",
 )
 
@@ -575,7 +632,7 @@
 
 #let pick-random(from: 1, to: 10) = block(
   "operator.random",
-  args: (from: from, to2: to),
+  args: (from: from, to: to),
   lang-code: "en",
 )
 
@@ -755,62 +812,17 @@
   lang-code: "en",
 )
 
-// =====================
-// Pen
-// =====================
-
-
-#let pen-erase-all() = block(
-  "pen.erase_all",
-  args: (:),
+// Visual variable monitor (like Scratch variable watcher)
+#let variable-display(name: "Variable", value: 0) = block(
+  "data.monitor_variable",
+  args: (name: name, value: value),
   lang-code: "en",
 )
 
-#let pen-stamp() = block(
-  "pen.stamp",
-  args: (:),
-  lang-code: "en",
-)
-
-#let pen-down() = block(
-  "pen.down",
-  args: (:),
-  lang-code: "en",
-)
-
-#let pen-up() = block(
-  "pen.up",
-  args: (:),
-  lang-code: "en",
-)
-
-#let pen-set-color(color) = block(
-  "pen.set_color",
-  args: (color:color),
-  lang-code: "en",
-)
-
-#let pen-change-component-by(component:"color",value:10) = block(
-  "pen.change_component_by",
-  args: (component:component,value:value),
-  lang-code: "en",
-)
-
-#let pen-set-component-to(component:"color",value:50) = block(
-  "pen.set_component",
-  args: (component:component,value:value),
-  lang-code: "en",
-)
-
-#let pen-change-size-by(value:1) = block(
-  "pen.change_size_by",
-  args: (value:value),
-  lang-code: "en",
-)
-
-#let pen-set-size-to(value:1) = block(
-  "pen.set_size_to",
-  args: (value:value),
+// Visual list monitor (like Scratch list watcher)
+#let list(name: "List", items: (), width: 4cm) = block(
+  "data.monitor_list",
+  args: (name: name, items: items, width: width),
   lang-code: "en",
 )
 
@@ -827,15 +839,15 @@
 )
 
 // Custom block with parameters (old API from scratch.typ)
-#let custom-block(..args) = eigener-block-alt(..args)
-// #let custom-block(..args) = block(
-//   "custom.define",
-//   args:(..args),
-//   lang-code:"en",
-// )
+#let custom-block(..args) = render-custom-block(..args)
 
 // Define block (old API from scratch.typ)
-#let define(label, ..children) = definiere-alt(label, ..children)
+#let define(label, ..children) = block(
+  "custom.define",
+  args: (label: label),
+  lang-code: "en",
+  body: children,
+)
 
 // Parameter reporter for custom blocks is exported
 // (imported directly from scratch.typ and is already available)

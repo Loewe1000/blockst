@@ -1,41 +1,42 @@
 // =====================================================
-// Scratch-Blöcke: Container-Funktion und Sprachmodule
+// blockst — Container function and language modules
 // =====================================================
 
-#import "scratch.typ": scratch-block-options
+#import "libs/scratch/mod.typ": scratch-block-options
 
-// Container-Funktion für Scratch-Blöcke
-// Verwendung: #blockst[#import scratch.de: * ...]
+// Container function for block environments
+// Usage: #blockst[#import scratch.de: * ...]
 #let blockst(
   theme: auto,
   scale: auto,
-  body
+  body,
 ) = context {
-  // Hole aktuelle Optionen aus dem State
+  // Read current options from state
   let current-opts = scratch-block-options.get()
-  
-  // Verwende State-Werte, wenn auto übergeben wurde
+
+  // Fall back to state values when auto was passed
   let final-theme = if theme == auto {
     current-opts.at("theme", default: "normal")
   } else {
     theme
   }
-  
+
   let final-scale = if scale == auto {
     current-opts.at("scale", default: 100%)
   } else {
     scale
   }
-  
-  // Rendere Body mit Skalierung
+
+  // Render body with scaling
   block(above: 2em, std.scale(final-scale, reflow: true, body))
 }
 
-// Globale Einstellungen für Scratch-Blöcke
-// Verwendung: #set-blockst(theme: "dark", scale: 80%)
+// Global settings for block environments
+// Usage: #set-blockst(theme: "dark", scale: 80%, stroke-width: 1pt)
 #let set-blockst(
   theme: none,
   scale: none,
+  stroke-width: none,
 ) = {
   scratch-block-options.update(old => {
     let new-opts = old
@@ -45,21 +46,35 @@
     if scale != none {
       new-opts.insert("scale", scale)
     }
+    if stroke-width != none {
+      new-opts.insert("stroke-width", stroke-width)
+    }
     new-opts
   })
 }
 
-// Sprachmodule als Sub-Module
-#import "lang/de.typ" as de
-#import "lang/en.typ" as en
-#import "lang/fr.typ" as fr
+// Executable Scratch environment (interpreter, state, settings)
+#import "libs/scratch/interpreter.typ": blockst-run-options, set-scratch-run, scratch-run
 
-// Scratch-Namespace mit Sprachmodulen
+// Language modules as sub-namespaces
+#import "libs/scratch/lang/de.typ" as de
+#import "libs/scratch/lang/en.typ" as en
+#import "libs/scratch/lang/fr.typ" as fr
+
+// Executable block localisations
+#import "libs/scratch/exec/de.typ" as exec-de
+#import "libs/scratch/exec/en.typ" as exec-en
+#import "libs/scratch/exec/fr.typ" as exec-fr
+
+// Scratch namespace with language sub-modules and executable localisations
 #let scratch = (
   de: de,
   en: en,
   fr: fr,
+  exec: (
+    de: exec-de,
+    en: exec-en,
+    fr: exec-fr,
+  ),
 )
 
-// Scratch-Blöcke: Legacy-Import (für Abwärtskompatibilität)
-#import "scratch.typ": *

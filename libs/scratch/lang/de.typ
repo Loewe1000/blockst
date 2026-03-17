@@ -1,8 +1,7 @@
-// lang/de.typ — Deutsche Aliase (Vollständig)
-// Nutzt core.typ für schema-basiertes Rendering
+// lang/de.typ — German block aliases (complete)
+// Uses core.typ for schema-based rendering
 
-#import "../core.typ": block
-#import "../scratch.typ": eigener-block as eigener-block-alt, definiere as definiere-alt, parameter
+#import "../core.typ": block, custom-block as render-custom-block, parameter
 
 // =====================
 // EREIGNISSE (Events)
@@ -45,20 +44,20 @@
 
 #let wenn-nachricht-empfangen(nachricht, body) = block(
   "event.when_message_received",
-  args: (message1: nachricht),
+  args: (message: nachricht),
   lang-code: "de",
   body: body,
 )
 
 #let sende-nachricht(nachricht) = block(
   "event.broadcast",
-  args: (message2: nachricht),
+  args: (message: nachricht),
   lang-code: "de",
 )
 
 #let sende-nachricht-und-warte(nachricht) = block(
   "event.broadcast_and_wait",
-  args: (message2: nachricht),
+  args: (message: nachricht),
   lang-code: "de",
 )
 
@@ -349,6 +348,64 @@
 )
 
 // =====================
+// MALSTIFT (Pen)
+// =====================
+
+#let loesche-alles() = block(
+  "pen.clear",
+  args: (:),
+  lang-code: "de",
+)
+
+#let hinterlasse-abdruck() = block(
+  "pen.stamp",
+  args: (:),
+  lang-code: "de",
+)
+
+#let schalte-stift-ein() = block(
+  "pen.pen_down",
+  args: (:),
+  lang-code: "de",
+)
+
+#let schalte-stift-aus() = block(
+  "pen.pen_up",
+  args: (:),
+  lang-code: "de",
+)
+
+#let setze-stiftfarbe-auf(farbe) = block(
+  "pen.set_pen_color_to_color",
+  args: (color: farbe),
+  lang-code: "de",
+)
+
+#let aendere-stift-param(param, wert: 10) = block(
+  "pen.change_pen_param_by",
+  args: (param: param, value: wert),
+  lang-code: "de",
+)
+
+#let setze-stift-param(param, wert: 50) = block(
+  "pen.set_pen_param_to",
+  args: (param: param, value: wert),
+  lang-code: "de",
+)
+
+#let aendere-stiftdicke(dicke: 1) = block(
+  "pen.change_pen_size_by",
+  args: (size: dicke),
+  lang-code: "de",
+)
+
+#let setze-stiftdicke(dicke: 1) = block(
+  "pen.set_pen_size_to",
+  args: (size: dicke),
+  lang-code: "de",
+)
+
+// =====================
 // STEUERUNG (Control)
 // =====================
 
@@ -426,7 +483,7 @@
 )
 
 // =====================
-// FÜHLEN (Sensing)
+// SENSING
 // =====================
 
 #let wird-beruehrt(objekt) = block(
@@ -467,7 +524,7 @@
 
 #let taste-gedrueckt(taste) = block(
   "sensing.key_pressed",
-  args: (key2: taste),
+  args: (key: taste),
   lang-code: "de",
 )
 
@@ -567,7 +624,7 @@
 
 #let zufallszahl(von: 1, bis: 10) = block(
   "operator.random",
-  args: (from: von, to2: bis),
+  args: (from: von, to: bis),
   lang-code: "de",
 )
 
@@ -747,70 +804,26 @@
   lang-code: "de",
 )
 
-// =====================
-// (Malstift) Pen
-// =====================
-
-#let losche-alles() = block(
-  "pen.erase_all",
-  args: (:),
-  lang-code: "de",
-)
-  
-#let hinterlasse-abdruck() = block(
-  "pen.stamp",
-  args: (:),
+// Visuelle Variablen-Darstellung (Monitor)
+#let variable(name: "Variable", wert: 0) = block(
+  "data.monitor_variable",
+  args: (name: name, value: wert),
   lang-code: "de",
 )
 
-#let schalte-stift-ein() = block(
-  "pen.down",
-  args: (:),
-  lang-code: "de",
-)
-
-#let schalte-stift-aus() = block(
-  "pen.up",
-  args: (:),
-  lang-code: "de",
-)
-  
-#let setze-stiftfarbe-auf(color) = block(
-  "pen.set_color",
-  args: (color:color),
-  lang-code: "de",
-)
-
-#let andere-stift(component:"color",value:10) = block(
-  "pen.change_component_by",
-  args: (component:component,value:value),
-  lang-code: "de",
-)
-
-#let setze-stift(component:"color",value:50) = block(
-  "pen.set_component",
-  args: (component:component,value:value),
-  lang-code: "de",
-)
-
-#let andere-stiftdicke(value:1) = block(
-  "pen.change_size_by",
-  args: (value:value),
-  lang-code: "de",
-)
-
-#let setze-stiftdicke(value:1) = block(
-  "pen.set_size_to",
-  args: (value:value),
+// Visuelle Listen-Darstellung (Monitor)
+#let liste(name: "Liste", items: (), width: 4cm, height: auto) = block(
+  "data.monitor_list",
+  args: (name: name, items: items, width: width, height: height),
   lang-code: "de",
 )
 
 // =====================
-// EIGENE BLÖCKE (Custom Blocks)
+// CUSTOM BLOCKS
 // =====================
 
 // =====================
-// EIGENE BLÖCKE (Custom Blocks)
+// CUSTOM BLOCKS
 // =====================
 
 #let eigene-eingabe(text) = block(
@@ -820,10 +833,14 @@
 )
 
 // Eigener Block mit Parametern (alte API aus scratch.typ)
-#let eigener-block(..args) = eigener-block-alt(..args)
+#let eigener-block(..args) = render-custom-block(..args)
 
 // Definiere-Block (alte API aus scratch.typ)
-#let definiere(label, ..children) = definiere-alt(label, ..children)
+#let definiere(label, ..children) = block(
+  "custom.define",
+  args: (label: label),
+  lang-code: "de",
+  body: children,
+)
 
-// Parameter-Reporter für eigene Blöcke exportieren
-// (wird direkt aus scratch.typ importiert und ist bereits verfügbar)
+// Parameter reporter for custom blocks — re-exported from mod.typ
