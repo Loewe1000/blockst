@@ -1,24 +1,24 @@
 // Example 3 – Variable & list monitors
-#import "../lib.typ": blockst, scratch
+#import "@preview/blockst:0.1.0": blockst, scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
 #blockst[
-  #import scratch.de: *
+  #import scratch.en: *
 
   // Program blocks
-  #wenn-gruene-flagge-geklickt[
-    #setze-variable("Highscore", 0)
-    #fuege-zu-liste-hinzu("Anna", "Spieler")
-    #fuege-zu-liste-hinzu("Ben", "Spieler")
-    #fuege-zu-liste-hinzu("Clara", "Spieler")
+  #when-flag-clicked[
+    #set-variable-to("Highscore", 0)
+    #add-to-list("Anna", "Players")
+    #add-to-list("Ben", "Players")
+    #add-to-list("Clara", "Players")
   ]
 
   // Visual monitors (like on the Scratch stage)
-  #variable(name: "Highscore", wert: 100)
+  #variable-display(name: "Highscore", value: 100)
 
-  #liste(
-    name: "Spieler",
+  #list(
+    name: "Players",
     items: ("Anna", "Ben", "Clara"),
   )
 ]

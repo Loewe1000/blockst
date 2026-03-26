@@ -1,6 +1,6 @@
 [package]
 name = "blockst"
-version = "0.0.2"
+version = "0.1.0"
 entrypoint = "lib.typ"
 authors = ["Loewe1000 <@Loewe1000>"]
 repository = "https://github.com/Loewe1000/blockst"
@@ -11,7 +11,7 @@ compiler = "0.13.1"
 exclude = [
 	".DS_Store",
 	"*.pdf",
-	"/examples/*.png",
+	"/examples",
 ]
 
 description = "Render Scratch-style blocks for educational documents."

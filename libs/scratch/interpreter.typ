@@ -9,37 +9,37 @@
 #let blockst-run-options = state("blockst-run-options", (:))
 
 // Global settings for scratch-run
-// Usage: #set-scratch-run(zeige-gitter: 50, zeige-achsen: true)
+// Usage: #set-scratch-run(show-grid: 50, show-axes: true)
 #let set-scratch-run(
-  breite: none,
-  hoehe: none,
+  width: none,
+  height: none,
   start-x: none,
   start-y: none,
   start-angle: none,
-  start-farbe: none,
-  start-dicke: none,
-  einheit: none,
-  hintergrund: none,
-  zeige-achsen: none,
-  zeige-gitter: none,
-  zeige-rahmen: none,
-  zeige-cursor: none,
+  start-color: none,
+  start-thickness: none,
+  unit: none,
+  background: none,
+  show-axes: none,
+  show-grid: none,
+  show-border: none,
+  show-cursor: none,
 ) = {
   blockst-run-options.update(old => {
     let new-opts = old
-    if breite != none { new-opts.insert("breite", breite) }
-    if hoehe != none { new-opts.insert("hoehe", hoehe) }
+    if width != none { new-opts.insert("width", width) }
+    if height != none { new-opts.insert("height", height) }
     if start-x != none { new-opts.insert("start-x", start-x) }
     if start-y != none { new-opts.insert("start-y", start-y) }
     if start-angle != none { new-opts.insert("start-angle", start-angle) }
-    if start-farbe != none { new-opts.insert("start-farbe", start-farbe) }
-    if start-dicke != none { new-opts.insert("start-dicke", start-dicke) }
-    if einheit != none { new-opts.insert("einheit", einheit) }
-    if hintergrund != none { new-opts.insert("hintergrund", hintergrund) }
-    if zeige-achsen != none { new-opts.insert("zeige-achsen", zeige-achsen) }
-    if zeige-gitter != none { new-opts.insert("zeige-gitter", zeige-gitter) }
-    if zeige-rahmen != none { new-opts.insert("zeige-rahmen", zeige-rahmen) }
-    if zeige-cursor != none { new-opts.insert("zeige-cursor", zeige-cursor) }
+    if start-color != none { new-opts.insert("start-color", start-color) }
+    if start-thickness != none { new-opts.insert("start-thickness", start-thickness) }
+    if unit != none { new-opts.insert("unit", unit) }
+    if background != none { new-opts.insert("background", background) }
+    if show-axes != none { new-opts.insert("show-axes", show-axes) }
+    if show-grid != none { new-opts.insert("show-grid", show-grid) }
+    if show-border != none { new-opts.insert("show-border", show-border) }
+    if show-cursor != none { new-opts.insert("show-cursor", show-cursor) }
     new-opts
   })
 }
@@ -49,20 +49,20 @@
 // =====================================================
 
 #let scratch-run(
-  breite: auto,
-  hoehe: auto,
+  width: auto,
+  height: auto,
   start-x: auto,
   start-y: auto,
   start-angle: auto,
-  start-farbe: auto,
-  start-dicke: auto,
-  einheit: auto,
-  hintergrund: auto,
-  zeige-achsen: auto,
-  zeige-gitter: auto,
-  zeige-rahmen: auto,
-  zeige-cursor: auto,
-  ..befehle,
+  start-color: auto,
+  start-thickness: auto,
+  unit: auto,
+  background: auto,
+  show-axes: auto,
+  show-grid: auto,
+  show-border: auto,
+  show-cursor: auto,
+  ..commands,
 ) = context {
   import "@preview/cetz:0.4.2": canvas, draw
 
@@ -74,22 +74,22 @@
     if param != auto { param } else { opts.at(global-key, default: default) }
   }
 
-  let breite = get-option(breite, "breite", 480)
-  let hoehe = get-option(hoehe, "hoehe", 360)
+  let width = get-option(width, "width", 480)
+  let height = get-option(height, "height", 360)
   let start-x = get-option(start-x, "start-x", 0)
   let start-y = get-option(start-y, "start-y", 0)
   let start-angle = get-option(start-angle, "start-angle", 90)
-  let start-farbe = get-option(start-farbe, "start-farbe", rgb("#1A1AFF"))
-  let start-dicke = get-option(start-dicke, "start-dicke", 0.5)
-  let einheit = get-option(einheit, "einheit", 1)
-  let hintergrund = get-option(hintergrund, "hintergrund", none)
-  let zeige-achsen = get-option(zeige-achsen, "zeige-achsen", false)
-  let zeige-gitter = get-option(zeige-gitter, "zeige-gitter", false)
-  let zeige-rahmen = get-option(zeige-rahmen, "zeige-rahmen", true)
-  let zeige-cursor = get-option(zeige-cursor, "zeige-cursor", true)
+  let start-color = get-option(start-color, "start-color", rgb("#1A1AFF"))
+  let start-thickness = get-option(start-thickness, "start-thickness", 0.5)
+  let unit = get-option(unit, "unit", 1)
+  let background = get-option(background, "background", none)
+  let show-axes = get-option(show-axes, "show-axes", false)
+  let show-grid = get-option(show-grid, "show-grid", false)
+  let show-border = get-option(show-border, "show-border", true)
+  let show-cursor = get-option(show-cursor, "show-cursor", true)
 
   // Collect all commands from arguments
-  let commands-array = befehle.pos()
+  let commands-array = commands.pos()
 
   // If a single content element was passed, raise an error
   if commands-array.len() == 1 and type(commands-array.first()) == content {
@@ -155,8 +155,8 @@
   }
 
   // Fixed stage size — oversized drawings are clipped, box never grows
-  let stage-w = breite * einheit * 1cm / 100
-  let stage-h = hoehe * einheit * 1cm / 100
+  let stage-w = width * unit * 1cm / 100
+  let stage-h = height * unit * 1cm / 100
   box(
     width: stage-w,
     height: stage-h,
@@ -164,25 +164,25 @@
     stroke: 1pt + rgb("#e0e0e0"),
     radius: 2pt,
     inset: 0pt,
-    fill: hintergrund,
-    canvas(length: einheit * 1cm / 100, {
+    fill: background,
+    canvas(length: unit * 1cm / 100, {
       import draw: *
 
       // Anchor canvas to full stage bounds so cetz never shrinks viewport
-      rect((-breite / 2, -hoehe / 2), (breite / 2, hoehe / 2), fill: none, stroke: none)
+      rect((-width / 2, -height / 2), (width / 2, height / 2), fill: none, stroke: none)
 
       // Background (if set)
-      if hintergrund != none {
-        rect((-breite / 2, -hoehe / 2), (breite / 2, hoehe / 2), fill: hintergrund, stroke: none)
+      if background != none {
+        rect((-width / 2, -height / 2), (width / 2, height / 2), fill: background, stroke: none)
       }
 
       // Grid
-      if zeige-gitter != false {
-        let grid-step = if type(zeige-gitter) == int { zeige-gitter } else { 10 }
-        let grid-x0 = calc.floor(-breite / 2 / grid-step) * grid-step
-        let grid-y0 = calc.floor(-hoehe / 2 / grid-step) * grid-step
-        let grid-x1 = calc.ceil(breite / 2 / grid-step) * grid-step
-        let grid-y1 = calc.ceil(hoehe / 2 / grid-step) * grid-step
+      if show-grid != false {
+        let grid-step = if type(show-grid) == int { show-grid } else { 10 }
+        let grid-x0 = calc.floor(-width / 2 / grid-step) * grid-step
+        let grid-y0 = calc.floor(-height / 2 / grid-step) * grid-step
+        let grid-x1 = calc.ceil(width / 2 / grid-step) * grid-step
+        let grid-y1 = calc.ceil(height / 2 / grid-step) * grid-step
         grid(
           (grid-x0, grid-y0),
           (grid-x1, grid-y1),
@@ -193,9 +193,9 @@
       }
 
       // Axes
-      if zeige-achsen {
-        line((-breite / 2, 0), (breite / 2, 0), stroke: (paint: gray, dash: "dashed", thickness: 0.5pt))
-        line((0, -hoehe / 2), (0, hoehe / 2), stroke: (paint: gray, dash: "dashed", thickness: 0.5pt))
+      if show-axes {
+        line((-width / 2, 0), (width / 2, 0), stroke: (paint: gray, dash: "dashed", thickness: 0.5pt))
+        line((0, -height / 2), (0, height / 2), stroke: (paint: gray, dash: "dashed", thickness: 0.5pt))
       }
 
       // Initial turtle state
@@ -204,8 +204,8 @@
         y: start-y,
         angle: start-angle,
         pen-down: false,
-        color: start-farbe,
-        size: start-dicke,
+        color: start-color,
+        size: start-thickness,
       )
       let vars = (:)
       let draw-commands = ()
@@ -222,7 +222,7 @@
           let new-x = state.x + steps * calc.cos(rad)
           let new-y = state.y + steps * calc.sin(rad)
           if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt)))
+            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
           }
           state.x = new-x
           state.y = new-y
@@ -236,32 +236,32 @@
           let new-x = eval-value(cmd.x, state, vars)
           let new-y = eval-value(cmd.y, state, vars)
           if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt)))
+            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
           }
           state.x = new-x
           state.y = new-y
         } else if cmd-type == "set-x" {
           let new-x = eval-value(cmd.x, state, vars)
           if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, state.y), stroke: (paint: state.color, thickness: state.size * 1pt)))
+            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, state.y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
           }
           state.x = new-x
         } else if cmd-type == "set-y" {
           let new-y = eval-value(cmd.y, state, vars)
           if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (state.x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt)))
+            draw-commands.push((type: "line", from: (state.x, state.y), to: (state.x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
           }
           state.y = new-y
         } else if cmd-type == "change-x" {
           let new-x = state.x + eval-value(cmd.dx, state, vars)
           if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, state.y), stroke: (paint: state.color, thickness: state.size * 1pt)))
+            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, state.y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
           }
           state.x = new-x
         } else if cmd-type == "change-y" {
           let new-y = state.y + eval-value(cmd.dy, state, vars)
           if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (state.x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt)))
+            draw-commands.push((type: "line", from: (state.x, state.y), to: (state.x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
           }
           state.y = new-y
 
@@ -290,6 +290,10 @@
         // ---- OUTPUT ----
         } else if cmd-type == "say" or cmd-type == "think" {
           draw-commands.push((type: "text", position: (state.x, state.y + 5), text: cmd.message))
+
+        // ---- CLOSE PATH ----
+        } else if cmd-type == "close" {
+          draw-commands.push((type: "close"))
         }
       }
 
@@ -307,6 +311,12 @@
             current-path = (draw-cmd.from, draw-cmd.to)
             current-stroke = draw-cmd.stroke
           }
+        } else if draw-cmd.type == "close" {
+          if current-path.len() > 0 {
+            combined-paths.push((points: current-path, stroke: current-stroke, closed: true))
+            current-path = ()
+            current-stroke = none
+          }
         } else {
           if current-path.len() > 0 {
             combined-paths.push((points: current-path, stroke: current-stroke))
@@ -321,7 +331,7 @@
       // Render merged paths
       for path in combined-paths {
         if "points" in path {
-          line(..path.points, stroke: path.stroke)
+          line(..path.points, closed: path.at("closed", default: false), stroke: path.stroke)
         } else if path.type == "circle" {
           circle(path.center, radius: path.radius, fill: path.fill, stroke: none)
         } else if path.type == "text" {
@@ -330,7 +340,7 @@
       }
 
       // Turtle cursor
-      if zeige-cursor {
+      if show-cursor {
         import "mod.typ": icons
         on-layer(0, {
           let rotation = state.angle - 90

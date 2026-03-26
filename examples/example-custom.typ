@@ -1,27 +1,25 @@
-// Example 4 – Custom block definition
-#import "../lib.typ": blockst, scratch
+// Example 3 – Custom block definition
+#import "@preview/blockst:0.1.0": blockst, scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
 #blockst[
-  #import scratch.de: *
+  #import scratch.en: *
 
-  #let zeichne-n-eck = eigener-block(
-    "zeichne ",
+  #let draw-n-gon = custom-block(
+    "draw ",
     (name: "n"),
-    "-Eck mit Seite ",
+    "-gon with side length ",
     (name: "s"),
   )
 
-  #definiere(zeichne-n-eck)[
-    #wiederhole(anzahl: parameter("n"))[
-      #gehe(schritte: parameter("s"))
-      #drehe-rechts(grad: dividiere(360, parameter("n")))
-    ]
-  ]
+  #define(draw-n-gon, repeat(times: parameter("n"))[
+    #move(steps: parameter("s"))
+    #turn-right(degrees: divide(360, parameter("n")))
+  ])
 
-  #wenn-gruene-flagge-geklickt[
-    #zeichne-n-eck(6, 40)
-    #zeichne-n-eck(4, 60)
+  #when-flag-clicked[
+    #draw-n-gon(6, 40)
+    #draw-n-gon(4, 60)
   ]
 ]

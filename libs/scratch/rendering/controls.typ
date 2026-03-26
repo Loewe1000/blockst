@@ -1,11 +1,14 @@
 // rendering/controls.typ — Control structures (loops, conditionals)
 // Contains repeat, repeat-until, forever, if-then-else blocks.
 
-#import "colors.typ": scratch-block-options, get-colors-from-options, get-stroke-from-options
+#import "colors.typ": scratch-block-options, get-colors-from-options, get-stroke-from-options, get-font-from-options
 #import "icons.typ": icons
 #import "geometry.typ": block-height, block-offset-y, corner-radius, content-inset, notch-spacing, block-path
 #import "pills.typ": number-or-content
 #import "blocks.typ": condition
+
+// Alias to avoid shadowing by function parameters named `condition`
+#let _condition-fn = condition
 
 // ------------------------------------------------
 // Common helper for loop and conditional blocks
@@ -24,12 +27,13 @@
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
+  let font-family = get-font-from-options(options)
 
   block(
     above: 0em,
     below: 0mm,
   )[
-    #set text(font: "Helvetica Neue", colors.text-color, weight: 500)
+    #set text(font: font-family, colors.text-color, weight: 500)
 
     #let first-body = if first-body not in (none, []) {
       first-body
@@ -133,7 +137,7 @@
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   conditional-block(
-    [#stack(dir: ltr, spacing: 1.5mm, labels.at("repeat-until"), if condition != [] { condition } else { condition(colorschema: colors.control, []) })],
+    [#stack(dir: ltr, spacing: 1.5mm, labels.at("repeat-until"), if condition != [] { condition } else { _condition-fn(colorschema: colors.control, []) })],
     first-body: body,
   )
 }
@@ -161,7 +165,7 @@
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   conditional-block(
-    [#stack(dir: ltr, spacing: 1.5mm, labels.at("if-then"), if condition != [] { condition } else { condition(colorschema: colors.control, []) }, labels.then)],
+    [#stack(dir: ltr, spacing: 1.5mm, labels.at("if-then"), if condition != [] { condition } else { _condition-fn(colorschema: colors.control, []) }, labels.then)],
     first-body: then,
     middle-label: if else-body != none { [#stack(dir: ltr, spacing: 1.5mm, labels.at("else"))] } else { none },
     second-body: else-body,

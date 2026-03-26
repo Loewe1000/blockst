@@ -37,6 +37,7 @@
   theme: none,
   scale: none,
   stroke-width: none,
+  font: none,
 ) = {
   scratch-block-options.update(old => {
     let new-opts = old
@@ -48,6 +49,9 @@
     }
     if stroke-width != none {
       new-opts.insert("stroke-width", stroke-width)
+    }
+    if font != none {
+      new-opts.insert("font", font)
     }
     new-opts
   })

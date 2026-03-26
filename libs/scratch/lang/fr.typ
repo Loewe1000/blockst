@@ -849,16 +849,16 @@
 #let bloc-perso(..args) = render-custom-block(..args)
 
 // Bloc de définition
-#let define(label, ..children) = block(
+#let define(label, body) = block(
   "custom.define",
   args: (label: label),
   lang-code: "fr",
-  body: children,
+  body: body,
 )
 
-#let définir(label, ..children) = block(
+#let définir(label, body) = block(
   "custom.define",
   args: (label: label),
   lang-code: "fr",
-  body: children,
+  body: body,
 )

@@ -836,11 +836,11 @@
 #let eigener-block(..args) = render-custom-block(..args)
 
 // Definiere-Block (alte API aus scratch.typ)
-#let definiere(label, ..children) = block(
+#let definiere(label, body) = block(
   "custom.define",
   args: (label: label),
   lang-code: "de",
-  body: children,
+  body: body,
 )
 
 // Parameter reporter for custom blocks — re-exported from mod.typ

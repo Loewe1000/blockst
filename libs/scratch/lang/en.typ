@@ -842,11 +842,11 @@
 #let custom-block(..args) = render-custom-block(..args)
 
 // Define block (old API from scratch.typ)
-#let define(label, ..children) = block(
+#let define(label, body) = block(
   "custom.define",
   args: (label: label),
   lang-code: "en",
-  body: children,
+  body: body,
 )
 
 // Parameter reporter for custom blocks is exported

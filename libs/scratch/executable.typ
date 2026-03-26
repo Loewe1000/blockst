@@ -112,11 +112,16 @@
   }
 }
 
+#let close() = (type: "close")
+
 #let star(size: 50, points: 5) = {
-  let angle = 360 / points
+  // {n/2} star polygon: each segment turns by 360*2/n degrees
+  // For a 5-pointed star: 5 × 144° = 720° = 2 full rotations → closes correctly
+  let angle = 360 * 2 / points
   for i in range(points) {
-    (move(steps: size), turn-right(degrees: 180 - angle))
+    (move(steps: size), turn-right(degrees: angle))
   }
+  (close(),)
 }
 
 #let spiral(start: 5, end: 100, steps: 50) = {

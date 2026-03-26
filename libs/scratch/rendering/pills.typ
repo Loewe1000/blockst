@@ -21,6 +21,7 @@
   body,
   colors: colors-normal,
   stroke-thickness: 0.5pt,
+  font-family: "Helvetica Neue",
 ) = {
   // Default stroke when auto
   let final-stroke = if stroke == auto {
@@ -45,7 +46,7 @@
     colors.text-color
   }
 
-  set text(font: "Helvetica Neue", weight: 500)
+  set text(font: font-family, weight: 500)
   box(
     fill: fill,
     stroke: final-stroke,
@@ -93,6 +94,7 @@
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
+  let font-family = get-font-from-options(options)
 
   _pill-base-internal(
     fill: fill,
@@ -105,6 +107,7 @@
     body,
     colors: colors,
     stroke-thickness: stroke-thickness,
+    font-family: font-family,
   )
 }
 
@@ -129,6 +132,7 @@
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
+  let font-family = get-font-from-options(options)
 
   // Minimum height for reporters
   let min-height = 0.8 * block-height
@@ -158,6 +162,7 @@
     prepared-body,
     colors: colors,
     stroke-thickness: stroke-thickness,
+    font-family: font-family,
   )
 }
 

@@ -8,10 +8,11 @@
   theme: "normal",    // "normal" or "high-contrast"
   stroke-width: auto, // auto or specific length (e.g. 1pt)
   scale: 100%,        // block scale
+  font: "Helvetica Neue", // font family for block text
 ))
 
 // Internal helper — use set-blockst() from lib.typ as the public API
-#let set-scratch(theme: auto, stroke-width: auto, scale: auto) = {
+#let set-scratch(theme: auto, stroke-width: auto, scale: auto, font: auto) = {
   scratch-block-options.update(current => {
     let new-state = current
     if theme != auto {
@@ -22,6 +23,9 @@
     }
     if scale != auto {
       new-state.scale = scale
+    }
+    if font != auto {
+      new-state.font = font
     }
     new-state
   })
@@ -84,6 +88,9 @@
     0.5pt
   }
 }
+
+// Get font family from options
+#let get-font-from-options(options) = options.at("font", default: "Helvetica Neue")
 
 // ------------------------------------------------
 // Public helper functions (require context!)

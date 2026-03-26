@@ -1,18 +1,18 @@
 // rendering/blocks.typ — scratch-block renderer and condition (diamond) shape
 // Contains the core scratch-block() and condition() functions.
 
-#import "colors.typ": scratch-block-options, get-colors-from-options, get-stroke-from-options
+#import "colors.typ": scratch-block-options, get-colors-from-options, get-stroke-from-options, get-font-from-options
 #import "geometry.typ": block-height, block-offset-y, content-inset, pill-height, pill-inset-x, pill-inset-y, pill-spacing, corner-radius, block-path
 #import "pills.typ": pill-round, pill-reporter
 
 // ------------------------------------------------
 // Internal scratch-block function (takes explicit params)
 // ------------------------------------------------
-#let scratch-block-internal(colorschema, type: "event", top-notch: true, bottom-notch: true, dx: 0mm, dy: 0mm, body, children-array, colors, stroke-thickness) = block(
+#let scratch-block-internal(colorschema, type: "event", top-notch: true, bottom-notch: true, dx: 0mm, dy: 0mm, font-family: "Helvetica Neue", body, children-array, colors, stroke-thickness) = block(
   above: 0em + if (type == "event" or type == "define") { 6mm } else { 0mm },
   below: 0mm + if (type == "event" or type == "define") { 6mm } else { 0mm },
 )[
-  #set text(font: "Helvetica Neue", colors.text-color, weight: 500)
+  #set text(font: font-family, colors.text-color, weight: 500)
   #let content-box = align(horizon, box(
     inset: content-inset,
     height: if type == "define" { 1.5 * block-height } else { auto },
@@ -52,6 +52,7 @@
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
+  let font-family = get-font-from-options(options)
   let final-colorschema = if colorschema == auto { colors.motion } else { colorschema }
 
   scratch-block-internal(
@@ -61,6 +62,7 @@
     bottom-notch: bottom-notch,
     dx: dx,
     dy: dy,
+    font-family: font-family,
     body,
     children.pos(),
     colors,
@@ -75,9 +77,10 @@
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
+  let font-family = get-font-from-options(options)
   let final-colorschema = if colorschema == auto { colors.control } else { colorschema }
 
-  set text(font: "Helvetica Neue", colors.text-color, weight: 500)
+  set text(font: font-family, colors.text-color, weight: 500)
   box([
     // nested can be bool (both sides same) or (left, right) array
     #let nested-type = std.type(nested)

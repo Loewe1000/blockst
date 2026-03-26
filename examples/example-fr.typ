@@ -1,4 +1,4 @@
-#import "../lib.typ": blockst, scratch
+#import "@preview/blockst:0.1.0": blockst, scratch
 
 #set page(height: auto, width: auto, margin: 1cm)
 #set text(font: "Helvetica Neue", lang: "fr")
@@ -12,10 +12,11 @@
     #mettre-variable("score", 0)
     #répéter(val: 5)[
       #avancer(pas: 10)
+      // Single statement: pass the call directly — no content block needed.
       #si-alors-sinon(
         toucher-objet("bord"),
-        [#tourner-à-droite(degres: 180)],
-        [#ajouter-variable("score", 1)],
+        tourner-à-droite(degres: 180),
+        ajouter-variable("score", 1),
       )
     ]
     #dire-pendant(saisie-perso("score"), secondes: 2)
@@ -26,6 +27,7 @@
   #import scratch.fr: *
 
   #quand-drapeau[
+    // Multiple statements branch: wrap statements in a content block.
     #si-alors-sinon(
       intersection(
         supérieur(souris-x(), 0),
@@ -35,7 +37,7 @@
        #changer-costume("costume2")
        #ajouter-effet("couleur", valeur: 10)
       ],
-      [#dire-pendant("En dehors", secondes: 2)],
+      dire-pendant("En dehors", secondes: 2),
     )
   ]
 ]

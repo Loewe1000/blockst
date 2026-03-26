@@ -158,10 +158,10 @@
 }
 
 // When I start as a clone (event shape with control colors)
-#let when-i-start-as-clone(children) = context {
+#let when-i-start-as-clone(children, label: "when I start as a clone") = context {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
-  scratch-block(colorschema: colors.control, type: "event", [Wenn ich als Klon entstehe], children)
+  scratch-block(colorschema: colors.control, type: "event", [#label], children)
 }
 
 // Create clone of
@@ -280,7 +280,7 @@
 }
 
 // Define block header (signature for custom block definitions)
-#let define(block-label, verb: "Definiere", ..children) = context {
+#let define(block-label, verb: "define", ..children) = context {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   scratch-block(

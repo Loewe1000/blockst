@@ -35,10 +35,10 @@
   let stroke-thickness = get-stroke-from-options(scratch-block-options.get())
   
   // Dropdown-Felder (typischerweise Strings in Rechteck-Pills)
-  let dropdown-keys = ("to", "scene", "costume", "backdrop", "effect", "sound", "key", "object", "property", "timeunit", "layer", "direction", "variable", "list", "clone", "option", "mode", "style", "element", "operator")
+  let dropdown-keys = ("to", "scene", "costume", "backdrop", "effect", "sound", "key", "object", "property", "timeunit", "layer", "direction", "variable", "list", "clone", "option", "mode", "style", "element", "operator", "towards", "param")
   
-  // Condition fields (for boolean operators: and, or, not)
-  let condition-keys = ("operand", "operand1", "operand2")
+  // Condition fields (for boolean operators: and, or, not, and direct condition slots)
+  let condition-keys = ("operand", "operand1", "operand2", "condition")
   
   // inline: true for reporters/booleans, inline: false for stack blocks
   let use-inline = shape in ("reporter", "boolean")
@@ -240,7 +240,8 @@
     let lbl = ("repeat-until": get-template("control.repeat_until_label", l))
     return repeat-until(cond, body: body, labels: lbl)
   } else if id == "control.start_as_clone" {
-    return when-i-start-as-clone(body)
+    let lbl = get-template("control.start_as_clone", l)
+    return when-i-start-as-clone(body, label: lbl)
   }
   
   // Custom block definition without label function falls back to filled content.

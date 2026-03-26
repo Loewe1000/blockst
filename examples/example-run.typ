@@ -1,26 +1,28 @@
-// Example 5 – Scratch-run (turtle graphics)
-#import "../lib.typ": blockst, scratch, scratch-run, set-scratch-run
+// Example – Scratch-run (turtle graphics)
+#import "@preview/blockst:0.1.0": blockst, scratch, scratch-run, set-scratch-run
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
-#import scratch.exec.de: *
+#import scratch.exec.en: *
 
 // Simple square
 #scratch-run(
-  stift-ein(),
-  quadrat(groesse: 70),
+  pen-down(),
+  square(size: 70),
 )
 
 #v(4mm)
 
-// Coloured triangle with axes
-#set-scratch-run(zeige-gitter: true, zeige-achsen: true)
+// Coloured square spiral — each side grows by 5 units
+#set-scratch-run(show-grid: true, show-axes: true, show-cursor: false)
 
 #scratch-run(
-  setze-farbe(farbe: rgb("#4C97FF")),
-  setze-dicke(dicke: 2),
-  stift-ein(),
-  dreieck(groesse: 70),
+  set-pen-color(color: rgb("#4C97FF")),
+  set-pen-size(size: 1),
+  pen-down(),
+  ..for i in range(1, 20) {
+    (move(steps: i * 5), turn-right(degrees: 90))
+  },
 )
 
-#set-scratch-run(zeige-gitter: false, zeige-achsen: false)
+#set-scratch-run(show-grid: false, show-axes: false)
