@@ -300,7 +300,7 @@
       looks:     looks,
       sound:     sound,
       pen:       pen,
-      control:   control,
+      control:   content => control(content, bottom-notch: shape != "cap"),
       sensing:   sensing,
       variables: variables,
       lists:     lists,
