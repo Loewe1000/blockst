@@ -31,9 +31,14 @@ It is made for worksheets, tutorials, teaching material, and visual programming 
 
 ![Quick Start example](examples/example-quickstart.png)
 
-## Experimental: Parse Text to Blocks (English, v1)
+## Text Parser: Scratchblocks-Style (EN/DE/FR)
 
-Blockst now includes an experimental English text parser that maps scratchblocks-like lines to visual blocks.
+Blockst includes an advanced text parser that maps scratchblocks-like lines to visual blocks.
+It is now language-aware and available as dedicated modules:
+
+- `scratch.text.en`
+- `scratch.text.de`
+- `scratch.text.fr`
 
 ```typst
 #import "@preview/blockst:0.1.0": blockst, scratch
@@ -42,22 +47,33 @@ Blockst now includes an experimental English text parser that maps scratchblocks
   #import scratch.text.en: *
 
   #render-scratch-text("when flag clicked
-repeat (4)
-move (40) steps
-turn right (90) degrees
+repeat 4
+move 40 steps
+if <touching [mouse-pointer] ?> then
+say [Hello parser]
+else
+turn right 15 degrees
 end
 end")
 ]
 ```
 
-Current v1 parser rules:
+Parser rules and behavior:
 
-- Language: English only
-- Control flow is explicit: use `end`, and `else` for if/else branches
-- Input wrappers are supported: `(number)`, `[text]`, `<condition>`
-- Unknown lines fail fast with a parser error message
+- Explicit control flow markers per language:
+  - English: `end`, `else`
+  - German: `ende`, `sonst`
+  - French: `fin`, `sinon`
+- Input wrappers are supported: `(number)`, `[text/dropdown]`, `<condition>`
+- Nested reporters/booleans are parsed recursively
+- Unknown or unsupported lines fail fast with a clear parser error
+- Scratch-style dropdown marker text like `[mouse-pointer v]` is accepted and normalized
 
-See the full example in `examples/example-parser-text.typ`.
+Examples:
+
+- English parser example: [examples/example-parser-text.typ](examples/example-parser-text.typ)
+
+To keep parser docs focused and concise, the parser examples in this README use English.
 
 > **Font requirement:** Blockst uses **Helvetica Neue** (the same font Scratch itself uses).
 > This font is pre-installed on macOS. On Linux and Windows you need to install it manually,
@@ -371,6 +387,10 @@ All block names, labels, and inputs are translated. Here the same control-flow p
 #import scratch.en: *
 #import scratch.de: *
 #import scratch.fr: *
+
+#import scratch.text.en: *
+#import scratch.text.de: *
+#import scratch.text.fr: *
 ```
 
 ### scratch-run
