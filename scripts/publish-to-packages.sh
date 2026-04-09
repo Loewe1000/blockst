@@ -55,8 +55,8 @@ fi
 
 cd "$PACKAGES_REPO"
 
-# Make sure we're up-to-date
-git fetch origin
+# Make sure we're up-to-date with upstream (typst/packages)
+git fetch upstream
 
 PR_BRANCH="add-blockst-$VERSION"
 
@@ -64,8 +64,8 @@ if git show-ref --verify --quiet "refs/heads/$PR_BRANCH"; then
   echo "Branch '$PR_BRANCH' already exists in packages repo. Switching to it."
   git checkout "$PR_BRANCH"
 else
-  echo "Creating branch '$PR_BRANCH' from origin/main …"
-  git checkout -b "$PR_BRANCH" origin/main
+  echo "Creating branch '$PR_BRANCH' from upstream/main …"
+  git checkout -b "$PR_BRANCH" upstream/main
 fi
 
 # ── Copy files ───────────────────────────────────────────────────────────────
@@ -100,6 +100,7 @@ fi
 
 echo ""
 echo "Next steps:"
-echo "  1. Review the diff:  cd $PACKAGES_REPO && git diff origin/main"
-echo "  2. Push the branch:  git push -u origin $PR_BRANCH"
-echo "  3. Open a PR on GitHub against typst/packages:main"
+echo "  1. Review the diff:  cd $PACKAGES_REPO && git diff upstream/main"
+echo "  2. Push to your fork: git push -u origin $PR_BRANCH"
+echo "  3. Open https://github.com/Loewe1000/packages and click 'Compare & pull request'"
+echo "     → Base: typst/packages:main  ←  Compare: Loewe1000/packages:$PR_BRANCH"
