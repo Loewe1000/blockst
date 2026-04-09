@@ -3,7 +3,7 @@
 // number-or-content helper.
 
 #import "colors.typ": *
-#import "icons.typ": icons
+#import "icons.typ": icons, icon-by-theme
 #import "geometry.typ": pill-height, pill-inset-x, pill-inset-y, pill-spacing, block-height
 
 // ------------------------------------------------
@@ -20,6 +20,7 @@
   dropdown: false,
   body,
   colors: colors-normal,
+  theme: "normal",
   stroke-thickness: 0.5pt,
   font-family: "Helvetica Neue",
 ) = {
@@ -62,7 +63,7 @@
           height
         }
         let width = pill-inset-x
-        stack(dir: ltr, spacing: pill-spacing, box(height: height, text(final-text-color, body)), image(icon-by-theme("dropdown-arrow", theme: options.at("theme", default: "normal")), height: 2mm))
+        stack(dir: ltr, spacing: pill-spacing, box(height: height, text(final-text-color, body)), image(icon-by-theme("dropdown-arrow", theme: theme), height: 2mm))
       }
     } else {
       context [
@@ -93,6 +94,7 @@
 ) = context {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
+  let theme = options.at("theme", default: "normal")
   let stroke-thickness = get-stroke-from-options(options)
   let font-family = get-font-from-options(options)
 
@@ -106,6 +108,7 @@
     dropdown: dropdown,
     body,
     colors: colors,
+    theme: theme,
     stroke-thickness: stroke-thickness,
     font-family: font-family,
   )

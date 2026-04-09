@@ -2,7 +2,7 @@
 // Contains repeat, repeat-until, forever, if-then-else blocks.
 
 #import "colors.typ": scratch-block-options, get-colors-from-options, get-stroke-from-options, get-font-from-options
-#import "icons.typ": icons
+#import "icons.typ": icons, icon-by-theme
 #import "geometry.typ": block-height, block-offset-y, corner-radius, content-inset, notch-spacing, block-path
 #import "pills.typ": number-or-content
 #import "blocks.typ": condition

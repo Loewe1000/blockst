@@ -151,7 +151,7 @@
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
   event-statement(
-    stack(dir: ltr, spacing: 1.5mm, "sende", pill-reporter(message, fill: colors.events.secondary, stroke: colors.events.tertiary + stroke-thickness, dropdown: true, inline: true), if wait {
+    stack(dir: ltr, spacing: 1.5mm, "sende", pill-rect(message, fill: colors.events.secondary, stroke: colors.events.tertiary + stroke-thickness, dropdown: true, inline: true), if wait {
       "an alle und warte"
     } else { "an alle" }),
   )

@@ -30,20 +30,58 @@
   }
 }
 
+#let _is-numeric-string(value) = {
+  if type(value) != str {
+    return false
+  }
+
+  let text = value.trim()
+  if text == "" {
+    return false
+  }
+
+  let digits = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+  let has-digit = false
+  let dot-count = 0
+  let index = 0
+
+  for ch in text.clusters() {
+    if ch in digits {
+      has-digit = true
+    } else if ch == "-" and index == 0 {
+      // Leading minus is allowed.
+    } else if ch == "." {
+      dot-count += 1
+      if dot-count > 1 {
+        return false
+      }
+    } else {
+      return false
+    }
+
+    index += 1
+  }
+
+  has-digit
+}
+
 // Helper: render a pill for a block argument slot
-#let make-pill(key, value, colors, shape: none) = {
+#let make-pill(key, value, colors, shape: none, block-id: none) = {
   let stroke-thickness = get-stroke-from-options(scratch-block-options.get())
   
   // Dropdown-Felder (typischerweise Strings in Rechteck-Pills)
   let dropdown-keys = ("to", "scene", "costume", "backdrop", "effect", "sound", "key", "object", "property", "timeunit", "layer", "direction", "variable", "list", "clone", "option", "mode", "style", "element", "operator", "towards", "param")
+  let message-dropdown-blocks = ("event.when_message_received", "event.broadcast", "event.broadcast_and_wait")
   
   // Condition fields (for boolean operators: and, or, not, and direct condition slots)
   let condition-keys = ("operand", "operand1", "operand2", "condition")
   
   // inline: true for reporters/booleans, inline: false for stack blocks
   let use-inline = shape in ("reporter", "boolean")
+  let is-numeric-random-to = key == "to" and _is-numeric-string(value)
+  let is-message-dropdown = key == "message" and block-id in message-dropdown-blocks
 
-  if key in dropdown-keys and type(value) == str {
+  if (key in dropdown-keys or is-message-dropdown) and type(value) == str and not is-numeric-random-to {
     pill-rect(value, fill: colors.primary, stroke: colors.tertiary + stroke-thickness, dropdown: true, inline: use-inline)
   } else if key in ("color", "color1", "color2") {
     pill-color("        ", fill: value)
@@ -56,7 +94,7 @@
 }
 
 // Hilfsfunktion: Ersetze Platzhalter in Templates - UNIVERSELLE VERSION
-#let fill-template(template, args, colors, shape: none, theme: "normal") = {
+#let fill-template(template, args, colors, shape: none, theme: "normal", block-id: none) = {
   // Icon-Definitionen aus scratch.typ
   let flag-icon = box(baseline: 20%, image(icon-by-theme("green-flag", theme: theme), width: 1em, height: 1em))
   let arrow-right = box(baseline: 20%, image(icon-by-theme("rotate-right", theme: theme), width: 1.5em, height: 1.5em))
@@ -137,7 +175,7 @@
     } else if placeholder == "pen" {
       parts.push(pen-icon)
     } else if placeholder in args {
-      parts.push(make-pill(placeholder, args.at(placeholder), colors, shape: shape))
+      parts.push(make-pill(placeholder, args.at(placeholder), colors, shape: shape, block-id: block-id))
     } else {
       // Unbekannter Platzhalter - als Text behalten
       parts.push("{" + placeholder + "}")
@@ -217,7 +255,7 @@
   }
   
   // Fill template with arguments
-  let content = fill-template(template, args, color, shape: shape, theme: options.at("theme", default: "normal"))
+  let content = fill-template(template, args, color, shape: shape, theme: options.at("theme", default: "normal"), block-id: id)
 
   // Special cases: Control blocks with special shapes.
   // Labels are sourced from the translation system so controls.typ stays language-neutral.
@@ -310,7 +348,7 @@
       (stack-dispatch.at(category))(content)
     } else if category == "events" {
       // Event category as stack block (e.g. broadcast)
-      scratch-block(colorschema: color, type: "statement", content)
+      scratch-block(colorschema: color, type: "statement", dy: block-offset-y, content)
     } else {
       control(content)
     }

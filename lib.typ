@@ -65,6 +65,11 @@
 #import "libs/scratch/lang/en.typ" as en
 #import "libs/scratch/lang/fr.typ" as fr
 
+// Experimental text parser modules
+#import "libs/scratch/text/en.typ" as text-en
+#import "libs/scratch/text/de.typ" as text-de
+#import "libs/scratch/text/fr.typ" as text-fr
+
 // Executable block localisations
 #import "libs/scratch/exec/de.typ" as exec-de
 #import "libs/scratch/exec/en.typ" as exec-en
@@ -75,6 +80,11 @@
   de: de,
   en: en,
   fr: fr,
+  text: (
+    de: text-de,
+    en: text-en,
+    fr: text-fr,
+  ),
   exec: (
     de: exec-de,
     en: exec-en,

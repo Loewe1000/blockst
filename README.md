@@ -31,6 +31,34 @@ It is made for worksheets, tutorials, teaching material, and visual programming 
 
 ![Quick Start example](examples/example-quickstart.png)
 
+## Experimental: Parse Text to Blocks (English, v1)
+
+Blockst now includes an experimental English text parser that maps scratchblocks-like lines to visual blocks.
+
+```typst
+#import "@preview/blockst:0.1.0": blockst, scratch
+
+#blockst[
+  #import scratch.text.en: *
+
+  #render-scratch-text("when flag clicked
+repeat (4)
+move (40) steps
+turn right (90) degrees
+end
+end")
+]
+```
+
+Current v1 parser rules:
+
+- Language: English only
+- Control flow is explicit: use `end`, and `else` for if/else branches
+- Input wrappers are supported: `(number)`, `[text]`, `<condition>`
+- Unknown lines fail fast with a parser error message
+
+See the full example in `examples/example-parser-text.typ`.
+
 > **Font requirement:** Blockst uses **Helvetica Neue** (the same font Scratch itself uses).
 > This font is pre-installed on macOS. On Linux and Windows you need to install it manually,
 > or provide a compatible substitute (e.g. *Nimbus Sans* on Linux).
