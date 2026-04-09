@@ -5,7 +5,7 @@
 // State for global Scratch block options
 // ------------------------------------------------
 #let scratch-block-options = state("scratch-block-options", (
-  theme: "normal",    // "normal" or "high-contrast"
+  theme: "normal",    // "normal", "high-contrast" or "print"
   stroke-width: auto, // auto or specific length (e.g. 1pt)
   scale: 100%,        // block scale
   font: "Helvetica Neue", // font family for block text
@@ -66,6 +66,22 @@
   pen:       (primary: rgb("#13ECAF"), secondary: rgb("#75F0CD"), tertiary: rgb("#0B8E69"), quaternary: rgb("#A3F5DD")),
 )
 
+// Printer-friendly monochrome variant (black text/stroke, white fills)
+#let colors-print = (
+  text-color: black,
+  motion:    (primary: white, secondary: white, tertiary: black, quaternary: white),
+  looks:     (primary: white, secondary: white, tertiary: black, quaternary: white),
+  sound:     (primary: white, secondary: white, tertiary: black, quaternary: white),
+  events:    (primary: white, secondary: white, tertiary: black, quaternary: white),
+  control:   (primary: white, secondary: white, tertiary: black, quaternary: white),
+  sensing:   (primary: white, secondary: white, tertiary: black, quaternary: white),
+  operators: (primary: white, secondary: white, tertiary: black, quaternary: white),
+  variables: (primary: white, secondary: white, tertiary: black, quaternary: white),
+  lists:     (primary: white, secondary: white, tertiary: black, quaternary: white),
+  custom:    (primary: white, secondary: white, tertiary: black, quaternary: white),
+  pen:       (primary: white, secondary: white, tertiary: black, quaternary: white),
+)
+
 // ------------------------------------------------
 // Theme/Stroke helpers
 // ------------------------------------------------
@@ -73,6 +89,8 @@
 #let get-colors-from-options(options) = {
   if options.theme == "high-contrast" {
     colors-high-contrast
+  } else if options.theme == "print" {
+    colors-print
   } else {
     colors-normal
   }
@@ -82,7 +100,7 @@
 #let get-stroke-from-options(options) = {
   if options.stroke-width != auto {
     options.stroke-width
-  } else if options.theme == "high-contrast" {
+  } else if options.theme == "high-contrast" or options.theme == "print" {
     1.0pt
   } else {
     0.5pt

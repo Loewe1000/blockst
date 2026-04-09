@@ -32,12 +32,12 @@
 
   // Automatic text color:
   // - Explicit value: use as given
-  // - White background: use dark gray (normal) or black (high-contrast)
+  // - White background: use dark gray (normal) or black (high-contrast/print)
   // - Colored background: use theme text color
   let final-text-color = if text-color != auto {
     text-color
   } else if fill == white or fill == rgb("#FFFFFF") {
-    if colors == colors-high-contrast {
+    if colors == colors-high-contrast or colors == colors-print {
       black
     } else {
       rgb("#575E75") // dark gray for normal theme
@@ -62,7 +62,7 @@
           height
         }
         let width = pill-inset-x
-        stack(dir: ltr, spacing: pill-spacing, box(height: height, text(final-text-color, body)), image(icons.dropdown-arrow, height: 2mm))
+        stack(dir: ltr, spacing: pill-spacing, box(height: height, text(final-text-color, body)), image(icon-by-theme("dropdown-arrow", theme: options.at("theme", default: "normal")), height: 2mm))
       }
     } else {
       context [

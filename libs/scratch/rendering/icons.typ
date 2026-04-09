@@ -56,3 +56,34 @@
 </svg>",
   ),
 )
+
+// Printer-friendly icon variants (white fill, black stroke/details)
+#let icons-print = (
+  dropdown-arrow: bytes(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12.71\" height=\"8.79\" viewBox=\"0 0 12.71 8.79\"><path d=\"M1 1h10.71l-5.35 6.79z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-width=\"1\" stroke-linejoin=\"round\"/></svg>",
+  ),
+  rotate-right: bytes(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M12 3a9 9 0 1 0 8.2 5.3\" fill=\"none\" stroke=\"#000000\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M14 3h7v7\" fill=\"#ffffff\" stroke=\"#000000\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
+  ),
+  rotate-left: bytes(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M12 3a9 9 0 1 1-8.2 5.3\" fill=\"none\" stroke=\"#000000\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M10 3H3v7\" fill=\"#ffffff\" stroke=\"#000000\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
+  ),
+  green-flag: bytes(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16.63 17.5\"><path d=\"M.75,2A6.44,6.44,0,0,1,8.44,2h0a6.44,6.44,0,0,0,7.69,0V12.4a6.44,6.44,0,0,1-7.69,0h0a6.44,6.44,0,0,0-7.69,0\" fill=\"#ffffff\" stroke=\"#000000\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><line x1=\"0.75\" y1=\"16.75\" x2=\"0.75\" y2=\"0.75\" stroke=\"#000000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
+  ),
+  repeat: bytes(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M23.3,11c-0.3,0.6-0.9,1-1.5,1h-1.6c-0.1,1.3-0.5,2.5-1.1,3.6c-0.9,1.7-2.3,3.2-4.1,4.1c-1.7,0.9-3.6,1.2-5.5,0.9c-1.8-0.3-3.5-1.1-4.9-2.3c-0.7-0.7-0.7-1.9,0-2.6c0.6-0.6,1.6-0.7,2.3-0.2H7c0.9,0.6,1.9,0.9,2.9,0.9s1.9-0.3,2.7-0.9c1.1-0.8,1.8-2.1,1.8-3.5h-1.5c-0.9,0-1.7-0.7-1.7-1.7c0-0.4,0.2-0.9,0.5-1.2l4.4-4.4c0.7-0.6,1.7-0.6,2.4,0L23,9.2C23.5,9.7,23.6,10.4,23.3,11z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-width=\"1\" stroke-linejoin=\"round\"/><path d=\"M21.8,11h-2.6c0,1.5-0.3,2.9-1,4.2c-0.8,1.6-2.1,2.8-3.7,3.6c-1.5,0.8-3.3,1.1-4.9,0.8c-1.6-0.2-3.2-1-4.4-2.1c-0.4-0.3-0.4-0.9-0.1-1.2c0.3-0.4,0.9-0.4,1.2-0.1l0,0c1,0.7,2.2,1.1,3.4,1.1s2.3-0.3,3.3-1c0.9-0.6,1.6-1.5,2-2.6c0.3-0.9,0.4-1.8,0.2-2.8h-2.4c-0.4,0-0.7-0.3-0.7-0.7c0-0.2,0.1-0.3,0.2-0.4l4.4-4.4c0.3-0.3,0.7-0.3,0.9,0L22,9.8c0.3,0.3,0.4,0.6,0.3,0.9S22,11,21.8,11z\" fill=\"#000000\"/></svg>",
+  ),
+  pen: bytes(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M3 21l4-1 11-11-3-3L4 17l-1 4z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M14 6l3 3\" stroke=\"#000000\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>",
+  ),
+)
+
+// Returns icon bytes based on theme.
+#let icon-by-theme(name, theme: "normal") = {
+  if theme == "print" {
+    icons-print.at(name, default: icons.at(name))
+  } else {
+    icons.at(name)
+  }
+}

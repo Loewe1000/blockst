@@ -32,7 +32,7 @@
 }
 
 // Global settings for block environments
-// Usage: #set-blockst(theme: "dark", scale: 80%, stroke-width: 1pt)
+// Usage: #set-blockst(theme: "print", scale: 80%, stroke-width: 1pt)
 #let set-blockst(
   theme: none,
   scale: none,

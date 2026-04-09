@@ -93,7 +93,7 @@
       ]
       #if block-type == "loop" {
         place(bottom + left, dx: header-box-sizes.width - 0.5 * block-height)[
-          #image(icons.repeat, height: 0.5 * block-height)
+          #image(icon-by-theme("repeat", theme: options.at("theme", default: "normal")), height: 0.5 * block-height)
         ]
       }
 

@@ -10,7 +10,7 @@ It is made for worksheets, tutorials, teaching material, and visual programming 
 - All major Scratch categories (events, motion, looks, sound, control, sensing, operators, data, custom)
 - Nested control structures and custom block definitions
 - Reporter/boolean/input pills and monitor widgets
-- Two themes: normal and high-contrast
+- Three themes: normal, high-contrast, and print (black/white, printer-friendly)
 - Localized APIs: English, German, and French
 - Optional scratch-run turtle-graphics helpers
 
@@ -225,7 +225,7 @@ Import the executable API from `scratch.exec.en` (or `.de`, `.fr`).
 ### Theme and Scale (`set-blockst`)
 
 Use `set-blockst` to change the visual theme or scale of all following blocks.
-Available themes: `"normal"` (default) and `"high-contrast"`.
+Available themes: `"normal"` (default), `"high-contrast"`, and `"print"`.
 
 ```typst
 #import "@preview/blockst:0.1.0": blockst, scratch, set-blockst
@@ -254,11 +254,23 @@ Available themes: `"normal"` (default) and `"high-contrast"`.
   ]
 ]
 
+// Printer-friendly black/white theme
+#set-blockst(theme: "print", scale: 100%)
+
+#blockst[
+  #import scratch.en: *
+
+  #when-flag-clicked[
+    #move(steps: 10)
+    #say-for-secs("Hello!", secs: 2)
+  ]
+]
+
 // Reset to defaults
 #set-blockst(theme: "normal", scale: 100%)
 ```
 
-![Normal vs. high-contrast theme example](examples/example-theme.png)
+![Theme example (normal, high-contrast, print)](examples/example-theme.png)
 
 ### Custom Font (`set-blockst`) {#custom-font-set-blockst}
 

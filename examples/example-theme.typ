@@ -27,5 +27,19 @@
   ]
 ]
 
+#v(4mm)
+
+// Printer-friendly black/white theme
+#set-blockst(theme: "print", scale: 100%)
+
+#blockst[
+  #import scratch.en: *
+
+  #when-flag-clicked[
+    #move(steps: 10)
+    #say-for-secs("Hello!", secs: 2)
+  ]
+]
+
 // Reset to defaults
 #set-blockst(theme: "normal", scale: 100%)

@@ -56,12 +56,12 @@
 }
 
 // Hilfsfunktion: Ersetze Platzhalter in Templates - UNIVERSELLE VERSION
-#let fill-template(template, args, colors, shape: none) = {
+#let fill-template(template, args, colors, shape: none, theme: "normal") = {
   // Icon-Definitionen aus scratch.typ
-  let flag-icon = box(baseline: 20%, image(icons.green-flag, width: 1em, height: 1em))
-  let arrow-right = box(baseline: 20%, image(icons.rotate-right, width: 1.5em, height: 1.5em))
-  let arrow-left = box(baseline: 20%, image(icons.rotate-left, width: 1.5em, height: 1.5em))
-  let pen-icon = box(baseline: 20%, image(icons.pen, width: 1.5em, height: 1.5em))
+  let flag-icon = box(baseline: 20%, image(icon-by-theme("green-flag", theme: theme), width: 1em, height: 1em))
+  let arrow-right = box(baseline: 20%, image(icon-by-theme("rotate-right", theme: theme), width: 1.5em, height: 1.5em))
+  let arrow-left = box(baseline: 20%, image(icon-by-theme("rotate-left", theme: theme), width: 1.5em, height: 1.5em))
+  let pen-icon = box(baseline: 20%, image(icon-by-theme("pen", theme: theme), width: 1.5em, height: 1.5em))
   
   // Einfache Templates ohne Platzhalter
   if not template.contains("{") {
@@ -217,7 +217,7 @@
   }
   
   // Fill template with arguments
-  let content = fill-template(template, args, color, shape: shape)
+  let content = fill-template(template, args, color, shape: shape, theme: options.at("theme", default: "normal"))
 
   // Special cases: Control blocks with special shapes.
   // Labels are sourced from the translation system so controls.typ stays language-neutral.

@@ -69,7 +69,7 @@
   scratch-block(
     colorschema: colors.events,
     type: "event",
-    grid(columns: 3, gutter: 0.5em, align: horizon, [Wenn], box(image(icons.green-flag)), [angeklickt wird]),
+    grid(columns: 3, gutter: 0.5em, align: horizon, [Wenn], box(image(icon-by-theme("green-flag", theme: options.at("theme", default: "normal")))), [angeklickt wird]),
     children,
   )
 }
