@@ -1,0 +1,1160 @@
+use std::collections::HashSet;
+use std::io::{Cursor, Read};
+
+use serde::Serialize;
+use serde_json::{Map, Value};
+use zip::ZipArchive;
+
+#[cfg(target_arch = "wasm32")]
+use wasm_minimal_protocol::wasm_func;
+
+#[cfg(target_arch = "wasm32")]
+wasm_minimal_protocol::initiate_protocol!();
+
+#[derive(Debug, Serialize)]
+struct ScriptsDump {
+  targets: Vec<ScriptsTarget>,
+}
+
+#[derive(Debug, Serialize)]
+struct ScriptsTarget {
+  name: String,
+  is_stage: bool,
+  scripts: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct ScriptCatalogItem {
+  number: usize,
+  local_number: usize,
+  target_name: String,
+  target_kind: String,
+  is_stage: bool,
+}
+
+#[derive(Debug)]
+struct NumberedScript {
+  meta: ScriptCatalogItem,
+  lines: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct ScriptsCatalog {
+  scripts: Vec<ScriptCatalogItem>,
+}
+
+fn err_bytes(message: impl AsRef<str>) -> Vec<u8> {
+  format!("ERROR: {}", message.as_ref()).into_bytes()
+}
+
+fn value_to_text(value: &Value) -> String {
+  match value {
+    Value::String(s) => s.clone(),
+    Value::Number(n) => n.to_string(),
+    Value::Bool(b) => {
+      if *b {
+        "true".to_string()
+      } else {
+        "false".to_string()
+      }
+    }
+    Value::Null => "".to_string(),
+    _ => value.to_string(),
+  }
+}
+
+fn decode_literal_value(value: &Value) -> String {
+  if let Some(arr) = value.as_array() {
+    if arr.len() >= 2 {
+      return value_to_text(&arr[1]);
+    }
+    if let Some(first) = arr.first() {
+      return value_to_text(first);
+    }
+    return "".to_string();
+  }
+
+  value_to_text(value)
+}
+
+fn sanitize_square_brackets(value: &str) -> String {
+  value.replace('[', "(").replace(']', ")")
+}
+
+fn as_number_token(value: &str) -> String {
+  let normalized = value.trim();
+  if normalized.starts_with('(') && normalized.ends_with(')') {
+    normalized.to_string()
+  } else if normalized.is_empty() {
+    "(0)".to_string()
+  } else {
+    format!("({normalized})")
+  }
+}
+
+fn as_text_token(value: &str) -> String {
+  let normalized = sanitize_square_brackets(value).trim().to_string();
+  if normalized.starts_with('[') && normalized.ends_with(']') {
+    normalized
+  } else {
+    format!("[{normalized}]")
+  }
+}
+
+fn as_condition_token(value: &str) -> String {
+  let normalized = value.trim();
+  if normalized.is_empty() {
+    "< >".to_string()
+  } else {
+    normalized.to_string()
+  }
+}
+
+fn decode_expression_literal(value: &Value) -> Option<String> {
+  let arr = value.as_array()?;
+  let kind = arr.first().and_then(Value::as_i64)?;
+
+  match kind {
+    // Scratch variable literal: [12, "VariableName", "variableId"]
+    12 => {
+      let name = arr
+        .get(1)
+        .map(value_to_text)
+        .unwrap_or_else(|| "variable".to_string());
+      Some(format!("var {}", as_text_token(&name)))
+    }
+    _ => None,
+  }
+}
+
+fn get_field_value(block: &Map<String, Value>, key: &str, fallback: &str) -> String {
+  let Some(fields) = block.get("fields").and_then(Value::as_object) else {
+    return fallback.to_string();
+  };
+
+  let Some(raw) = fields.get(key) else {
+    return fallback.to_string();
+  };
+
+  if let Some(arr) = raw.as_array() {
+    if let Some(first) = arr.first() {
+      return value_to_text(first);
+    }
+    return fallback.to_string();
+  }
+
+  value_to_text(raw)
+}
+
+fn get_input_entry<'a>(block: &'a Map<String, Value>, key: &str) -> Option<&'a Vec<Value>> {
+  block
+    .get("inputs")
+    .and_then(Value::as_object)
+    .and_then(|inputs| inputs.get(key))
+    .and_then(Value::as_array)
+}
+
+fn get_substack_start(blocks: &Map<String, Value>, block: &Map<String, Value>, key: &str) -> Option<String> {
+  let entry = get_input_entry(block, key)?;
+  let block_id = entry.get(1)?.as_str()?.to_string();
+
+  if blocks.contains_key(&block_id) {
+    Some(block_id)
+  } else {
+    None
+  }
+}
+
+fn get_mutation_value(block: &Map<String, Value>, key: &str) -> Option<String> {
+  block
+    .get("mutation")
+    .and_then(Value::as_object)
+    .and_then(|mutation| mutation.get(key))
+    .and_then(Value::as_str)
+    .map(|value| value.to_string())
+}
+
+fn parse_string_array(raw: Option<String>) -> Vec<String> {
+  let Some(raw) = raw else {
+    return Vec::new();
+  };
+
+  serde_json::from_str::<Vec<String>>(&raw).unwrap_or_default()
+}
+
+fn procedure_slot_token(value: &str) -> String {
+  let trimmed = value.trim();
+  if trimmed.is_empty() {
+    return "[]".to_string();
+  }
+
+  if trimmed.starts_with('[') && trimmed.ends_with(']') {
+    trimmed.to_string()
+  } else {
+    as_text_token(trimmed)
+  }
+}
+
+fn resolve_procedure_signature(
+  blocks: &Map<String, Value>,
+  block: &Map<String, Value>,
+) -> (String, Vec<String>) {
+  let fallback_proccode = get_mutation_value(block, "proccode").unwrap_or_else(|| "my block".to_string());
+  let fallback_arg_names = parse_string_array(get_mutation_value(block, "argumentnames"));
+
+  let Some(proto_id) = get_input_entry(block, "custom_block")
+    .and_then(|entry| entry.get(1))
+    .and_then(Value::as_str)
+  else {
+    return (fallback_proccode, fallback_arg_names);
+  };
+
+  let Some(proto_block) = blocks.get(proto_id).and_then(Value::as_object) else {
+    return (fallback_proccode, fallback_arg_names);
+  };
+
+  let proccode = get_mutation_value(proto_block, "proccode")
+    .or_else(|| get_mutation_value(block, "proccode"))
+    .unwrap_or_else(|| "my block".to_string());
+
+  let arg_names = {
+    let from_proto = parse_string_array(get_mutation_value(proto_block, "argumentnames"));
+    if from_proto.is_empty() {
+      parse_string_array(get_mutation_value(block, "argumentnames"))
+    } else {
+      from_proto
+    }
+  };
+
+  (proccode, arg_names)
+}
+
+fn fill_procedure_placeholders(proccode: &str, values: &[String]) -> String {
+  let mut out = proccode.to_string();
+
+  for value in values {
+    if out.contains("%s") {
+      out = out.replacen("%s", value, 1);
+    } else if out.contains("%b") {
+      out = out.replacen("%b", value, 1);
+    } else {
+      break;
+    }
+  }
+
+  out
+}
+
+fn is_expression_input(block: &Map<String, Value>, key: &str) -> bool {
+  let Some(entry) = get_input_entry(block, key) else {
+    return false;
+  };
+
+  let Some(kind) = entry.first().and_then(Value::as_i64) else {
+    return false;
+  };
+
+  kind == 2 || kind == 3
+}
+
+fn render_input_expression(
+  blocks: &Map<String, Value>,
+  block: &Map<String, Value>,
+  key: &str,
+  seen: &mut HashSet<String>,
+) -> String {
+  let Some(entry) = get_input_entry(block, key) else {
+    return "".to_string();
+  };
+
+  if let Some(payload) = entry.get(1) {
+    if let Some(block_id) = payload.as_str() {
+      if blocks.contains_key(block_id) {
+        return render_expression_by_id(blocks, block_id, seen);
+      }
+    }
+
+    if let Some(expression_literal) = decode_expression_literal(payload) {
+      return expression_literal;
+    }
+
+    return decode_literal_value(payload);
+  }
+
+  if let Some(shadow) = entry.get(2) {
+    if let Some(expression_literal) = decode_expression_literal(shadow) {
+      return expression_literal;
+    }
+    return decode_literal_value(shadow);
+  }
+
+  "".to_string()
+}
+
+fn render_expression_by_id(blocks: &Map<String, Value>, block_id: &str, seen: &mut HashSet<String>) -> String {
+  if seen.contains(block_id) {
+    return "".to_string();
+  }
+
+  let Some(block) = blocks.get(block_id).and_then(Value::as_object) else {
+    return "".to_string();
+  };
+
+  seen.insert(block_id.to_string());
+
+  let input_text = |key: &str, seen: &mut HashSet<String>| render_input_expression(blocks, block, key, seen);
+  let opcode = block
+    .get("opcode")
+    .and_then(Value::as_str)
+    .unwrap_or("unknown_opcode");
+
+  let out = match opcode {
+    "operator_add" => format!(
+      "{} + {}",
+      as_number_token(&input_text("NUM1", seen)),
+      as_number_token(&input_text("NUM2", seen))
+    ),
+    "operator_subtract" => format!(
+      "{} - {}",
+      as_number_token(&input_text("NUM1", seen)),
+      as_number_token(&input_text("NUM2", seen))
+    ),
+    "operator_multiply" => format!(
+      "{} * {}",
+      as_number_token(&input_text("NUM1", seen)),
+      as_number_token(&input_text("NUM2", seen))
+    ),
+    "operator_divide" => format!(
+      "{} / {}",
+      as_number_token(&input_text("NUM1", seen)),
+      as_number_token(&input_text("NUM2", seen))
+    ),
+    "operator_mod" => format!(
+      "{} mod {}",
+      as_number_token(&input_text("NUM1", seen)),
+      as_number_token(&input_text("NUM2", seen))
+    ),
+    "operator_random" => format!(
+      "pick random {} to {}",
+      as_number_token(&input_text("FROM", seen)),
+      as_number_token(&input_text("TO", seen))
+    ),
+    "operator_join" => format!(
+      "join {} {}",
+      as_text_token(&input_text("STRING1", seen)),
+      as_text_token(&input_text("STRING2", seen))
+    ),
+    "operator_letter_of" => format!(
+      "letter {} of {}",
+      as_number_token(&input_text("LETTER", seen)),
+      as_text_token(&input_text("STRING", seen))
+    ),
+    "operator_length" => format!("length of {}", as_text_token(&input_text("STRING", seen))),
+    "operator_round" => format!("round {}", as_number_token(&input_text("NUM", seen))),
+    "operator_mathop" => {
+      let operator = get_field_value(block, "OPERATOR", "abs");
+      format!(
+        "{} of {}",
+        sanitize_square_brackets(&operator),
+        as_number_token(&input_text("NUM", seen))
+      )
+    }
+    "operator_contains" => format!(
+      "{} contains {} ?",
+      as_text_token(&input_text("STRING1", seen)),
+      as_text_token(&input_text("STRING2", seen))
+    ),
+    "operator_gt" => format!(
+      "{} > {}",
+      as_number_token(&input_text("OPERAND1", seen)),
+      as_number_token(&input_text("OPERAND2", seen))
+    ),
+    "operator_lt" => format!(
+      "{} < {}",
+      as_number_token(&input_text("OPERAND1", seen)),
+      as_number_token(&input_text("OPERAND2", seen))
+    ),
+    "operator_equals" => format!(
+      "{} = {}",
+      as_text_token(&input_text("OPERAND1", seen)),
+      as_text_token(&input_text("OPERAND2", seen))
+    ),
+    "operator_and" => format!(
+      "{} and {}",
+      as_condition_token(&input_text("OPERAND1", seen)),
+      as_condition_token(&input_text("OPERAND2", seen))
+    ),
+    "operator_or" => format!(
+      "{} or {}",
+      as_condition_token(&input_text("OPERAND1", seen)),
+      as_condition_token(&input_text("OPERAND2", seen))
+    ),
+    "operator_not" => format!("not {}", as_condition_token(&input_text("OPERAND", seen))),
+    "sensing_touchingobject" => {
+      let object = get_field_value(block, "TOUCHINGOBJECTMENU", "mouse-pointer");
+      format!("touching {} ?", as_text_token(&object))
+    }
+    "sensing_keypressed" => {
+      let key_input = input_text("KEY_OPTION", seen);
+      let key = if key_input.is_empty() {
+        get_field_value(block, "KEY_OPTION", "space")
+      } else {
+        key_input
+      };
+      format!("key {} pressed?", as_text_token(&key))
+    }
+    "sensing_keyoptions" => get_field_value(block, "KEY_OPTION", "space"),
+    "sensing_mousedown" => "mouse down?".to_string(),
+    "sensing_mousex" => "mouse x".to_string(),
+    "sensing_mousey" => "mouse y".to_string(),
+    "motion_xposition" => "x position".to_string(),
+    "motion_yposition" => "y position".to_string(),
+    "motion_direction" => "direction".to_string(),
+    "looks_costume" => get_field_value(block, "COSTUME", "costume1"),
+    "music_menu_INSTRUMENT" => get_field_value(block, "INSTRUMENT", "1"),
+    "control_create_clone_of_menu" => get_field_value(block, "CLONE_OPTION", "_myself_"),
+    "sensing_answer" => "answer".to_string(),
+    "sensing_timer" => "timer".to_string(),
+    "sensing_loudness" => "loudness".to_string(),
+    "data_itemoflist" => {
+      let index = input_text("INDEX", seen);
+      let list = get_field_value(block, "LIST", "list");
+      format!("item {} of {}", as_number_token(&index), as_text_token(&list))
+    }
+    "data_lengthoflist" => {
+      let list = get_field_value(block, "LIST", "list");
+      format!("length of {}", as_text_token(&list))
+    }
+    "data_variable" => {
+      let variable = get_field_value(block, "VARIABLE", "variable");
+      format!("var {}", as_text_token(&variable))
+    }
+    "argument_reporter_string_number" => {
+      let arg_name = get_field_value(block, "VALUE", "input");
+      format!("var {}", as_text_token(&arg_name))
+    }
+    "note" => get_field_value(block, "NOTE", "60"),
+    other => sanitize_square_brackets(&format!("unsupported:{other}")),
+  };
+
+  seen.remove(block_id);
+  out
+}
+
+fn render_stack(
+  blocks: &Map<String, Value>,
+  start_block_id: &str,
+  indent: &str,
+  inherited_seen: &HashSet<String>,
+) -> Vec<String> {
+  let mut lines = Vec::new();
+  let mut local_seen = inherited_seen.clone();
+  let mut current = Some(start_block_id.to_string());
+
+  while let Some(block_id) = current {
+    if local_seen.contains(&block_id) {
+      lines.push(format!("{indent}// cycle detected at block {block_id}"));
+      break;
+    }
+
+    local_seen.insert(block_id.clone());
+
+    let Some(block) = blocks.get(&block_id).and_then(Value::as_object) else {
+      lines.push(format!("{indent}// missing block {block_id}"));
+      break;
+    };
+
+    lines.extend(render_statement(blocks, &block_id, indent, &mut local_seen));
+
+    current = block
+      .get("next")
+      .and_then(Value::as_str)
+      .map(|next| next.to_string());
+  }
+
+  lines
+}
+
+fn render_statement(
+  blocks: &Map<String, Value>,
+  block_id: &str,
+  indent: &str,
+  seen: &mut HashSet<String>,
+) -> Vec<String> {
+  let Some(block) = blocks.get(block_id).and_then(Value::as_object) else {
+    return vec![format!("{indent}// missing block: {block_id}")];
+  };
+
+  let mut expr_seen = HashSet::new();
+  let input_text = |key: &str, expr_seen: &mut HashSet<String>| {
+    render_input_expression(blocks, block, key, expr_seen)
+  };
+  let input_is_expression = |key: &str| is_expression_input(block, key);
+  let opcode = block
+    .get("opcode")
+    .and_then(Value::as_str)
+    .unwrap_or("unknown_opcode");
+
+  match opcode {
+    "event_whenflagclicked" => vec![format!("{indent}when flag clicked")],
+    "event_whenkeypressed" => {
+      let key = get_field_value(block, "KEY_OPTION", "space");
+      vec![format!("{indent}when {} key pressed", as_text_token(&key))]
+    }
+    "event_whenthisspriteclicked" => vec![format!("{indent}when this sprite clicked")],
+    "event_whenbackdropswitchesto" => {
+      let backdrop = get_field_value(block, "BACKDROP", "backdrop1");
+      vec![format!("{indent}when backdrop switches to {}", as_text_token(&backdrop))]
+    }
+    "event_whenbroadcastreceived" => {
+      let message = get_field_value(block, "BROADCAST_OPTION", "message1");
+      vec![format!("{indent}when I receive {}", as_text_token(&message))]
+    }
+    "event_broadcast" => {
+      let input = input_text("BROADCAST_INPUT", &mut expr_seen);
+      let message = if input.is_empty() {
+        get_field_value(block, "BROADCAST_OPTION", "message1")
+      } else {
+        input
+      };
+      vec![format!("{indent}broadcast {}", as_text_token(&message))]
+    }
+    "event_broadcastandwait" => {
+      let input = input_text("BROADCAST_INPUT", &mut expr_seen);
+      let message = if input.is_empty() {
+        get_field_value(block, "BROADCAST_OPTION", "message1")
+      } else {
+        input
+      };
+      vec![format!("{indent}broadcast {} and wait", as_text_token(&message))]
+    }
+    "motion_movesteps" => vec![format!(
+      "{indent}move {} steps",
+      as_number_token(&input_text("STEPS", &mut expr_seen))
+    )],
+    "motion_turnright" => vec![format!(
+      "{indent}turn right {} degrees",
+      as_number_token(&input_text("DEGREES", &mut expr_seen))
+    )],
+    "motion_turnleft" => vec![format!(
+      "{indent}turn left {} degrees",
+      as_number_token(&input_text("DEGREES", &mut expr_seen))
+    )],
+    "motion_gotoxy" => vec![format!(
+      "{indent}go to x: {} y: {}",
+      as_number_token(&input_text("X", &mut expr_seen)),
+      as_number_token(&input_text("Y", &mut expr_seen))
+    )],
+    "motion_pointindirection" => vec![format!(
+      "{indent}point in direction {}",
+      as_number_token(&input_text("DIRECTION", &mut expr_seen))
+    )],
+    "motion_changexby" => vec![format!(
+      "{indent}change x by {}",
+      as_number_token(&input_text("DX", &mut expr_seen))
+    )],
+    "motion_setx" => vec![format!(
+      "{indent}set x to {}",
+      as_number_token(&input_text("X", &mut expr_seen))
+    )],
+    "motion_changeyby" => vec![format!(
+      "{indent}change y by {}",
+      as_number_token(&input_text("DY", &mut expr_seen))
+    )],
+    "motion_sety" => vec![format!(
+      "{indent}set y to {}",
+      as_number_token(&input_text("Y", &mut expr_seen))
+    )],
+    "motion_ifonedgebounce" => vec![format!("{indent}if on edge, bounce")],
+    "looks_say" => vec![format!(
+      "{indent}say {}",
+      as_text_token(&input_text("MESSAGE", &mut expr_seen))
+    )],
+    "looks_sayforsecs" => vec![format!(
+      "{indent}say {} for {} seconds",
+      as_text_token(&input_text("MESSAGE", &mut expr_seen)),
+      as_number_token(&input_text("SECS", &mut expr_seen))
+    )],
+    "looks_think" => vec![format!(
+      "{indent}think {}",
+      as_text_token(&input_text("MESSAGE", &mut expr_seen))
+    )],
+    "looks_thinkforsecs" => vec![format!(
+      "{indent}think {} for {} seconds",
+      as_text_token(&input_text("MESSAGE", &mut expr_seen)),
+      as_number_token(&input_text("SECS", &mut expr_seen))
+    )],
+    "looks_switchcostumeto" => {
+      let input = input_text("COSTUME", &mut expr_seen);
+      let costume = if input.is_empty() {
+        get_field_value(block, "COSTUME", "costume1")
+      } else {
+        input
+      };
+      vec![format!("{indent}switch costume to {}", as_text_token(&costume))]
+    }
+    "looks_nextcostume" => vec![format!("{indent}next costume")],
+    "looks_switchbackdropto" => {
+      let input = input_text("BACKDROP", &mut expr_seen);
+      let backdrop = if input.is_empty() {
+        get_field_value(block, "BACKDROP", "backdrop1")
+      } else {
+        input
+      };
+      vec![format!("{indent}switch backdrop to {}", as_text_token(&backdrop))]
+    }
+    "looks_nextbackdrop" => vec![format!("{indent}next backdrop")],
+    "looks_changesizeby" => vec![format!(
+      "{indent}change size by {}",
+      as_number_token(&input_text("CHANGE", &mut expr_seen))
+    )],
+    "looks_setsizeto" => vec![format!(
+      "{indent}set size to {} %",
+      as_number_token(&input_text("SIZE", &mut expr_seen))
+    )],
+    "looks_cleargraphiceffects" => vec![format!("{indent}clear graphic effects")],
+    "looks_show" => vec![format!("{indent}show")],
+    "looks_hide" => vec![format!("{indent}hide")],
+    "sound_playuntildone" => {
+      let input = input_text("SOUND_MENU", &mut expr_seen);
+      let sound = if input.is_empty() {
+        get_field_value(block, "SOUND_MENU", "pop")
+      } else {
+        input
+      };
+      vec![format!("{indent}play sound {} until done", as_text_token(&sound))]
+    }
+    "sound_play" => {
+      let input = input_text("SOUND_MENU", &mut expr_seen);
+      let sound = if input.is_empty() {
+        get_field_value(block, "SOUND_MENU", "pop")
+      } else {
+        input
+      };
+      vec![format!("{indent}start sound {}", as_text_token(&sound))]
+    }
+    "music_playNoteForBeats" => {
+      let note = if let Some(entry) = get_input_entry(block, "NOTE") {
+        if let Some(shadow_id) = entry.get(2).and_then(Value::as_str) {
+          render_expression_by_id(blocks, shadow_id, &mut expr_seen)
+        } else {
+          input_text("NOTE", &mut expr_seen)
+        }
+      } else {
+        input_text("NOTE", &mut expr_seen)
+      };
+      vec![format!(
+        "{indent}play note {} for {} beats",
+        as_number_token(&note),
+        as_number_token(&input_text("BEATS", &mut expr_seen))
+      )]
+    }
+    "music_setInstrument" => vec![format!(
+      "{indent}set instrument to {}",
+      as_number_token(&input_text("INSTRUMENT", &mut expr_seen))
+    )],
+    "sound_stopallsounds" => vec![format!("{indent}stop all sounds")],
+    "sensing_askandwait" => {
+      let question = input_text("QUESTION", &mut expr_seen);
+      let final_question = if question.is_empty() {
+        "What's your name?".to_string()
+      } else {
+        question
+      };
+      vec![format!("{indent}ask {} and wait", as_text_token(&final_question))]
+    }
+    "data_setvariableto" => {
+      let variable = get_field_value(block, "VARIABLE", "variable");
+      let value = input_text("VALUE", &mut expr_seen);
+      let rendered_value = if input_is_expression("VALUE") {
+        value.trim().to_string()
+      } else {
+        as_text_token(&value)
+      };
+      vec![format!(
+        "{indent}set {} to {}",
+        as_text_token(&variable),
+        rendered_value
+      )]
+    }
+    "data_changevariableby" => {
+      let variable = get_field_value(block, "VARIABLE", "variable");
+      let value = input_text("VALUE", &mut expr_seen);
+      vec![format!(
+        "{indent}change {} by {}",
+        as_text_token(&variable),
+        as_number_token(&value)
+      )]
+    }
+    "data_addtolist" => {
+      let list = get_field_value(block, "LIST", "list");
+      let item = input_text("ITEM", &mut expr_seen);
+      let rendered_item = if input_is_expression("ITEM") {
+        item.trim().to_string()
+      } else {
+        as_text_token(&item)
+      };
+      vec![format!("{indent}add {} to {}", rendered_item, as_text_token(&list))]
+    }
+    "data_deleteoflist" => {
+      let list = get_field_value(block, "LIST", "list");
+      let index = input_text("INDEX", &mut expr_seen);
+      vec![format!(
+        "{indent}delete {} of {}",
+        as_number_token(&index),
+        as_text_token(&list)
+      )]
+    }
+    "data_deletealloflist" => {
+      let list = get_field_value(block, "LIST", "list");
+      vec![format!("{indent}delete all of {}", as_text_token(&list))]
+    }
+    "data_insertatlist" => {
+      let list = get_field_value(block, "LIST", "list");
+      let item = input_text("ITEM", &mut expr_seen);
+      let index = input_text("INDEX", &mut expr_seen);
+      let rendered_item = if input_is_expression("ITEM") {
+        item.trim().to_string()
+      } else {
+        as_text_token(&item)
+      };
+      vec![format!(
+        "{indent}insert {} at {} of {}",
+        rendered_item,
+        as_number_token(&index),
+        as_text_token(&list)
+      )]
+    }
+    "data_replaceitemoflist" => {
+      let list = get_field_value(block, "LIST", "list");
+      let item = input_text("ITEM", &mut expr_seen);
+      let index = input_text("INDEX", &mut expr_seen);
+      let rendered_item = if input_is_expression("ITEM") {
+        item.trim().to_string()
+      } else {
+        as_text_token(&item)
+      };
+      vec![format!(
+        "{indent}replace item {} of {} with {}",
+        as_number_token(&index),
+        as_text_token(&list),
+        rendered_item
+      )]
+    }
+    "data_showlist" => {
+      let list = get_field_value(block, "LIST", "list");
+      vec![format!("{indent}show list {}", as_text_token(&list))]
+    }
+    "data_hidelist" => {
+      let list = get_field_value(block, "LIST", "list");
+      vec![format!("{indent}hide list {}", as_text_token(&list))]
+    }
+    "control_wait" => vec![format!(
+      "{indent}wait {} seconds",
+      as_number_token(&input_text("DURATION", &mut expr_seen))
+    )],
+    "control_wait_until" => vec![format!(
+      "{indent}wait until {}",
+      as_condition_token(&input_text("CONDITION", &mut expr_seen))
+    )],
+    "control_repeat" => {
+      let mut lines = vec![format!(
+        "{indent}repeat {}",
+        as_number_token(&input_text("TIMES", &mut expr_seen))
+      )];
+      if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
+        lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
+      }
+      lines.push(format!("{indent}end"));
+      lines
+    }
+    "control_forever" => {
+      let mut lines = vec![format!("{indent}forever")];
+      if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
+        lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
+      }
+      lines.push(format!("{indent}end"));
+      lines
+    }
+    "control_if" => {
+      let mut lines = vec![format!(
+        "{indent}if {} then",
+        as_condition_token(&input_text("CONDITION", &mut expr_seen))
+      )];
+      if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
+        lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
+      }
+      lines.push(format!("{indent}end"));
+      lines
+    }
+    "control_if_else" => {
+      let mut lines = vec![format!(
+        "{indent}if {} then",
+        as_condition_token(&input_text("CONDITION", &mut expr_seen))
+      )];
+      if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
+        lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
+      }
+      lines.push(format!("{indent}else"));
+      if let Some(start) = get_substack_start(blocks, block, "SUBSTACK2") {
+        lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
+      }
+      lines.push(format!("{indent}end"));
+      lines
+    }
+    "control_repeat_until" => {
+      let mut lines = vec![format!(
+        "{indent}repeat until {}",
+        as_condition_token(&input_text("CONDITION", &mut expr_seen))
+      )];
+      if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
+        lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
+      }
+      lines.push(format!("{indent}end"));
+      lines
+    }
+    "control_stop" => {
+      let option = get_field_value(block, "STOP_OPTION", "all");
+      vec![format!("{indent}stop {}", as_text_token(&option))]
+    }
+    "control_start_as_clone" => vec![format!("{indent}when I start as a clone")],
+    "control_create_clone_of" => {
+      let clone_input = input_text("CLONE_OPTION", &mut expr_seen);
+      let clone = if clone_input.is_empty() {
+        get_field_value(block, "CLONE_OPTION", "_myself_")
+      } else {
+        clone_input
+      };
+      vec![format!("{indent}create clone of {}", as_text_token(&clone))]
+    }
+    "control_delete_this_clone" => vec![format!("{indent}delete this clone")],
+    "procedures_definition" => {
+      let (proccode, arg_names) = resolve_procedure_signature(blocks, block);
+      let rendered_slots: Vec<String> = arg_names
+        .iter()
+        .map(|name| procedure_slot_token(name))
+        .collect();
+      let label = fill_procedure_placeholders(&proccode, &rendered_slots);
+      vec![format!("{indent}define {label}")]
+    }
+    "procedures_prototype" => Vec::new(),
+    "procedures_call" => {
+      let proccode = get_mutation_value(block, "proccode").unwrap_or_else(|| "my block".to_string());
+      let arg_ids = parse_string_array(get_mutation_value(block, "argumentids"));
+      let rendered_slots: Vec<String> = arg_ids
+        .iter()
+        .map(|arg_id| procedure_slot_token(&input_text(arg_id, &mut expr_seen)))
+        .collect();
+      let label = fill_procedure_placeholders(&proccode, &rendered_slots);
+      vec![format!("{indent}call {label}")]
+    }
+    "music_menu_INSTRUMENT" => Vec::new(),
+    "sensing_keyoptions" => Vec::new(),
+    "control_create_clone_of_menu" => Vec::new(),
+    "note" => Vec::new(),
+    _ => vec![format!("{indent}// unsupported opcode: {opcode}")],
+  }
+}
+
+fn is_top_level_script(block: &Map<String, Value>) -> bool {
+  let is_top_level = block.get("topLevel").and_then(Value::as_bool).unwrap_or(false);
+  let parent_is_none = block.get("parent").map(Value::is_null).unwrap_or(true);
+  is_top_level && parent_is_none
+}
+
+fn top_level_script_ids(blocks: &Map<String, Value>) -> Vec<String> {
+  let mut ids = Vec::new();
+
+  for (id, block_value) in blocks {
+    if let Some(block) = block_value.as_object() {
+      if is_top_level_script(block) {
+        ids.push(id.clone());
+      }
+    }
+  }
+
+  ids.sort();
+  ids
+}
+
+fn target_kind_label(is_stage: bool) -> &'static str {
+  if is_stage {
+    "Stage (Backdrop)"
+  } else {
+    "Sprite"
+  }
+}
+
+fn format_script_header(meta: &ScriptCatalogItem) -> String {
+  format!(
+    "// [{}] {}: {} - Script {}",
+    meta.number, meta.target_kind, meta.target_name, meta.local_number
+  )
+}
+
+fn is_diagnostic_line(line: &str) -> bool {
+  line.starts_with("// unsupported opcode:")
+    || line.starts_with("// missing block")
+    || line.starts_with("// cycle detected at block")
+}
+
+fn is_effectively_empty_script(lines: &[String]) -> bool {
+  !lines.iter().any(|line| {
+    let trimmed = line.trim();
+    !trimmed.is_empty() && !is_diagnostic_line(trimmed)
+  })
+}
+
+fn collect_numbered_scripts(root: &Value) -> Result<Vec<NumberedScript>, String> {
+  let targets = root
+    .get("targets")
+    .and_then(Value::as_array)
+    .ok_or_else(|| "project.json has no targets array.".to_string())?;
+
+  let mut scripts_out: Vec<NumberedScript> = Vec::new();
+  let mut global_number: usize = 0;
+
+  for target in targets {
+    let Some(target_obj) = target.as_object() else {
+      continue;
+    };
+
+    let name = target_obj
+      .get("name")
+      .and_then(Value::as_str)
+      .unwrap_or("Unnamed Target")
+      .to_string();
+
+    let is_stage = target_obj
+      .get("isStage")
+      .and_then(Value::as_bool)
+      .unwrap_or(false);
+
+    let Some(blocks) = target_obj.get("blocks").and_then(Value::as_object) else {
+      continue;
+    };
+
+    let top_scripts = top_level_script_ids(blocks);
+    let mut local_number: usize = 0;
+
+    for top_id in &top_scripts {
+      let lines = render_stack(blocks, top_id, "", &HashSet::new());
+      if is_effectively_empty_script(&lines) {
+        continue;
+      }
+
+      local_number += 1;
+      global_number += 1;
+
+      let meta = ScriptCatalogItem {
+        number: global_number,
+        local_number,
+        target_name: name.clone(),
+        target_kind: target_kind_label(is_stage).to_string(),
+        is_stage,
+      };
+
+      scripts_out.push(NumberedScript { meta, lines });
+    }
+  }
+
+  Ok(scripts_out)
+}
+
+fn parse_script_number(script_number_bytes: &[u8]) -> Result<usize, String> {
+  let raw = std::str::from_utf8(script_number_bytes)
+    .map_err(|err| format!("script number argument is not valid UTF-8: {err}"))?;
+  let trimmed = raw.trim();
+  if trimmed.is_empty() {
+    return Err("script number argument is empty.".to_string());
+  }
+
+  let parsed: usize = trimmed
+    .parse()
+    .map_err(|_| format!("script number '{trimmed}' is not a valid positive integer."))?;
+
+  if parsed == 0 {
+    return Err("script number must be >= 1.".to_string());
+  }
+
+  Ok(parsed)
+}
+
+fn extract_project_json_raw(sb3_bytes: &[u8]) -> Result<String, String> {
+  let reader = Cursor::new(sb3_bytes);
+  let mut archive =
+    ZipArchive::new(reader).map_err(|err| format!("Could not open sb3 (zip): {err}"))?;
+
+  let mut project_json = String::new();
+
+  if let Ok(mut file) = archive.by_name("project.json") {
+    file
+      .read_to_string(&mut project_json)
+      .map_err(|err| format!("Failed to read project.json as UTF-8 text: {err}"))?;
+    return Ok(project_json);
+  }
+
+  if let Ok(mut file) = archive.by_name("PROJECT.JSON") {
+    file
+      .read_to_string(&mut project_json)
+      .map_err(|err| format!("Failed to read PROJECT.JSON as UTF-8 text: {err}"))?;
+    return Ok(project_json);
+  }
+
+  Err("project.json not found inside sb3 archive.".to_string())
+}
+
+fn extract_scripts_json_raw(project_json: &str) -> Result<String, String> {
+  let root: Value =
+    serde_json::from_str(project_json).map_err(|err| format!("Invalid project.json content: {err}"))?;
+
+  let targets = root
+    .get("targets")
+    .and_then(Value::as_array)
+    .ok_or_else(|| "project.json has no targets array.".to_string())?;
+
+  let mut out_targets = Vec::new();
+
+  for target in targets {
+    let Some(target_obj) = target.as_object() else {
+      continue;
+    };
+
+    let name = target_obj
+      .get("name")
+      .and_then(Value::as_str)
+      .unwrap_or("Unnamed Target")
+      .to_string();
+
+    let is_stage = target_obj
+      .get("isStage")
+      .and_then(Value::as_bool)
+      .unwrap_or(false);
+
+    let blocks = target_obj
+      .get("blocks")
+      .and_then(Value::as_object)
+      .ok_or_else(|| format!("Target '{name}' has no blocks map."))?;
+
+    out_targets.push(ScriptsTarget {
+      name,
+      is_stage,
+      scripts: top_level_script_ids(blocks),
+    });
+  }
+
+  serde_json::to_string(&ScriptsDump { targets: out_targets })
+    .map_err(|err| format!("Failed to serialize scripts dump: {err}"))
+}
+
+fn sb3_to_scratch_text_raw(sb3_bytes: &[u8]) -> Result<String, String> {
+  let project_json = extract_project_json_raw(sb3_bytes)?;
+  let root: Value =
+    serde_json::from_str(&project_json).map_err(|err| format!("Invalid project.json content: {err}"))?;
+
+  let numbered_scripts = collect_numbered_scripts(&root)?;
+  let mut output_lines: Vec<String> = Vec::new();
+
+  for script in &numbered_scripts {
+    output_lines.push(format_script_header(&script.meta));
+    output_lines.extend(script.lines.clone());
+    output_lines.push(String::new());
+  }
+
+  if output_lines.is_empty() {
+    Ok("// No top-level scripts found in this sb3.".to_string())
+  } else {
+    Ok(output_lines.join("\n").trim().to_string())
+  }
+}
+
+fn sb3_to_scratch_text_by_number_raw(sb3_bytes: &[u8], script_number: usize) -> Result<String, String> {
+  let project_json = extract_project_json_raw(sb3_bytes)?;
+  let root: Value =
+    serde_json::from_str(&project_json).map_err(|err| format!("Invalid project.json content: {err}"))?;
+
+  let numbered_scripts = collect_numbered_scripts(&root)?;
+  if numbered_scripts.is_empty() {
+    return Ok("// No top-level scripts found in this sb3.".to_string());
+  }
+
+  let Some(script) = numbered_scripts
+    .iter()
+    .find(|item| item.meta.number == script_number)
+  else {
+    return Err(format!(
+      "script number {} does not exist (available range: 1..={}).",
+      script_number,
+      numbered_scripts.len()
+    ));
+  };
+
+  let mut output_lines: Vec<String> = Vec::new();
+  output_lines.push(format_script_header(&script.meta));
+  output_lines.extend(script.lines.clone());
+
+  Ok(output_lines.join("\n").trim().to_string())
+}
+
+fn sb3_scripts_catalog_json_raw(sb3_bytes: &[u8]) -> Result<String, String> {
+  let project_json = extract_project_json_raw(sb3_bytes)?;
+  let root: Value =
+    serde_json::from_str(&project_json).map_err(|err| format!("Invalid project.json content: {err}"))?;
+
+  let numbered_scripts = collect_numbered_scripts(&root)?;
+  let catalog = ScriptsCatalog {
+    scripts: numbered_scripts.into_iter().map(|entry| entry.meta).collect(),
+  };
+
+  serde_json::to_string(&catalog).map_err(|err| format!("Failed to serialize scripts catalog: {err}"))
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
+pub fn extract_project_json(sb3_bytes: &[u8]) -> Vec<u8> {
+  match extract_project_json_raw(sb3_bytes) {
+    Ok(json_text) => json_text.into_bytes(),
+    Err(err) => err_bytes(err),
+  }
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
+pub fn extract_scripts_json(project_json_bytes: &[u8]) -> Vec<u8> {
+  let project_json = match std::str::from_utf8(project_json_bytes) {
+    Ok(value) => value,
+    Err(err) => return err_bytes(format!("project_json argument is not valid UTF-8: {err}")),
+  };
+
+  match extract_scripts_json_raw(project_json) {
+    Ok(json_text) => json_text.into_bytes(),
+    Err(err) => err_bytes(err),
+  }
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
+pub fn sb3_to_scratch_text(sb3_bytes: &[u8]) -> Vec<u8> {
+  match sb3_to_scratch_text_raw(sb3_bytes) {
+    Ok(text) => text.into_bytes(),
+    Err(err) => err_bytes(err),
+  }
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
+pub fn sb3_to_scratch_text_by_number(sb3_bytes: &[u8], script_number_bytes: &[u8]) -> Vec<u8> {
+  let script_number = match parse_script_number(script_number_bytes) {
+    Ok(value) => value,
+    Err(err) => return err_bytes(err),
+  };
+
+  match sb3_to_scratch_text_by_number_raw(sb3_bytes, script_number) {
+    Ok(text) => text.into_bytes(),
+    Err(err) => err_bytes(err),
+  }
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
+pub fn sb3_scripts_catalog_json(sb3_bytes: &[u8]) -> Vec<u8> {
+  match sb3_scripts_catalog_json_raw(sb3_bytes) {
+    Ok(text) => text.into_bytes(),
+    Err(err) => err_bytes(err),
+  }
+}

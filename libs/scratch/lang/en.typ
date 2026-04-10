@@ -724,6 +724,12 @@
   lang-code: "en",
 )
 
+#let variable(variable) = block(
+  "data.variable",
+  args: (variable: variable),
+  lang-code: "en",
+)
+
 #let change-variable-by(variable, value) = block(
   "data.change_variable_by",
   args: (variable: variable, value: value),

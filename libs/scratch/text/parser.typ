@@ -27,7 +27,35 @@
 
 #let _ends-with(value, suffix) = value.ends-with(suffix)
 
-#let _is-wrapped(value, left, right) = value.len() >= 2 and _starts-with(value, left) and _ends-with(value, right)
+#let _is-wrapped(value, left, right) = {
+  if value.len() < 2 or not _starts-with(value, left) or not _ends-with(value, right) {
+    return false
+  }
+
+  let depth = 0
+  let index = 0
+  let total = value.clusters().len()
+
+  for cluster in value.clusters() {
+    if cluster == left {
+      depth += 1
+    }
+    if cluster == right {
+      depth -= 1
+      if depth < 0 {
+        return false
+      }
+    }
+
+    if depth == 0 and index < total - 1 {
+      return false
+    }
+
+    index += 1
+  }
+
+  depth == 0
+}
 
 #let _next-boundary(text, index) = {
   let pos = 0
@@ -67,10 +95,19 @@
   let depth-paren = 0
   let depth-square = 0
   let depth-angle = 0
+  let prev-cluster = none
   let byte-pos = 0
 
   for cluster in text.clusters() {
+    let next-pos = byte-pos + cluster.len()
+    let next-cluster = if next-pos < text.len() {
+      text.slice(next-pos, _next-boundary(text, next-pos + 1))
+    } else {
+      none
+    }
+
     if byte-pos < start {
+      prev-cluster = cluster
       byte-pos += cluster.len()
       continue
     }
@@ -95,11 +132,16 @@
     } else if ch == "]" and depth-square > 0 {
       depth-square -= 1
     } else if ch == "<" {
-      depth-angle += 1
+      // Treat "<" as angle-group opener only when it is not a plain
+      // comparison operator surrounded by spaces (e.g. "a < b").
+      if not (prev-cluster == " " and next-cluster == " ") {
+        depth-angle += 1
+      }
     } else if ch == ">" and depth-angle > 0 {
       depth-angle -= 1
     }
 
+    prev-cluster = cluster
     byte-pos += cluster.len()
   }
 
@@ -226,18 +268,48 @@
     return none
   }
 
+  let mathop-operators = (
+    "abs",
+    "floor",
+    "ceiling",
+    "sqrt",
+    "sin",
+    "cos",
+    "tan",
+    "asin",
+    "acos",
+    "atan",
+    "ln",
+    "log",
+    "e ^",
+    "10 ^",
+  )
+
   for expr-def in expression-defs {
     let template = get-template(expr-def.id, lang-code)
     let parsed-template = _parse-template(template)
     let raw-args = _match-template-plain(source, template)
     if raw-args != none {
+      if expr-def.id == "sensing.of" and "property" in raw-args {
+        let property = _strip-wrappers(_trim(raw-args.at("property")))
+        if property in mathop-operators {
+          continue
+        }
+      }
+
       let args = (:)
       for key in parsed-template.placeholders {
         let raw-token = _trim(raw-args.at(key))
         if raw-token == "" {
           args.insert(key, "")
         } else if _is-wrapped(raw-token, "[", "]") {
-          args.insert(key, _strip-wrappers(raw-token))
+          let unwrapped = _strip-wrappers(raw-token)
+          let nested = _try-parse-expression(unwrapped, lang-code, expression-defs)
+          if nested != none {
+            args.insert(key, nested)
+          } else {
+            args.insert(key, unwrapped)
+          }
         } else {
           let inner-token = if _is-wrapped(raw-token, "(", ")") or _is-wrapped(raw-token, "<", ">") {
             _strip-wrappers(raw-token)
@@ -252,7 +324,7 @@
           }
         }
       }
-      return block(expr-def.id, args: args, lang-code: lang-code)
+      return (id: expr-def.id, args: args)
     }
   }
 
@@ -263,6 +335,56 @@
   let cleaned = _trim(value)
   if cleaned == "" {
     return ""
+  }
+
+  if key in ("condition", "operand", "operand1", "operand2") {
+    let parsed = _try-parse-expression(cleaned, lang-code, expression-defs)
+    if parsed != none {
+      return parsed
+    }
+
+    let inner = if _is-wrapped(cleaned, "(", ")") or _is-wrapped(cleaned, "<", ">") or _is-wrapped(cleaned, "[", "]") {
+      _strip-wrappers(cleaned)
+    } else {
+      cleaned
+    }
+
+    let parsed-inner = _try-parse-expression(inner, lang-code, expression-defs)
+    return if parsed-inner != none { parsed-inner } else { inner }
+  }
+
+  if key in ("value", "x", "y", "index", "string1", "string2") {
+    let parsed = _try-parse-expression(cleaned, lang-code, expression-defs)
+    if parsed != none {
+      return parsed
+    }
+
+    let inner = if _is-wrapped(cleaned, "(", ")") or _is-wrapped(cleaned, "<", ">") {
+      _strip-wrappers(cleaned)
+    } else {
+      cleaned
+    }
+    let parsed-inner = _try-parse-expression(inner, lang-code, expression-defs)
+    if parsed-inner != none {
+      return parsed-inner
+    }
+  }
+
+  if key in ("costume", "backdrop", "sound") {
+    let parsed = _try-parse-expression(cleaned, lang-code, expression-defs)
+    if parsed != none {
+      return parsed
+    }
+
+    let inner = if _is-wrapped(cleaned, "(", ")") or _is-wrapped(cleaned, "<", ">") or _is-wrapped(cleaned, "[", "]") {
+      _strip-wrappers(cleaned)
+    } else {
+      cleaned
+    }
+    let parsed-inner = _try-parse-expression(inner, lang-code, expression-defs)
+    if parsed-inner != none {
+      return parsed-inner
+    }
   }
 
   if _is-wrapped(cleaned, "[", "]") {
@@ -280,22 +402,21 @@
     return if parsed != none { parsed } else { inner }
   }
 
-  if key in ("condition", "operand", "operand1", "operand2") {
-    let parsed = _try-parse-expression(cleaned, lang-code, expression-defs)
-    return if parsed != none { parsed } else { cleaned }
-  }
-
   if expression-only {
     let parsed = _try-parse-expression(cleaned, lang-code, expression-defs)
     return if parsed != none { parsed } else { cleaned }
   }
 
-  let parsed = _try-parse-expression(cleaned, lang-code, expression-defs)
-  if parsed != none {
-    parsed
-  } else {
-    cleaned
+  // Preserve reporter semantics in slots that are otherwise treated as plain
+  // text (e.g. list item/value fields containing `var [Name]`).
+  if cleaned.starts-with("var ") {
+    let parsed = _try-parse-expression(cleaned, lang-code, expression-defs)
+    if parsed != none {
+      return parsed
+    }
   }
+
+  cleaned
 }
 
 #let _match-template(line, template, lang-code, expression-defs, expression-only: false) = {
@@ -356,7 +477,7 @@
     return none
   }
 
-  let defs = if expression-only { expression-defs } else { statement-defs + expression-defs }
+  let defs = if expression-only { expression-defs } else { statement-defs }
   for entry in defs {
     let template = get-template(entry.id, lang-code)
     let args = _match-template(source, template, lang-code, expression-defs, expression-only: expression-only)
@@ -389,7 +510,28 @@
   lines
 }
 
+#let _render-arg-value(value, lang-code) = {
+  if type(value) == dictionary and "id" in value and "args" in value {
+    let nested-args = (:)
+    for key in value.args.keys() {
+      nested-args.insert(key, _render-arg-value(value.args.at(key), lang-code))
+    }
+    block(value.id, args: nested-args, lang-code: lang-code)
+  } else {
+    value
+  }
+}
+
+#let _render-node-args(args, lang-code) = {
+  let rendered = (:)
+  for key in args.keys() {
+    rendered.insert(key, _render-arg-value(args.at(key), lang-code))
+  }
+  rendered
+}
+
 #let _render-node(node, lang-code) = {
+  let rendered-args = _render-node-args(node.args, lang-code)
   let body = node.at("body", default: none)
   let else-body = node.at("else-body", default: none)
 
@@ -414,20 +556,20 @@
   }
 
   if body == none and else-body == none {
-    return block(node.id, args: node.args, lang-code: lang-code)
+    return block(node.id, args: rendered-args, lang-code: lang-code)
   }
 
   if else-body != none {
     return block(
       "control.if_else",
-      args: node.args,
+      args: rendered-args,
       lang-code: lang-code,
       body: body-content,
       else-body: else-content,
     )
   }
 
-  block(node.id, args: node.args, lang-code: lang-code, body: body-content)
+  block(node.id, args: rendered-args, lang-code: lang-code, body: body-content)
 }
 
 #let _render-nodes(nodes, lang-code) = [
@@ -557,6 +699,9 @@
   make-def("sound.change_volume_by"),
   make-def("sound.set_volume_to"),
 
+  make-def("music.play_note_for_beats"),
+  make-def("music.set_instrument_to"),
+
   make-def("pen.clear"),
   make-def("pen.stamp"),
   make-def("pen.pen_down"),
@@ -594,6 +739,9 @@
   make-def("data.replace_item_of_list"),
   make-def("data.show_list"),
   make-def("data.hide_list"),
+
+  make-def("custom.define", opens-body: true, control-kind: "hat"),
+  make-def("custom.call"),
 )
 
 #let default-expression-defs-raw = (
@@ -642,6 +790,7 @@
   make-def("operator.round"),
   make-def("operator.mathop"),
 
+  make-def("data.variable"),
   make-def("data.item_of_list"),
   make-def("data.item_number_of_list"),
   make-def("data.length_of_list"),

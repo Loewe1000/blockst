@@ -1,6 +1,6 @@
 [package]
 name = "blockst"
-version = "0.1.0"
+version = "0.2.0"
 entrypoint = "lib.typ"
 authors = ["Loewe1000 <@Loewe1000>"]
 repository = "https://github.com/Loewe1000/blockst"

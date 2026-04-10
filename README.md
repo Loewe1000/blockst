@@ -17,7 +17,7 @@ It is made for worksheets, tutorials, teaching material, and visual programming 
 ## Quick Start
 
 ```typst
-#import "@preview/blockst:0.1.0": blockst, scratch
+#import "@preview/blockst:0.2.0": blockst, scratch
 
 #blockst[
   #import scratch.en: *
@@ -33,15 +33,20 @@ It is made for worksheets, tutorials, teaching material, and visual programming 
 
 ## Text Parser: Scratchblocks-Style (EN/DE/FR)
 
-Blockst includes an advanced text parser that maps scratchblocks-like lines to visual blocks.
-It is now language-aware and available as dedicated modules:
+Blockst includes a language-aware scratchblocks-style parser that maps text lines
+to visual blocks. Use one of these modules:
 
 - `scratch.text.en`
 - `scratch.text.de`
 - `scratch.text.fr`
 
+Each module exposes two entry points:
+
+- `render-scratch-text(text)` - parse and render directly
+- `parse-scratch-text(text)` - parse only (returns AST-like nodes)
+
 ```typst
-#import "@preview/blockst:0.1.0": blockst, scratch
+#import "@preview/blockst:0.2.0": blockst, scratch
 
 #blockst[
   #import scratch.text.en: *
@@ -58,7 +63,7 @@ end")
 ]
 ```
 
-Parser rules and behavior:
+Parser behavior:
 
 - Explicit control flow markers per language:
   - English: `end`, `else`
@@ -66,12 +71,14 @@ Parser rules and behavior:
   - French: `fin`, `sinon`
 - Input wrappers are supported: `(number)`, `[text/dropdown]`, `<condition>`
 - Nested reporters/booleans are parsed recursively
+- Unary math operators like `abs`, `floor`, and `ceiling` are parsed as structured expressions
+- Line comments with `//` are ignored by the parser
 - Unknown or unsupported lines fail fast with a clear parser error
 - Scratch-style dropdown marker text like `[mouse-pointer v]` is accepted and normalized
 
 Examples:
 
-- English parser example: [examples/example-parser-text.typ](examples/example-parser-text.typ)
+- Scratchblocks parser example: [examples/example-parser-scratchblocks.typ](examples/example-parser-scratchblocks.typ)
 
 To keep parser docs focused and concise, the parser examples in this README use English.
 
@@ -86,7 +93,7 @@ To keep parser docs focused and concise, the parser examples in this README use 
 ### Events and Control Flow
 
 ```typst
-#import "@preview/blockst:0.1.0": blockst, scratch
+#import "@preview/blockst:0.2.0": blockst, scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
@@ -113,7 +120,7 @@ To keep parser docs focused and concise, the parser examples in this README use 
 ### Custom Block Definition
 
 ```typst
-#import "@preview/blockst:0.1.0": blockst, scratch
+#import "@preview/blockst:0.2.0": blockst, scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
@@ -144,7 +151,7 @@ To keep parser docs focused and concise, the parser examples in this README use 
 ### Variable and List Monitors
 
 ```typst
-#import "@preview/blockst:0.1.0": blockst, scratch
+#import "@preview/blockst:0.2.0": blockst, scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
@@ -175,7 +182,7 @@ To keep parser docs focused and concise, the parser examples in this README use 
 `#blockst[]` only adds scaling. Blocks render at 1:1 size in normal document flow — useful for worksheets that mix explanatory text with individual blocks:
 
 ```typst
-#import "@preview/blockst:0.1.0": scratch
+#import "@preview/blockst:0.2.0": scratch
 
 #set page(width: auto, height: auto, margin: 5mm, fill: white)
 
@@ -207,7 +214,7 @@ When a branch contains **multiple statements**, wrap them in a content block `[.
 When a branch contains only a **single statement**, pass it directly — no `[...]` needed.
 
 ```typst
-#import "@preview/blockst:0.1.0": blockst, scratch
+#import "@preview/blockst:0.2.0": blockst, scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
@@ -237,7 +244,7 @@ When a branch contains only a **single statement**, pass it directly — no `[..
 Import the executable API from `scratch.exec.en` (or `.de`, `.fr`).
 
 ```typst
-#import "@preview/blockst:0.1.0": blockst, scratch, scratch-run, set-scratch-run
+#import "@preview/blockst:0.2.0": blockst, scratch, scratch-run, set-scratch-run
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
@@ -272,7 +279,7 @@ Use `set-blockst` to change the visual theme or scale of all following blocks.
 Available themes: `"normal"` (default), `"high-contrast"`, and `"print"`.
 
 ```typst
-#import "@preview/blockst:0.1.0": blockst, scratch, set-blockst
+#import "@preview/blockst:0.2.0": blockst, scratch, set-blockst
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
@@ -322,7 +329,7 @@ Available themes: `"normal"` (default), `"high-contrast"`, and `"print"`.
 <summary><strong>Example: Comic Sans MS</strong></summary>
 
 ```typst
-#import "@preview/blockst:0.1.0": blockst, scratch, set-blockst
+#import "@preview/blockst:0.2.0": blockst, scratch, set-blockst
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
@@ -350,7 +357,7 @@ Available themes: `"normal"` (default), `"high-contrast"`, and `"print"`.
 All block names, labels, and inputs are translated. Here the same control-flow pattern as example 1 in German:
 
 ```typst
-#import "@preview/blockst:0.1.0": blockst, scratch
+#import "@preview/blockst:0.2.0": blockst, scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
@@ -391,13 +398,117 @@ All block names, labels, and inputs are translated. Here the same control-flow p
 #import scratch.text.en: *
 #import scratch.text.de: *
 #import scratch.text.fr: *
+
+#import scratch.sb3: *
 ```
 
 ### scratch-run
 
 ```typst
-#import "@preview/blockst:0.1.0": scratch-run, set-scratch-run
+#import "@preview/blockst:0.2.0": scratch-run, set-scratch-run
 #import scratch.exec.en: *
+```
+
+## Import Scratch `.sb3` via Typst Plugin (WASM)
+
+Recommended workflow:
+
+1. Read `.sb3` bytes with `read(..., encoding: none)`
+2. Use helpers from `scratch.sb3`
+3. Render imported scripts, lists, and variables directly in Blockst
+
+`scratch.sb3` uses the bundled SB3 plugin by default, so no manual
+`plugin("...")` call is needed for standard usage.
+
+### Quick Start
+
+```typst
+#import "@preview/blockst:0.2.0": blockst, scratch
+#let sb3-bytes = read("project.sb3", encoding: none)
+
+#blockst[
+  #import scratch.sb3: render-sb3-scripts
+  #render-sb3-scripts(sb3-bytes)
+]
+```
+
+### Script Rendering Options
+
+```typst
+// Render language for labels/headers (same imported SB3 data)
+#render-sb3-scripts(sb3-bytes, language: "de")
+
+// Filter by target ("stage" or exact sprite name)
+#render-sb3-scripts(sb3-bytes, target: "stage")
+#render-sb3-scripts(sb3-bytes, target: "Player")
+
+// Pick one script by global number (1-based across all targets)
+#render-sb3-scripts(sb3-bytes, script-number: 2)
+
+// Pick one script by local number inside one selected target
+#render-sb3-scripts(sb3-bytes, target: "Player", target-script-number: 1)
+```
+
+Header behavior defaults:
+
+- Without `target`: headers are shown
+- With `target`: headers are hidden
+- Override with `show-headers: true/false`
+
+### Lists and Variables
+
+```typst
+#import scratch.sb3: render-sb3-lists, render-sb3-variables
+
+// All lists/variables from one target
+#render-sb3-lists(sb3-bytes, target: "stage")
+#render-sb3-variables(sb3-bytes, target: "stage")
+
+// Select one item by name (recommended)
+#render-sb3-lists(sb3-bytes, target: "stage", target-list-name: "Players")
+#render-sb3-variables(sb3-bytes, target: "stage", target-variable-name: "Score")
+
+// Or by local number within the selected target
+#render-sb3-lists(sb3-bytes, target: "stage", target-list-number: 1)
+#render-sb3-variables(sb3-bytes, target: "stage", target-variable-number: 1)
+```
+
+### Catalog APIs (Metadata)
+
+```typst
+#import scratch.sb3: sb3-scripts-catalog, sb3-state-catalog
+
+// Script catalog (grouped by target)
+#let catalog = sb3-scripts-catalog(sb3-bytes)
+
+// Skip parsed_text for faster metadata-only lookup
+#let fast-catalog = sb3-scripts-catalog(sb3-bytes, include-parser-text: false)
+
+// Compact target state snapshots (variables, lists, stage/sprite props)
+#let state = sb3-state-catalog(sb3-bytes)
+```
+
+### Advanced
+
+You can convert SB3 bytes to parser text directly with `sb3-to-scratch-text(...)`
+and optionally pass a custom plugin via `sb3-plugin: plugin("...")`.
+
+If you maintain the SB3 plugin itself, build details are in
+[scripts/sb3-wasm/README.md](scripts/sb3-wasm/README.md).
+
+### Validate SB3 Import Coverage
+
+To test whether all opcodes in a specific `.sb3` are currently imported by the
+SB3 parser, run:
+
+```bash
+./scripts/sb3-wasm/check-sb3-import-coverage.sh examples/Listen.sb3
+```
+
+Strict mode (exit with error if unsupported opcodes are found):
+
+```bash
+./scripts/sb3-wasm/check-sb3-import-coverage.sh examples/Listen.sb3 --strict
 ```
 
 ## Complete English Block Catalog

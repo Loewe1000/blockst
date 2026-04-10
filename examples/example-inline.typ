@@ -1,7 +1,7 @@
 // Inline example – scratch blocks without #blockst wrapper
 // #blockst[] only adds scaling; blocks render fine directly in document flow.
 // Practical use case: placing blocks in a grid/table layout.
-#import "@preview/blockst:0.1.0": scratch
+#import "@preview/blockst:0.2.0": scratch
 
 #set page(width: auto, height: auto, margin: 5mm, fill: white)
 

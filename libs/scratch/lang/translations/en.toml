@@ -64,6 +64,10 @@ change_volume_by = "change volume by {volume}"
 set_volume_to    = "set volume to {volume} %"
 volume           = "volume"
 
+[music]
+play_note_for_beats = "play note {note} for {beats} beats"
+set_instrument_to   = "set instrument to {instrument}"
+
 [pen]
 clear                  = "erase all"
 stamp                  = "stamp"
@@ -138,6 +142,7 @@ mathop    = "{operator} of {num}"
 
 [data]
 length_label         = "Length"
+variable             = "var {variable}"
 set_variable_to      = "set {variable} to {value}"
 change_variable_by   = "change {variable} by {value}"
 show_variable        = "show variable {variable}"
@@ -157,5 +162,6 @@ hide_list            = "hide list {list}"
 [custom]
 input  = "{text}"
 block  = "{label}"
+call   = "call {label}"
 define_label = "define"
 define = "define {label}"

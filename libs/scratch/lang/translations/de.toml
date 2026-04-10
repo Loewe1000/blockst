@@ -64,6 +64,10 @@ change_volume_by = "ändere Lautstärke um {volume}"
 set_volume_to    = "setze Lautstärke auf {volume} %"
 volume           = "Lautstärke"
 
+[music]
+play_note_for_beats = "spiele Note {note} für {beats} Schläge"
+set_instrument_to   = "setze Instrument auf {instrument}"
+
 [pen]
 clear                  = "lösche alles"
 stamp                  = "hinterlasse Abdruck"
@@ -138,13 +142,14 @@ mathop    = "{operator} von {num}"
 
 [data]
 length_label         = "Länge"
+variable             = "var {variable}"
 set_variable_to      = "setze {variable} auf {value}"
 change_variable_by   = "ändere {variable} um {value}"
 show_variable        = "zeige Variable {variable}"
 hide_variable        = "verstecke Variable {variable}"
 add_to_list          = "füge {item} zu {list} hinzu"
 delete_of_list       = "entferne {index} aus {list}"
-delete_all_of_list   = "entferne alles aus {list}"
+delete_all_of_list   = "lösche alles aus {list}"
 insert_at_list       = "füge {item} bei {index} in {list} ein"
 replace_item_of_list = "ersetze Element {index} von {list} durch {item}"
 item_of_list         = "Element {index} von {list}"
@@ -157,5 +162,6 @@ hide_list            = "verstecke Liste {list}"
 [custom]
 input  = "{text}"
 block  = "{label}"
+call   = "rufe {label} auf"
 define_label = "Definiere"
 define = "Definiere {label}"

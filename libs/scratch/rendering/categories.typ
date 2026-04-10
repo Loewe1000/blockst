@@ -4,7 +4,7 @@
 #import "colors.typ": scratch-block-options, get-colors-from-options, get-stroke-from-options
 #import "icons.typ": icons
 #import "geometry.typ": block-height, block-offset-y, corner-radius, content-inset, notch-spacing, block-path
-#import "pills.typ": number-or-content, pill-reporter, pill-round
+#import "pills.typ": number-or-content, pill-reporter, pill-round, pill-min-height
 #import "blocks.typ": scratch-block, condition
 
 // ------------------------------------------------
@@ -180,18 +180,20 @@
 // Reporter blocks (value blocks)
 // ------------------------------------------------
 // Generic reporter function for all categories
-#let reporter(colorschema: auto, body, dropdown-content: none) = context {
+#let reporter(colorschema: auto, body, dropdown-content: none, body-min-height: pill-min-height, enforce-min-height: false) = context {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
   let final-colorschema = if colorschema == auto { colors.looks } else { colorschema }
+  let simple-body = type(body) in (str, int, float)
+  let resolved-body-min-height = if enforce-min-height or simple-body { body-min-height } else { auto }
 
   pill-reporter(
     fill: final-colorschema.primary,
     stroke: final-colorschema.tertiary + stroke-thickness,
     text-color: colors.text-color,
     if dropdown-content != none {
-      pill-round(fill: none, stroke: none, text-color: colors.text-color, inset: (x: 0mm, y: 0.5mm), stack(dir: ltr, spacing: pill-spacing, box(inset: (left: pill-inset-x), body), pill-reporter(
+      pill-round(fill: none, stroke: none, text-color: colors.text-color, inset: (x: 0mm, y: 0.5mm), min-height: resolved-body-min-height, stack(dir: ltr, spacing: pill-spacing, box(inset: (left: pill-inset-x), body), pill-reporter(
         dropdown-content,
         fill: final-colorschema.secondary,
         stroke: final-colorschema.tertiary + stroke-thickness,
@@ -200,7 +202,7 @@
         inline: true,
       )))
     } else {
-      pill-round(body, fill: none, stroke: none, text-color: colors.text-color, inset: (x: 1.5mm, y: 0.5mm))
+      pill-round(body, fill: none, stroke: none, text-color: colors.text-color, inset: (x: 1.5mm, y: 0.5mm), min-height: resolved-body-min-height)
     },
   )
 }
@@ -209,7 +211,7 @@
 #let motion-reporter(body, dropdown-content: none)    = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.motion,    body, dropdown-content: dropdown-content) }
 #let looks-reporter(body, dropdown-content: none)     = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.looks,     body, dropdown-content: dropdown-content) }
 #let sound-reporter(body, dropdown-content: none)     = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.sound,     body, dropdown-content: dropdown-content) }
-#let sensing-reporter(body, dropdown-content: none)   = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.sensing,   body, dropdown-content: dropdown-content) }
+#let sensing-reporter(body, dropdown-content: none)   = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.sensing,   body, dropdown-content: dropdown-content, enforce-min-height: true) }
 #let variables-reporter(body, dropdown-content: none) = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.variables, body, dropdown-content: dropdown-content) }
 #let lists-reporter(body, dropdown-content: none)     = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.lists,     body, dropdown-content: dropdown-content) }
 #let custom-reporter(body, dropdown-content: none)    = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.custom,    body, dropdown-content: dropdown-content) }
@@ -283,11 +285,16 @@
 #let define(block-label, verb: "define", ..children) = context {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
+  let rendered-label = if std.type(block-label) == function {
+    block-label(dark: true)
+  } else {
+    block-label
+  }
   scratch-block(
     colorschema: colors.custom,
     type: "define",
     dy: 2.5 * corner-radius,
-    stack(dir: ltr, spacing: 1.5mm, verb, block-label(dark: true)),
+    stack(dir: ltr, spacing: 1.5mm, verb, rendered-label),
     ..children,
   )
 }

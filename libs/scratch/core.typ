@@ -65,6 +65,111 @@
   has-digit
 }
 
+#let _custom-label-parts(label) = {
+  let parts = ()
+  let buffer = ""
+  let in-slot = false
+
+  for ch in label.clusters() {
+    if ch == "[" and not in-slot {
+      if buffer != "" {
+        parts.push((kind: "text", value: buffer))
+      }
+      buffer = ""
+      in-slot = true
+    } else if ch == "]" and in-slot {
+      parts.push((kind: "slot", value: buffer.trim()))
+      buffer = ""
+      in-slot = false
+    } else {
+      buffer += ch
+    }
+  }
+
+  if buffer != "" {
+    if in-slot {
+      parts.push((kind: "text", value: "[" + buffer))
+    } else {
+      parts.push((kind: "text", value: buffer))
+    }
+  }
+
+  parts
+}
+
+#let _custom-variable-name(slot-value) = {
+  let value = slot-value.trim()
+  if value.starts-with("var (") and value.ends-with(")") {
+    return value.slice(5, value.len() - 1).trim()
+  }
+  if value.starts-with("var [") and value.ends-with("]") {
+    return value.slice(5, value.len() - 1).trim()
+  }
+  if value.starts-with("var ") {
+    return value.slice(4).trim()
+  }
+  none
+}
+
+#let _custom-known-reporter(slot-value, langcode) = {
+  let value = slot-value.trim()
+  if value == "mouse x" {
+    sensing-reporter("mouse x")
+  } else if value == "mouse y" {
+    sensing-reporter("mouse y")
+  } else {
+    none
+  }
+}
+
+#let _render-custom-define-label(label) = {
+  let parts = _custom-label-parts(label)
+  let items = ()
+
+  for part in parts {
+    if part.kind == "slot" {
+      items.push((name: part.value))
+    } else if part.value != "" {
+      items.push(part.value)
+    }
+  }
+
+  if items.len() == 0 {
+    custom-block(label)
+  } else {
+    custom-block(..items)
+  }
+}
+
+#let _render-custom-call-label(label, custom-colors, langcode) = {
+  let parts = _custom-label-parts(label)
+  let rendered = ()
+
+  for part in parts {
+    if part.kind == "slot" {
+      let known-reporter = _custom-known-reporter(part.value, langcode)
+      let variable-name = _custom-variable-name(part.value)
+      if known-reporter != none {
+        rendered.push(known-reporter)
+      } else if variable-name != none {
+        rendered.push(variables-reporter(variable-name))
+      } else {
+        rendered.push(number-or-content(part.value, custom-colors))
+      }
+    } else if part.value != "" {
+      rendered.push(part.value)
+    }
+  }
+
+  if rendered.len() == 0 {
+    label
+  } else if rendered.len() == 1 {
+    rendered.at(0)
+  } else {
+    stack(dir: ltr, spacing: 1.5mm, ..rendered)
+  }
+}
+
 // Helper: render a pill for a block argument slot
 #let make-pill(key, value, colors, shape: none, block-id: none) = {
   let stroke-thickness = get-stroke-from-options(scratch-block-options.get())
@@ -78,6 +183,9 @@
   
   // inline: true for reporters/booleans, inline: false for stack blocks
   let use-inline = shape in ("reporter", "boolean")
+  let non-compact-inline-keys = ("num", "num1", "num2", "index", "x", "y", "dx", "dy", "steps", "letter")
+  let compact-inline = use-inline and not (key in non-compact-inline-keys)
+  let tall-inline = use-inline and (key in non-compact-inline-keys)
   let is-numeric-random-to = key == "to" and _is-numeric-string(value)
   let is-message-dropdown = key == "message" and block-id in message-dropdown-blocks
 
@@ -89,7 +197,7 @@
     // Empty condition → dark placeholder with nested: true for smaller insets
     condition(colorschema: colors, type: "condition", [], nested: true)
   } else {
-    number-or-content(value, colors)
+    number-or-content(value, colors, compact: compact-inline, tall: tall-inline)
   }
 }
 
@@ -148,7 +256,8 @@
         is-first-text = false
       }
     } else {
-      is-first-text = false
+      // Keep first-position state when template starts with a placeholder,
+      // so the first rendered part still gets the left reporter inset.
     }
     
     // Rest nach {
@@ -166,19 +275,29 @@
     let placeholder = inside-split.at(0)
     
     // Ersetze bekannte Platzhalter
+    let placeholder-content = none
     if placeholder == "flag" {
-      parts.push(flag-icon)
+      placeholder-content = flag-icon
     } else if placeholder == "arrow-right" {
-      parts.push(arrow-right)
+      placeholder-content = arrow-right
     } else if placeholder == "arrow-left" {
-      parts.push(arrow-left)
+      placeholder-content = arrow-left
     } else if placeholder == "pen" {
-      parts.push(pen-icon)
+      placeholder-content = pen-icon
     } else if placeholder in args {
-      parts.push(make-pill(placeholder, args.at(placeholder), colors, shape: shape, block-id: block-id))
+      placeholder-content = make-pill(placeholder, args.at(placeholder), colors, shape: shape, block-id: block-id)
     } else {
       // Unbekannter Platzhalter - als Text behalten
-      parts.push("{" + placeholder + "}")
+      placeholder-content = "{" + placeholder + "}"
+    }
+
+    if placeholder-content != none {
+      if shape in ("reporter", "boolean") and is-first-text {
+        parts.push(box(inset: (left: 2mm), placeholder-content))
+      } else {
+        parts.push(placeholder-content)
+      }
+      is-first-text = false
     }
     
     // Weiter mit dem Rest
@@ -247,11 +366,31 @@
   // Custom block definition carries a label-render function, not a normal template value.
   // Handle it before generic template filling to avoid treating functions as inline content.
   if id == "custom.define" {
-    let label-func = args.at("label", default: none)
+    let label-value = args.at("label", default: none)
     let define-verb = get-template("custom.define_label", l)
-    if label-func != none {
-      return define(label-func, verb: define-verb, body)
+    if label-value != none {
+      if type(label-value) == function {
+        return define(label-value, verb: define-verb, body)
+      }
+      if type(label-value) == str {
+        return define(_render-custom-define-label(label-value), verb: define-verb, body)
+      }
+      return define(label-value, verb: define-verb, body)
     }
+  }
+
+  if id == "custom.call" {
+    let label-value = args.at("label", default: "")
+    if type(label-value) == str {
+      return custom(_render-custom-call-label(label-value, colors.custom, l))
+    }
+    return custom(label-value)
+  }
+
+  // Dedicated variable reporter: parser uses a synthetic template ("var {...}")
+  // for unambiguous matching, but visual output should be just the reporter itself.
+  if id == "data.variable" {
+    return variables-reporter(args.at("variable", default: ""))
   }
   
   // Fill template with arguments
