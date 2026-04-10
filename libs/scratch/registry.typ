@@ -83,6 +83,14 @@
   ),
 
   // =====================
+  // MUSIC (extension)
+  // =====================
+  music: (
+    play_note_for_beats: (shape: "stack"),
+    set_instrument_to:   (shape: "stack"),
+  ),
+
+  // =====================
   // PEN
   // =====================
   pen: (
@@ -169,6 +177,7 @@
   // =====================
   data: (
     // Variables
+    variable:           (shape: "reporter", category: "variables"),
     set_variable_to:    (shape: "stack",    category: "variables"),
     change_variable_by: (shape: "stack",    category: "variables"),
     show_variable:      (shape: "stack",    category: "variables"),
@@ -196,6 +205,7 @@
   custom: (
     input:  (shape: "input"),
     block:  (shape: "stack"),
+    call:   (shape: "stack"),
     define: (shape: "define"),
   ),
 )

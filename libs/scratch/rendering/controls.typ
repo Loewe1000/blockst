@@ -23,6 +23,7 @@
   first-inset-notch: true,
   second-inset-notch: true,
   block-type: "loop", // "loop" or "if"
+  empty-child-min-height: 0.5 * block-height,
 ) = context {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
@@ -35,13 +36,16 @@
   )[
     #set text(font: font-family, colors.text-color, weight: 500)
 
-    #let first-body = if first-body not in (none, []) {
-      first-body
-    } else { box(height: 0.5 * block-height, width: 0cm) }
+    #let first-body-is-empty = first-body in (none, [])
+    #let second-body-is-empty = second-body in (none, [])
 
-    #let second-body = if second-body not in (none, []) {
+    #let first-body = if not first-body-is-empty {
+      first-body
+    } else { box(height: empty-child-min-height + 2 * corner-radius, width: 0cm) }
+
+    #let second-body = if not second-body-is-empty {
       second-body
-    } else { box(height: 0.5 * block-height, width: 0cm) }
+    } else { box(height: empty-child-min-height + 2 * corner-radius, width: 0cm) }
 
     #let header-box = align(horizon, box(inset: content-inset, height: auto, header-label))
     #let middle-box = if middle-label != none {
@@ -66,11 +70,51 @@
         }
       } else { 0mm }
 
-      #let first-body-sizes = measure(first-body)
-      #let second-body-sizes = measure(second-body)
+      #let empty-body-threshold = 2 * corner-radius + 0.1mm
 
-      #let first-height = if first-body != none { first-body-sizes.height - corner-radius - corner-radius } else { 0mm }
-      #let second-height = if second-body != none { second-body-sizes.height - corner-radius - corner-radius } else { 0mm }
+      #let empty-body-box = box(height: empty-child-min-height + 2 * corner-radius, width: 0cm)
+      #let first-body-candidate = if first-body-is-empty {
+        empty-body-box
+      } else {
+        first-body
+      }
+      #let second-body-candidate = if second-body-is-empty {
+        empty-body-box
+      } else {
+        second-body
+      }
+
+      #let first-body-candidate-sizes = measure(first-body-candidate)
+      #let second-body-candidate-sizes = measure(second-body-candidate)
+
+      #let first-body-is-empty = first-body-is-empty or first-body-candidate-sizes.height <= empty-body-threshold
+      #let second-body-is-empty = second-body-is-empty or second-body-candidate-sizes.height <= empty-body-threshold
+
+      #let first-body-render = if first-body-is-empty {
+        empty-body-box
+      } else {
+        first-body-candidate
+      }
+
+      #let second-body-render = if second-body-is-empty {
+        empty-body-box
+      } else {
+        second-body-candidate
+      }
+
+      #let first-height-source = if first-body-is-empty {
+        empty-child-min-height + 2 * corner-radius
+      } else {
+        first-body-candidate-sizes.height
+      }
+      #let second-height-source = if second-body-is-empty {
+        empty-child-min-height + 2 * corner-radius
+      } else {
+        second-body-candidate-sizes.height
+      }
+
+      #let first-height = if first-body-render != none { first-height-source - corner-radius - corner-radius } else { 0mm }
+      #let second-height = if second-body-render != none { second-height-source - corner-radius - corner-radius } else { 0mm }
 
       // Path prefix based on block type
       #let path-prefix = if block-type == "if" { "if" } else { "loop" }
@@ -103,7 +147,7 @@
         above: 0em,
         below: 0em,
         inset: (bottom: if middle-label == none { 3mm + 2 * corner-radius } else { corner-radius }),
-        move(dx: 2 * notch-spacing, first-body),
+        move(dx: 2 * notch-spacing, first-body-render),
       )
       #if middle-label != none {
         box(height: middle-height, middle-box)
@@ -111,7 +155,7 @@
           above: 0em,
           below: 0em,
           inset: (bottom: 3mm + 2 * corner-radius),
-          move(dx: 2 * notch-spacing, second-body),
+          move(dx: 2 * notch-spacing, second-body-render),
         )
       }
     ]

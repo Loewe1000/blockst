@@ -70,6 +70,9 @@
 #import "libs/scratch/text/de.typ" as text-de
 #import "libs/scratch/text/fr.typ" as text-fr
 
+// Experimental SB3 import helpers (Typst plugin bridge)
+#import "libs/scratch/sb3.typ" as sb3
+
 // Executable block localisations
 #import "libs/scratch/exec/de.typ" as exec-de
 #import "libs/scratch/exec/en.typ" as exec-en
@@ -85,6 +88,7 @@
     en: text-en,
     fr: text-fr,
   ),
+  sb3: sb3,
   exec: (
     de: exec-de,
     en: exec-en,

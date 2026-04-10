@@ -8,6 +8,7 @@
   motion:   "motion",
   looks:    "looks",
   sound:    "sound",
+  music:    "sound",
   pen:      "pen",
   control:  "control",
   sensing:  "sensing",

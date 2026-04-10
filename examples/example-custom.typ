@@ -1,5 +1,5 @@
 // Example 3 – Custom block definition
-#import "@preview/blockst:0.1.0": blockst, scratch
+#import "@preview/blockst:0.2.0": blockst, scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 

@@ -47,35 +47,25 @@
     colors.text-color
   }
 
-  set text(font: font-family, weight: 500)
+  let content-box = if dropdown {
+    stack(
+      dir: ltr,
+      spacing: pill-spacing,
+      box(body),
+      image(icon-by-theme("dropdown-arrow", theme: theme), height: 2mm),
+    )
+  } else {
+    box(body)
+  }
+
+  set text(font: font-family, weight: 500, fill: final-text-color)
   box(
     fill: fill,
     stroke: final-stroke,
     radius: radius,
-    height: auto,
+    height: height,
     inset: inset,
-    align(horizon, if dropdown {
-      context {
-        let height = measure(body).height
-        let height = if height < pill-height {
-          pill-height
-        } else {
-          height
-        }
-        let width = pill-inset-x
-        stack(dir: ltr, spacing: pill-spacing, box(height: height, text(final-text-color, body)), image(icon-by-theme("dropdown-arrow", theme: theme), height: 2mm))
-      }
-    } else {
-      context [
-        #let height = measure(body).height
-        #let height = if height < pill-height {
-          pill-height
-        } else {
-          height
-        }
-        #box(height: height, text(final-text-color, body))
-      ]
-    }),
+    align(horizon, content-box),
   )
 }
 
@@ -118,14 +108,19 @@
 // Public pill variants
 // ------------------------------------------------
 
+#let pill-min-height = 0.75 * block-height
+#let pill-string-min-height = pill-min-height
+#let pill-dropdown-min-height = pill-min-height
+#let pill-inline-operand-min-height = pill-min-height
+
 // White input pills (fixed height, no insets)
-#let pill-round(body, stroke: auto, inset: (x: 1.3 * pill-inset-x, y: 1mm), fill: white, text-color: auto) = _pill-base(
+#let pill-round(body, stroke: auto, inset: (x: 1.3 * pill-inset-x, y: 1mm), fill: white, text-color: auto, min-height: pill-min-height) = _pill-base(
   fill: fill,
   stroke: stroke,
   text-color: text-color,
   radius: 50%,
   inset: inset,
-  height: auto,
+  height: min-height,
   dropdown: false,
   body,
 )
@@ -137,32 +132,19 @@
   let stroke-thickness = get-stroke-from-options(options)
   let font-family = get-font-from-options(options)
 
-  // Minimum height for reporters
-  let min-height = 0.8 * block-height
-
-  // Prepare body with minimum height
-  let prepared-body = context {
-    let measured = measure(body)
-    if measured.height < min-height {
-      box(height: min-height, align(horizon, body))
-    } else {
-      body
-    }
-  }
-
   _pill-base-internal(
     fill: fill,
     stroke: stroke,
     text-color: text-color,
     radius: 50%,
     inset: if inline {
-      (x: pill-inset-x, y: 0.7 * pill-inset-y)
+      (x: pill-inset-x, y: 0.9 * pill-inset-y)
     } else {
-      (x: 0.4 * pill-inset-x, y: 0.7 * pill-inset-y)
+      (x: 0.4 * pill-inset-x, y: 0.4 * pill-inset-y)
     },
     height: if inline { 100% } else { auto },
     dropdown: dropdown,
-    prepared-body,
+    body,
     colors: colors,
     stroke-thickness: stroke-thickness,
     font-family: font-family,
@@ -176,7 +158,7 @@
   text-color: text-color,
   radius: 10%,
   inset: (x: 0.75 * pill-inset-x, y: if inline { 0mm } else { 0.75 * pill-inset-y }),
-  height: 0.5 * pill-height,
+  height: pill-dropdown-min-height,
   dropdown: dropdown,
   body,
 )
@@ -216,14 +198,26 @@
 // ------------------------------------------------
 // Converts simple values (string, int, float) into pills,
 // leaves content (blocks, reporters, etc.) unchanged.
-#let number-or-content(value, colorschema) = {
+#let number-or-content(value, colorschema, compact: false, tall: false) = {
   let value-type = type(value)
   if value-type == str or value-type == int or value-type == float {
     context {
       let options = scratch-block-options.get()
       let stroke-thickness = get-stroke-from-options(options)
+      let min-height = if tall {
+        pill-inline-operand-min-height
+      } else if value-type == str {
+        if compact { pill-min-height } else { pill-string-min-height }
+      } else {
+        pill-min-height
+      }
 
-      pill-round(str(value), stroke: colorschema.tertiary + stroke-thickness, inset: (x: 1.3 * pill-inset-x, y: 0.5mm))
+      pill-round(
+        str(value),
+        stroke: colorschema.tertiary + stroke-thickness,
+        inset: (x: 1.3 * pill-inset-x, y: 0.5mm),
+        min-height: min-height,
+      )
     }
   } else {
     value
