@@ -1,21 +1,19 @@
-// Example – scratchblocks-style parser stress test
-#import "@preview/blockst:0.2.0": blockst, scratch
+#import "../lib.typ": blockst, scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
 #blockst[
-  #import scratch.text.en: *
+  #import scratch.en: *
 
-  #render-scratch-text("when flag clicked
-clear graphic effects
-forever
-if <<mouse down?> and <touching [mouse-pointer] ?>> then
-switch costume to [button]
-else
-add (x position) to [list]
-end
-move ((x position) + (10)) steps
-turn left (9) degrees
-end")
+  #render-text("
+    when flag clicked
+      repeat (4)
+        move (40) steps
+        if <touching [mouse-pointer] ?> then
+          say [Hello parser]
+        else
+          turn right (15) degrees
+        end
+      end
+  ")
 ]
-

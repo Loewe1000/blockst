@@ -3,6 +3,7 @@
 // language-specific configuration around these generic functions.
 
 #import "../core.typ": block, get-template
+#import "profiles.typ": get-language-profile
 
 #let _trim(value) = value.trim()
 
@@ -21,7 +22,19 @@
   _collapse-spaces(text)
 }
 
-#let _normalise-line(value) = _normalise-punctuation(_trim(value))
+#let _decode-html-entities(value) = {
+  let text = value
+  text = text.replace("&lt;", "<")
+  text = text.replace("&gt;", ">")
+  text
+}
+
+#let _normalise-line(value) = _normalise-punctuation(_decode-html-entities(_trim(value)))
+
+#let _apply-scratchblocks-aliases(value, lang-code) = {
+  let profile = get-language-profile(lang-code)
+  profile.at("apply-aliases")(value)
+}
 
 #let _starts-with(value, prefix) = value.starts-with(prefix)
 
@@ -77,6 +90,54 @@
   }
 }
 
+#let _is-mathop-operator(value) = {
+  let token = _trim(value)
+  let operator = if token.len() >= 2 and token.starts-with("[") and token.ends-with("]") {
+    let inner = _trim(token.slice(1, token.len() - 1))
+    if inner.ends-with(" v") {
+      _trim(inner.slice(0, inner.len() - 2))
+    } else {
+      inner
+    }
+  } else {
+    token
+  }
+  operator in (
+    "abs",
+    "floor",
+    "ceiling",
+    "sqrt",
+    "wurzel",
+    "Wurzel",
+    "betrag",
+    "Betrag",
+    "abrunden",
+    "Abrunden",
+    "aufrunden",
+    "Aufrunden",
+    "sin",
+    "cos",
+    "tan",
+    "asin",
+    "acos",
+    "atan",
+    "ln",
+    "log",
+    "e ^",
+    "10 ^",
+  )
+}
+
+#let _is-dropdown-token(value) = {
+  let token = _trim(value)
+  if not _is-wrapped(token, "[", "]") {
+    return false
+  }
+
+  let inner = _trim(token.slice(1, token.len() - 1))
+  inner.ends-with(" v")
+}
+
 #let _strip-wrappers(value) = {
   let text = _trim(value)
   if _is-wrapped(text, "(", ")") or _is-wrapped(text, "[", "]") or _is-wrapped(text, "<", ">") {
@@ -85,6 +146,16 @@
   } else {
     text
   }
+}
+
+#let _expression-opener-count(value) = {
+  let count = 0
+  for ch in value.clusters() {
+    if ch == "(" or ch == "<" {
+      count += 1
+    }
+  }
+  count
 }
 
 #let _find-segment(text, needle, start: 0) = {
@@ -262,37 +333,38 @@
   args
 }
 
-#let _try-parse-expression(line, lang-code, expression-defs) = {
-  let source = _normalise-line(line)
-  if source == "" {
+#let _try-parse-expression(line, lang-code, expression-defs, depth: 0) = {
+  if depth > 24 {
     return none
   }
 
-  let mathop-operators = (
-    "abs",
-    "floor",
-    "ceiling",
-    "sqrt",
-    "sin",
-    "cos",
-    "tan",
-    "asin",
-    "acos",
-    "atan",
-    "ln",
-    "log",
-    "e ^",
-    "10 ^",
-  )
+  let source = _apply-scratchblocks-aliases(_normalise-line(line), lang-code)
+  if source == "" {
+    return none
+  }
 
   for expr-def in expression-defs {
     let template = get-template(expr-def.id, lang-code)
     let parsed-template = _parse-template(template)
     let raw-args = _match-template-plain(source, template)
     if raw-args != none {
+      // Disambiguate list reporters/booleans from generic string operators.
+      // `length of [list v]` and `[list v] contains [...]` must map to data.*
+      // and not to operator.length/operator.contains.
+      if expr-def.id == "operator.length" and "string" in raw-args {
+        if _is-dropdown-token(raw-args.at("string")) {
+          continue
+        }
+      }
+
+      if expr-def.id == "operator.contains" and "string1" in raw-args {
+        if _is-dropdown-token(raw-args.at("string1")) {
+          continue
+        }
+      }
+
       if expr-def.id == "sensing.of" and "property" in raw-args {
-        let property = _strip-wrappers(_trim(raw-args.at("property")))
-        if property in mathop-operators {
+        if _is-mathop-operator(raw-args.at("property")) {
           continue
         }
       }
@@ -303,20 +375,22 @@
         if raw-token == "" {
           args.insert(key, "")
         } else if _is-wrapped(raw-token, "[", "]") {
-          let unwrapped = _strip-wrappers(raw-token)
-          let nested = _try-parse-expression(unwrapped, lang-code, expression-defs)
-          if nested != none {
-            args.insert(key, nested)
-          } else {
-            args.insert(key, unwrapped)
-          }
+          // Dropdown/string-style slots should stay atomic and must not recurse.
+          args.insert(key, _strip-wrappers(raw-token))
         } else {
           let inner-token = if _is-wrapped(raw-token, "(", ")") or _is-wrapped(raw-token, "<", ">") {
             _strip-wrappers(raw-token)
           } else {
             raw-token
           }
-          let nested = _try-parse-expression(inner-token, lang-code, expression-defs)
+          let is-expression-slot = key in ("condition", "operand", "operand1", "operand2")
+          let looks-like-expression = raw-token.starts-with("not ") or raw-token.contains(" ?") or raw-token.contains(" and ") or raw-token.contains(" or ") or raw-token.contains(" > ") or raw-token.contains(" < ") or raw-token.contains(" = ")
+          let should-try-unwrapped = is-expression-slot and looks-like-expression and depth < 6
+          let nested = if inner-token != raw-token or should-try-unwrapped {
+            _try-parse-expression(inner-token, lang-code, expression-defs, depth: depth + 1)
+          } else {
+            none
+          }
           if nested != none {
             args.insert(key, nested)
           } else {
@@ -335,6 +409,12 @@
   let cleaned = _trim(value)
   if cleaned == "" {
     return ""
+  }
+
+  // Guard against pathological deep nesting in large imported scripts.
+  // Above this threshold, keep token text instead of recursive expression parsing.
+  if _expression-opener-count(cleaned) > 24 {
+    return _strip-wrappers(cleaned)
   }
 
   if key in ("condition", "operand", "operand1", "operand2") {
@@ -472,22 +552,68 @@
 }
 
 #let _parse-block-line(line, lang-code, statement-defs, expression-defs, allow-body: true, expression-only: false) = {
-  let source = _normalise-line(line)
+  let source = _apply-scratchblocks-aliases(_normalise-line(line), lang-code)
   if source == "" {
     return none
   }
 
   let defs = if expression-only { expression-defs } else { statement-defs }
-  for entry in defs {
-    let template = get-template(entry.id, lang-code)
-    let args = _match-template(source, template, lang-code, expression-defs, expression-only: expression-only)
-    if args != none {
-      return (
-        id: entry.id,
-        args: args,
-        opens-body: allow-body and entry.opens-body,
-        control-kind: entry.control-kind,
-      )
+  let candidates = (source,)
+
+  if expression-only {
+    if source.starts-with("(") and source.ends-with(")") and source.len() > 2 {
+      candidates.push(_normalise-line(source.slice(1, source.len() - 1)))
+    }
+
+    if source.starts-with("<") and source.ends-with(">") and source.len() > 2 {
+      candidates.push(_normalise-line(source.slice(1, source.len() - 1)))
+    }
+
+    if _is-wrapped(source, "[", "]") {
+      candidates.push(_normalise-line(_strip-wrappers(source)))
+    }
+  }
+
+  for candidate in candidates {
+    for entry in defs {
+      let template = get-template(entry.id, lang-code)
+
+      if expression-only and entry.id == "operator.length" {
+        let raw-args = _match-template-plain(candidate, template)
+        if raw-args != none and "string" in raw-args {
+          if _is-dropdown-token(raw-args.at("string")) {
+            continue
+          }
+        }
+      }
+
+      if expression-only and entry.id == "operator.contains" {
+        let raw-args = _match-template-plain(candidate, template)
+        if raw-args != none and "string1" in raw-args {
+          if _is-dropdown-token(raw-args.at("string1")) {
+            continue
+          }
+        }
+      }
+
+      if expression-only and entry.id == "sensing.of" {
+        let raw-args = _match-template-plain(candidate, template)
+        if raw-args != none and "property" in raw-args {
+          if _is-mathop-operator(raw-args.at("property")) {
+            continue
+          }
+        }
+      }
+
+      let args = _match-template(candidate, template, lang-code, expression-defs, expression-only: expression-only)
+      if args != none {
+        return (
+          id: entry.id,
+          args: args,
+          opens-body: allow-body and entry.opens-body,
+          control-kind: entry.control-kind,
+        )
+      }
     }
   }
 
@@ -501,7 +627,13 @@
 
   let lines = ()
   for raw-line in text.replace("\r", "").split("\n") {
-    let line = _normalise-line(raw-line)
+    let stripped = if raw-line.contains(line-comment-prefix) {
+      raw-line.split(line-comment-prefix).at(0)
+    } else {
+      raw-line
+    }
+
+    let line = _normalise-line(stripped)
     if line == "" or _starts-with(line, line-comment-prefix) {
       continue
     }
@@ -578,12 +710,19 @@
   }
 ]
 
-#let _parse-nodes(lines, index, lang-code, end-marker, else-marker, statement-defs, expression-defs) = {
+#let _parse-nodes(lines, index, lang-code, end-marker, else-marker, statement-defs, expression-defs, stop-on-hat: false) = {
   let nodes = ()
   let i = index
 
   while i < lines.len() {
     let line = lines.at(i)
+
+    if stop-on-hat {
+      let boundary = _parse-block-line(line, lang-code, statement-defs, expression-defs)
+      if boundary != none and boundary.control-kind == "hat" {
+        return (nodes: nodes, next: i, marker: "hat-boundary")
+      }
+    }
 
     if line == end-marker {
       return (nodes: nodes, next: i + 1, marker: end-marker)
@@ -594,23 +733,42 @@
 
     let parsed = _parse-block-line(line, lang-code, statement-defs, expression-defs)
     if parsed == none {
+      parsed = _parse-block-line(line, lang-code, statement-defs, expression-defs, allow-body: false, expression-only: true)
+    }
+    if parsed == none {
       panic("Text parser: unknown or unsupported line `" + line + "`.")
     }
 
     if parsed.opens-body {
-      let body-result = _parse-nodes(lines, i + 1, lang-code, end-marker, else-marker, statement-defs, expression-defs)
-      if body-result.marker == none and parsed.control-kind != "hat" {
-        panic("Text parser: missing `" + end-marker + "` for `" + line + "`.")
-      }
+      if parsed.control-kind == "hat" {
+        let body-result = _parse-nodes(
+          lines,
+          i + 1,
+          lang-code,
+          end-marker,
+          else-marker,
+          statement-defs,
+          expression-defs,
+          stop-on-hat: true,
+        )
 
-      let node = parsed
-      if body-result.marker == none and parsed.control-kind == "hat" {
+        if body-result.marker != none and body-result.marker != "hat-boundary" {
+          panic("Text parser: unexpected marker `" + body-result.marker + "` in hat body.")
+        }
+
+        let node = parsed
         node.insert("body", body-result.nodes)
         nodes.push(node)
         i = body-result.next
         continue
       }
 
+      let body-result = _parse-nodes(lines, i + 1, lang-code, end-marker, else-marker, statement-defs, expression-defs)
+      if body-result.marker == none and parsed.control-kind != "hat" {
+        panic("Text parser: missing `" + end-marker + "` for `" + line + "`.")
+      }
+
+      let node = parsed
       if body-result.marker == else-marker {
         if parsed.control-kind in ("if", "if_else") {
           let else-result = _parse-nodes(lines, body-result.next, lang-code, end-marker, else-marker, statement-defs, expression-defs)
@@ -679,6 +837,7 @@
   make-def("looks.switch_costume_to"),
   make-def("looks.next_costume"),
   make-def("looks.switch_backdrop_to"),
+  make-def("looks.switch_backdrop_to_and_wait"),
   make-def("looks.next_backdrop"),
   make-def("looks.change_size_by"),
   make-def("looks.set_size_to"),
@@ -701,6 +860,10 @@
 
   make-def("music.play_note_for_beats"),
   make-def("music.set_instrument_to"),
+  make-def("music.play_drum_for_beats"),
+  make-def("music.rest_for_beats"),
+  make-def("music.change_tempo_by"),
+  make-def("music.set_tempo_to"),
 
   make-def("pen.clear"),
   make-def("pen.stamp"),
@@ -727,6 +890,33 @@
   make-def("sensing.ask_and_wait"),
   make-def("sensing.set_drag_mode"),
   make-def("sensing.reset_timer"),
+  make-def("sensing.turn_video"),
+  make-def("sensing.set_video_transparency"),
+
+  make-def("picoboard.when_button_pressed", opens-body: true, control-kind: "hat"),
+  make-def("picoboard.when_slider", opens-body: true, control-kind: "hat"),
+
+  make-def("wedo.motor_on_for"),
+  make-def("wedo.motor_on"),
+  make-def("wedo.motor_off"),
+  make-def("wedo.set_motor_power"),
+  make-def("wedo.set_motor_direction"),
+  make-def("wedo.when_distance"),
+  make-def("wedo.when_tilt", opens-body: true, control-kind: "hat"),
+
+  make-def("wedo2.motor_on_for"),
+  make-def("wedo2.motor_on"),
+  make-def("wedo2.motor_off"),
+  make-def("wedo2.set_motor_power"),
+  make-def("wedo2.set_motor_direction"),
+  make-def("wedo2.set_light_color"),
+  make-def("wedo2.play_note_for_seconds"),
+  make-def("wedo2.when_distance", opens-body: true, control-kind: "hat"),
+  make-def("wedo2.when_tilted", opens-body: true, control-kind: "hat"),
+
+  make-def("control.forever_if", opens-body: true, control-kind: "if"),
+
+  make-def("grey.ellipsis"),
 
   make-def("data.set_variable_to"),
   make-def("data.change_variable_by"),
@@ -752,8 +942,12 @@
   make-def("looks.costume_number_name"),
   make-def("looks.backdrop_number_name"),
   make-def("looks.size"),
+  make-def("looks.costume_number"),
+  make-def("looks.backdrop_number"),
+  make-def("looks.backdrop_name"),
 
   make-def("sound.volume"),
+  make-def("music.tempo"),
 
   make-def("sensing.touching_object"),
   make-def("sensing.touching_color"),
@@ -770,6 +964,14 @@
   make-def("sensing.current"),
   make-def("sensing.days_since_2000"),
   make-def("sensing.username"),
+  make-def("sensing.user_id"),
+  make-def("sensing.video_on"),
+  make-def("picoboard.sensor_pressed"),
+  make-def("picoboard.sensor_value"),
+  make-def("wedo.distance"),
+  make-def("wedo.tilt"),
+  make-def("wedo2.distance"),
+  make-def("wedo2.tilt"),
 
   make-def("operator.add"),
   make-def("operator.subtract"),

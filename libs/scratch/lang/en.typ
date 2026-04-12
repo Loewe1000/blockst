@@ -2,6 +2,8 @@
 // All Scratch blocks with English function names
 
 #import "../core.typ": block, custom-block as render-custom-block, parameter
+#import "../text/en.typ": parse-scratch-text as _parse-scratch-text, render-scratch-text as _render-scratch-text
+#import "../sb3.typ": render-sb3-scripts as _render-sb3-scripts, render-sb3-lists as _render-sb3-lists, render-sb3-variables as _render-sb3-variables, sb3-image-assets-catalog as _sb3-image-assets-catalog, sb3-image as _sb3-image, sb3-screen-preview as _sb3-screen-preview
 
 // =====================
 // EVENTS
@@ -826,9 +828,9 @@
 )
 
 // Visual list monitor (like Scratch list watcher)
-#let list(name: "List", items: (), width: 4cm) = block(
+#let list(name: "List", items: (), width: 4cm, height: auto) = block(
   "data.monitor_list",
-  args: (name: name, items: items, width: width),
+  args: (name: name, items: items, width: width, height: height),
   lang-code: "en",
 )
 
@@ -857,3 +859,125 @@
 
 // Parameter reporter for custom blocks is exported
 // (imported directly from scratch.typ and is already available)
+
+// =====================
+// TEXT PARSER & SB3 IMPORT (CONVENIENCE)
+// =====================
+
+#let parse-text(text) = _parse-scratch-text(text)
+
+#let render-text(text) = _render-scratch-text(text)
+
+#let sb3-scripts(
+  sb3-bytes,
+  target: auto,
+  script: auto,
+  script-number: auto,
+  sb3-plugin: auto,
+  show-headers: auto,
+  header-gap: 1.5mm,
+  script-gap: 3mm,
+) = _render-sb3-scripts(
+  sb3-bytes,
+  script-number: script-number,
+  target-script-number: script,
+  target: target,
+  sb3-plugin: sb3-plugin,
+  language: "en",
+  show-headers: show-headers,
+  header-gap: header-gap,
+  script-gap: script-gap,
+)
+
+#let sb3-lists(
+  sb3-bytes,
+  target: auto,
+  list: auto,
+  list-name: auto,
+  sb3-plugin: auto,
+  show-target-headers: auto,
+  target-gap: 2mm,
+  item-gap: 0.8mm,
+) = _render-sb3-lists(
+  sb3-bytes,
+  target: target,
+  target-list-name: list-name,
+  target-list-number: list,
+  sb3-plugin: sb3-plugin,
+  language: "en",
+  show-target-headers: show-target-headers,
+  target-gap: target-gap,
+  item-gap: item-gap,
+)
+
+#let sb3-variables(
+  sb3-bytes,
+  target: auto,
+  variable: auto,
+  variable-name: auto,
+  sb3-plugin: auto,
+  show-target-headers: auto,
+  target-gap: 2mm,
+  item-gap: 0.8mm,
+) = _render-sb3-variables(
+  sb3-bytes,
+  target: target,
+  target-variable-name: variable-name,
+  target-variable-number: variable,
+  sb3-plugin: sb3-plugin,
+  language: "en",
+  show-target-headers: show-target-headers,
+  target-gap: target-gap,
+  item-gap: item-gap,
+)
+
+#let sb3-images-catalog(
+  sb3-bytes,
+  target: auto,
+  sb3-plugin: auto,
+) = _sb3-image-assets-catalog(
+  sb3-bytes,
+  target: target,
+  sb3-plugin: sb3-plugin,
+)
+
+#let sb3-image(
+  sb3-bytes,
+  target: auto,
+  image: auto,
+  image-number: auto,
+  image-name: auto,
+  sb3-plugin: auto,
+  width: auto,
+  height: auto,
+) = _sb3-image(
+  sb3-bytes,
+  image-number: image-number,
+  target: target,
+  target-image-number: image,
+  image-name: image-name,
+  sb3-plugin: sb3-plugin,
+  width: width,
+  height: height,
+)
+
+#let sb3-screen-preview(
+  sb3-bytes,
+  width: 480,
+  height: 360,
+  unit: 3,
+  background: none,
+  show-border: true,
+  show-backdrop: true,
+  sb3-plugin: auto,
+) = _sb3-screen-preview(
+  sb3-bytes,
+  width: width,
+  height: height,
+  unit: unit,
+  background: background,
+  show-border: show-border,
+  show-backdrop: show-backdrop,
+  sb3-plugin: sb3-plugin,
+  language: "en",
+)

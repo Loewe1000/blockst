@@ -65,6 +65,52 @@
   has-digit
 }
 
+#let _is-hex-digit(ch) = ch in (
+  "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+  "a", "b", "c", "d", "e", "f",
+  "A", "B", "C", "D", "E", "F",
+)
+
+#let _is-hex-color-literal(value) = {
+  if type(value) != str {
+    return false
+  }
+
+  let text = value.trim()
+  if not text.starts-with("#") {
+    return false
+  }
+
+  let len = text.len()
+  if not (len == 4 or len == 5 or len == 7 or len == 9) {
+    return false
+  }
+
+  let i = 1
+  while i < len {
+    let ch = text.slice(i, i + 1)
+    if not _is-hex-digit(ch) {
+      return false
+    }
+    i += 1
+  }
+
+  true
+}
+
+#let _coerce-color(value) = {
+  if _is-hex-color-literal(value) {
+    return rgb(value.trim())
+  }
+
+  if type(value) == color {
+    return value
+  }
+
+  // Fallback avoids type errors for malformed color tokens in text input.
+  white
+}
+
 #let _custom-label-parts(label) = {
   let parts = ()
   let buffer = ""
@@ -171,8 +217,9 @@
 }
 
 // Helper: render a pill for a block argument slot
-#let make-pill(key, value, colors, shape: none, block-id: none) = {
-  let stroke-thickness = get-stroke-from-options(scratch-block-options.get())
+#let make-pill(key, value, colors, shape: none, block-id: none, options: auto) = {
+  let final-options = if options == auto { scratch-block-options.get() } else { options }
+  let stroke-thickness = get-stroke-from-options(final-options)
   
   // Dropdown-Felder (typischerweise Strings in Rechteck-Pills)
   let dropdown-keys = ("to", "scene", "costume", "backdrop", "effect", "sound", "key", "object", "property", "timeunit", "layer", "direction", "variable", "list", "clone", "option", "mode", "style", "element", "operator", "towards", "param")
@@ -190,19 +237,19 @@
   let is-message-dropdown = key == "message" and block-id in message-dropdown-blocks
 
   if (key in dropdown-keys or is-message-dropdown) and type(value) == str and not is-numeric-random-to {
-    pill-rect(value, fill: colors.primary, stroke: colors.tertiary + stroke-thickness, dropdown: true, inline: use-inline)
+    pill-rect(value, fill: colors.primary, stroke: colors.tertiary + stroke-thickness, dropdown: true, inline: use-inline, options: final-options)
   } else if key in ("color", "color1", "color2") {
-    pill-color("        ", fill: value)
+    pill-color("        ", fill: _coerce-color(value), options: final-options)
   } else if key in condition-keys and (value == none or value == []) {
     // Empty condition → dark placeholder with nested: true for smaller insets
-    condition(colorschema: colors, type: "condition", [], nested: true)
+    condition(colorschema: colors, type: "condition", [], nested: true, options: final-options)
   } else {
-    number-or-content(value, colors, compact: compact-inline, tall: tall-inline)
+    number-or-content(value, colors, compact: compact-inline, tall: tall-inline, options: final-options)
   }
 }
 
 // Hilfsfunktion: Ersetze Platzhalter in Templates - UNIVERSELLE VERSION
-#let fill-template(template, args, colors, shape: none, theme: "normal", block-id: none) = {
+#let fill-template(template, args, colors, shape: none, theme: "normal", block-id: none, options: auto) = {
   // Icon-Definitionen aus scratch.typ
   let flag-icon = box(baseline: 20%, image(icon-by-theme("green-flag", theme: theme), width: 1em, height: 1em))
   let arrow-right = box(baseline: 20%, image(icon-by-theme("rotate-right", theme: theme), width: 1.5em, height: 1.5em))
@@ -240,9 +287,40 @@
       break
     }
     
+    // Rest nach {
+    let after-open = before-split.slice(1).join("{")
+
+    // Finde }
+    let inside-split = after-open.split("}")
+    if inside-split.len() < 2 {
+      // Kein } gefunden - als Text behandeln
+      parts.push("{" + after-open)
+      break
+    }
+
+    // Platzhalter-Name
+    let placeholder = inside-split.at(0)
+    let remaining-after-placeholder = inside-split.slice(1).join("}")
+
+    // Klammern um Platzhalter sind in Parser-Templates oft nur Syntax-Markierung.
+    // Beispiel: "move ({steps}) steps" soll visuell ohne sichtbare Klammern rendern.
+    let has-leading-slot-paren = before-split.at(0).ends-with("(")
+    let has-trailing-slot-paren = remaining-after-placeholder.starts-with(")")
+    let strip-slot-parens = placeholder in args and has-leading-slot-paren and has-trailing-slot-paren
+    let remaining-next = if strip-slot-parens {
+      remaining-after-placeholder.slice(1)
+    } else {
+      remaining-after-placeholder
+    }
+    let placeholder-ends-template = not remaining-next.contains("{") and remaining-next.trim() == ""
+
     // Text vor {
     if before-split.at(0).len() > 0 {
-      let text = before-split.at(0)
+      let text = if strip-slot-parens {
+        before-split.at(0).slice(0, before-split.at(0).len() - 1)
+      } else {
+        before-split.at(0)
+      }
       // Erster Text-Teil - nur left Inset
       if shape in ("reporter", "boolean") and text.len() > 0 {
         if is-first-text {
@@ -260,20 +338,6 @@
       // so the first rendered part still gets the left reporter inset.
     }
     
-    // Rest nach {
-    let after-open = before-split.slice(1).join("{")
-    
-    // Finde }
-    let inside-split = after-open.split("}")
-    if inside-split.len() < 2 {
-      // Kein } gefunden - als Text behandeln
-      parts.push("{" + after-open)
-      break
-    }
-    
-    // Platzhalter-Name
-    let placeholder = inside-split.at(0)
-    
     // Ersetze bekannte Platzhalter
     let placeholder-content = none
     if placeholder == "flag" {
@@ -285,7 +349,7 @@
     } else if placeholder == "pen" {
       placeholder-content = pen-icon
     } else if placeholder in args {
-      placeholder-content = make-pill(placeholder, args.at(placeholder), colors, shape: shape, block-id: block-id)
+      placeholder-content = make-pill(placeholder, args.at(placeholder), colors, shape: shape, block-id: block-id, options: options)
     } else {
       // Unbekannter Platzhalter - als Text behalten
       placeholder-content = "{" + placeholder + "}"
@@ -293,7 +357,14 @@
 
     if placeholder-content != none {
       if shape in ("reporter", "boolean") and is-first-text {
-        parts.push(box(inset: (left: 2mm), placeholder-content))
+        let first-part = box(inset: (left: 2mm), placeholder-content)
+        if placeholder-ends-template {
+          parts.push(box(inset: (right: 2mm), first-part))
+        } else {
+          parts.push(first-part)
+        }
+      } else if shape in ("reporter", "boolean") and placeholder-ends-template {
+        parts.push(box(inset: (right: 2mm), placeholder-content))
       } else {
         parts.push(placeholder-content)
       }
@@ -301,7 +372,7 @@
     }
     
     // Weiter mit dem Rest
-    remaining = inside-split.slice(1).join("}")
+    remaining = remaining-next
   }
   
   // Append remaining text segment
@@ -345,12 +416,19 @@
 // Central block rendering function with localisation
 // NOTE: This function should only be used for simple template-based blocks.
 // Complex blocks (operators, reporters, c-blocks) use the original functions from mod.typ.
-#let render-block(id, args: (:), lang-code: str, body: [], else-body: none) = context {
+#let render-block(id, args: (:), lang-code: str, body: [], else-body: none, options: auto) = {
+  if options == auto {
+    context {
+      let resolved-options = scratch-block-options.get()
+      render-block(id, args: args, lang-code: lang-code, body: body, else-body: else-body, options: resolved-options)
+    }
+    return
+  }
+
   // Normalise language code
   let l = if lang-code == "auto" { "de" } else { lang-code }
   
   // Read options and colours
-  let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
   
@@ -390,35 +468,35 @@
   // Dedicated variable reporter: parser uses a synthetic template ("var {...}")
   // for unambiguous matching, but visual output should be just the reporter itself.
   if id == "data.variable" {
-    return variables-reporter(args.at("variable", default: ""))
+    return variables-reporter(args.at("variable", default: ""), options: options)
   }
   
   // Fill template with arguments
-  let content = fill-template(template, args, color, shape: shape, theme: options.at("theme", default: "normal"), block-id: id)
+  let content = fill-template(template, args, color, shape: shape, theme: options.at("theme", default: "normal"), block-id: id, options: options)
 
   // Special cases: Control blocks with special shapes.
   // Labels are sourced from the translation system so controls.typ stays language-neutral.
   if id == "control.if_else" or id == "control.if" {
-    let cond = if "condition" in args { args.condition } else { condition(colorschema: colors.operators, []) }
+    let cond = if "condition" in args { args.condition } else { condition(colorschema: colors.operators, [], options: options) }
     let tmpl-if   = get-template("control.if_label", l)
     let tmpl-then = get-template("control.then", l)
     let tmpl-else = get-template("control.else", l)
     let lbl = ("if-then": tmpl-if, then: tmpl-then, "else": tmpl-else)
-    return if-then-else(cond, then: body, else-body: if id == "control.if_else" { else-body } else { none }, labels: lbl)
+    return if-then-else(cond, then: body, else-body: if id == "control.if_else" { else-body } else { none }, labels: lbl, options: options)
   } else if id == "control.repeat" {
     let times = if "times" in args { args.times } else { 10 }
     let lbl = (repeat: get-template("control.repeat_label", l), times: get-template("control.times_label", l))
-    return repeat(count: times, body: body, labels: lbl)
+    return repeat(count: times, body: body, labels: lbl, options: options)
   } else if id == "control.forever" {
     let lbl = (forever: get-template("control.forever_label", l))
-    return repeat-forever(body, labels: lbl)
+    return repeat-forever(body, labels: lbl, options: options)
   } else if id == "control.repeat_until" {
-    let cond = if "condition" in args { args.condition } else { condition(colorschema: colors.operators, []) }
+    let cond = if "condition" in args { args.condition } else { condition(colorschema: colors.operators, [], options: options) }
     let lbl = ("repeat-until": get-template("control.repeat_until_label", l))
-    return repeat-until(cond, body: body, labels: lbl)
+    return repeat-until(cond, body: body, labels: lbl, options: options)
   } else if id == "control.start_as_clone" {
     let lbl = get-template("control.start_as_clone", l)
-    return when-i-start-as-clone(body, label: lbl)
+    return when-i-start-as-clone(body, label: lbl, options: options)
   }
   
   // Custom block definition without label function falls back to filled content.

@@ -1,5 +1,5 @@
 // Example – Scratch-run (turtle graphics)
-#import "@preview/blockst:0.2.0": blockst, scratch, scratch-run, set-scratch-run
+#import "../lib.typ": blockst, scratch, scratch-run, set-scratch-run
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 

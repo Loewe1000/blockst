@@ -43,6 +43,25 @@ struct ScriptsCatalog {
   scripts: Vec<ScriptCatalogItem>,
 }
 
+#[derive(Debug, Serialize, Clone)]
+struct ImageAssetCatalogItem {
+  number: usize,
+  local_number: usize,
+  target_name: String,
+  target_kind: String,
+  is_stage: bool,
+  asset_kind: String,
+  asset_name: String,
+  asset_id: String,
+  md5ext: String,
+  data_format: String,
+}
+
+#[derive(Debug, Serialize)]
+struct ImageAssetsCatalog {
+  images: Vec<ImageAssetCatalogItem>,
+}
+
 fn err_bytes(message: impl AsRef<str>) -> Vec<u8> {
   format!("ERROR: {}", message.as_ref()).into_bytes()
 }
@@ -98,6 +117,30 @@ fn as_text_token(value: &str) -> String {
     normalized
   } else {
     format!("[{normalized}]")
+  }
+}
+
+fn as_color_arg(value: &str) -> String {
+  let normalized = value.trim();
+  if normalized.starts_with('[') && normalized.ends_with(']') && normalized.len() >= 2 {
+    normalized[1..normalized.len() - 1].trim().to_string()
+  } else {
+    normalized.to_string()
+  }
+}
+
+fn normalize_clone_target(value: &str) -> String {
+  let normalized = value.trim();
+  let unwrapped = if normalized.starts_with('[') && normalized.ends_with(']') && normalized.len() >= 2 {
+    normalized[1..normalized.len() - 1].trim()
+  } else {
+    normalized
+  };
+
+  if unwrapped == "_myself_" {
+    "myself".to_string()
+  } else {
+    unwrapped.to_string()
   }
 }
 
@@ -394,6 +437,12 @@ fn render_expression_by_id(blocks: &Map<String, Value>, block_id: &str, seen: &m
       let object = get_field_value(block, "TOUCHINGOBJECTMENU", "mouse-pointer");
       format!("touching {} ?", as_text_token(&object))
     }
+    "sensing_touchingcolor" => {
+      let color = as_color_arg(&input_text("COLOR", seen));
+      format!("touching color {} ?", color)
+    }
+    "sensing_touchingobjectmenu" => get_field_value(block, "TOUCHINGOBJECTMENU", "mouse-pointer"),
+    "motion_glideto_menu" => get_field_value(block, "TO", "random position"),
     "sensing_keypressed" => {
       let key_input = input_text("KEY_OPTION", seen);
       let key = if key_input.is_empty() {
@@ -411,8 +460,11 @@ fn render_expression_by_id(blocks: &Map<String, Value>, block_id: &str, seen: &m
     "motion_yposition" => "y position".to_string(),
     "motion_direction" => "direction".to_string(),
     "looks_costume" => get_field_value(block, "COSTUME", "costume1"),
+    "looks_backdrops" => get_field_value(block, "BACKDROP", "backdrop1"),
     "music_menu_INSTRUMENT" => get_field_value(block, "INSTRUMENT", "1"),
-    "control_create_clone_of_menu" => get_field_value(block, "CLONE_OPTION", "_myself_"),
+    "control_create_clone_of_menu" => {
+      normalize_clone_target(&get_field_value(block, "CLONE_OPTION", "_myself_"))
+    }
     "sensing_answer" => "answer".to_string(),
     "sensing_timer" => "timer".to_string(),
     "sensing_loudness" => "loudness".to_string(),
@@ -429,10 +481,76 @@ fn render_expression_by_id(blocks: &Map<String, Value>, block_id: &str, seen: &m
       let variable = get_field_value(block, "VARIABLE", "variable");
       format!("var {}", as_text_token(&variable))
     }
+    "data_itemnumoflist" => {
+      let list = get_field_value(block, "LIST", "list");
+      let item = input_text("ITEM", seen);
+      format!("item # of {} in {}", as_text_token(&item), as_text_token(&list))
+    }
+    "data_listcontainsitem" => {
+      let list = get_field_value(block, "LIST", "list");
+      let item = input_text("ITEM", seen);
+      format!("{} contains {} ?", as_text_token(&list), as_text_token(&item))
+    }
+    "data_listcontents" => {
+      let list = get_field_value(block, "LIST", "list");
+      as_text_token(&list)
+    }
     "argument_reporter_string_number" => {
       let arg_name = get_field_value(block, "VALUE", "input");
       format!("var {}", as_text_token(&arg_name))
     }
+    "argument_reporter_boolean" => {
+      let arg_name = get_field_value(block, "VALUE", "condition");
+      format!("<{}>", sanitize_square_brackets(&arg_name))
+    }
+    "control_get_counter" => "counter".to_string(),
+    "looks_backdropnumbername" => {
+      let property = get_field_value(block, "NUMBER_NAME", "number");
+      format!("backdrop {}", as_text_token(&property))
+    }
+    "looks_costumenumbername" => {
+      let property = get_field_value(block, "NUMBER_NAME", "number");
+      format!("costume {}", as_text_token(&property))
+    }
+    "looks_size" => "size".to_string(),
+    "motion_xscroll" => "x scroll".to_string(),
+    "motion_yscroll" => "y scroll".to_string(),
+    "sensing_coloristouchingcolor" => format!(
+      "color {} is touching {} ?",
+      as_color_arg(&input_text("COLOR", seen)),
+      as_color_arg(&input_text("COLOR2", seen))
+    ),
+    "sensing_current" => {
+      let current = get_field_value(block, "CURRENTMENU", "year");
+      format!("current {}", as_text_token(&current))
+    }
+    "sensing_dayssince2000" => "days since 2000".to_string(),
+    "sensing_distanceto" => {
+      let object_input = input_text("DISTANCETOMENU", seen);
+      let object = if object_input.is_empty() {
+        get_field_value(block, "DISTANCETOMENU", "mouse-pointer")
+      } else {
+        object_input
+      };
+      format!("distance to {}", as_text_token(&object))
+    }
+    "sensing_loud" => "loudness > (10)".to_string(),
+    "sensing_of" => {
+      let property = get_field_value(block, "PROPERTY", "x position");
+      let object_input = input_text("OBJECT", seen);
+      let object = if object_input.is_empty() {
+        get_field_value(block, "OBJECT", "Stage")
+      } else {
+        object_input
+      };
+      format!("{} of {}", as_text_token(&property), as_text_token(&object))
+    }
+    "sensing_userid" => "user id".to_string(),
+    "sensing_username" => "username".to_string(),
+    "sound_beats_menu" => get_field_value(block, "BEATS", "0.25"),
+    "sound_effects_menu" => get_field_value(block, "EFFECT", "pitch"),
+    "sound_sounds_menu" => get_field_value(block, "SOUND_MENU", "pop"),
+    "sound_volume" => "volume".to_string(),
     "note" => get_field_value(block, "NOTE", "60"),
     other => sanitize_square_brackets(&format!("unsupported:{other}")),
   };
@@ -510,6 +628,23 @@ fn render_statement(
       let message = get_field_value(block, "BROADCAST_OPTION", "message1");
       vec![format!("{indent}when I receive {}", as_text_token(&message))]
     }
+    "event_whengreaterthan" => {
+      let menu = get_field_value(block, "WHENGREATERTHANMENU", "LOUDNESS").to_ascii_lowercase();
+      let element = if menu == "timer" { "timer" } else { "loudness" };
+      vec![format!(
+        "{indent}when {} > {}",
+        as_text_token(element),
+        as_number_token(&input_text("VALUE", &mut expr_seen))
+      )]
+    }
+    "event_whenstageclicked" => vec![format!("{indent}// legacy opcode: event_whenstageclicked")],
+    "event_whentouchingobject" => {
+      let object = get_field_value(block, "TOUCHINGOBJECTMENU", "mouse-pointer");
+      vec![format!(
+        "{indent}// legacy opcode: event_whentouchingobject ({})",
+        sanitize_square_brackets(&object)
+      )]
+    }
     "event_broadcast" => {
       let input = input_text("BROADCAST_INPUT", &mut expr_seen);
       let message = if input.is_empty() {
@@ -545,10 +680,47 @@ fn render_statement(
       as_number_token(&input_text("X", &mut expr_seen)),
       as_number_token(&input_text("Y", &mut expr_seen))
     )],
+    "motion_goto" => {
+      let to_input = input_text("TO", &mut expr_seen);
+      let to = if to_input.is_empty() {
+        get_field_value(block, "TO", "random position")
+      } else {
+        to_input
+      };
+      vec![format!("{indent}go to {}", as_text_token(&to))]
+    }
+    "motion_glideto" => {
+      let to_input = input_text("TO", &mut expr_seen);
+      let to = if to_input.is_empty() {
+        get_field_value(block, "TO", "random position")
+      } else {
+        to_input
+      };
+      vec![format!(
+        "{indent}glide {} secs to {}",
+        as_number_token(&input_text("SECS", &mut expr_seen)),
+        as_text_token(&to)
+      )]
+    }
+    "motion_glidesecstoxy" => vec![format!(
+      "{indent}glide {} secs to x: {} y: {}",
+      as_number_token(&input_text("SECS", &mut expr_seen)),
+      as_number_token(&input_text("X", &mut expr_seen)),
+      as_number_token(&input_text("Y", &mut expr_seen))
+    )],
     "motion_pointindirection" => vec![format!(
       "{indent}point in direction {}",
       as_number_token(&input_text("DIRECTION", &mut expr_seen))
     )],
+    "motion_pointtowards" => {
+      let towards_input = input_text("TOWARDS", &mut expr_seen);
+      let towards = if towards_input.is_empty() {
+        get_field_value(block, "TOWARDS", "mouse-pointer")
+      } else {
+        towards_input
+      };
+      vec![format!("{indent}point towards {}", as_text_token(&towards))]
+    }
     "motion_changexby" => vec![format!(
       "{indent}change x by {}",
       as_number_token(&input_text("DX", &mut expr_seen))
@@ -564,6 +736,19 @@ fn render_statement(
     "motion_sety" => vec![format!(
       "{indent}set y to {}",
       as_number_token(&input_text("Y", &mut expr_seen))
+    )],
+    "motion_setrotationstyle" => {
+      let style = get_field_value(block, "STYLE", "all around");
+      vec![format!("{indent}set rotation style {}", as_text_token(&style))]
+    }
+    "motion_align_scene" => vec![format!("{indent}// legacy opcode: motion_align_scene")],
+    "motion_scroll_right" => vec![format!(
+      "{indent}// legacy opcode: motion_scroll_right {}",
+      as_number_token(&input_text("DISTANCE", &mut expr_seen))
+    )],
+    "motion_scroll_up" => vec![format!(
+      "{indent}// legacy opcode: motion_scroll_up {}",
+      as_number_token(&input_text("DISTANCE", &mut expr_seen))
     )],
     "motion_ifonedgebounce" => vec![format!("{indent}if on edge, bounce")],
     "looks_say" => vec![format!(
@@ -603,6 +788,18 @@ fn render_statement(
       };
       vec![format!("{indent}switch backdrop to {}", as_text_token(&backdrop))]
     }
+    "looks_switchbackdroptoandwait" => {
+      let input = input_text("BACKDROP", &mut expr_seen);
+      let backdrop = if input.is_empty() {
+        get_field_value(block, "BACKDROP", "backdrop1")
+      } else {
+        input
+      };
+      vec![format!(
+        "{indent}switch backdrop to {} and wait",
+        as_text_token(&backdrop)
+      )]
+    }
     "looks_nextbackdrop" => vec![format!("{indent}next backdrop")],
     "looks_changesizeby" => vec![format!(
       "{indent}change size by {}",
@@ -612,6 +809,37 @@ fn render_statement(
       "{indent}set size to {} %",
       as_number_token(&input_text("SIZE", &mut expr_seen))
     )],
+    "looks_changeeffectby" => {
+      let effect = get_field_value(block, "EFFECT", "color").to_ascii_lowercase();
+      vec![format!(
+        "{indent}change {} effect by {}",
+        as_text_token(&effect),
+        as_number_token(&input_text("CHANGE", &mut expr_seen))
+      )]
+    }
+    "looks_seteffectto" => {
+      let effect = get_field_value(block, "EFFECT", "color").to_ascii_lowercase();
+      vec![format!(
+        "{indent}set {} effect to {}",
+        as_text_token(&effect),
+        as_number_token(&input_text("VALUE", &mut expr_seen))
+      )]
+    }
+    "looks_gotofrontback" => {
+      let layer = get_field_value(block, "FRONT_BACK", "front").to_ascii_lowercase();
+      vec![format!("{indent}go to {} layer", as_text_token(&layer))]
+    }
+    "looks_goforwardbackwardlayers" => {
+      let direction = get_field_value(block, "FORWARD_BACKWARD", "forward").to_ascii_lowercase();
+      vec![format!(
+        "{indent}go {} {} layers",
+        as_text_token(&direction),
+        as_number_token(&input_text("NUM", &mut expr_seen))
+      )]
+    }
+    "looks_changestretchby" => vec![format!("{indent}// legacy opcode: looks_changestretchby")],
+    "looks_setstretchto" => vec![format!("{indent}// legacy opcode: looks_setstretchto")],
+    "looks_hideallsprites" => vec![format!("{indent}// legacy opcode: looks_hideallsprites")],
     "looks_cleargraphiceffects" => vec![format!("{indent}clear graphic effects")],
     "looks_show" => vec![format!("{indent}show")],
     "looks_hide" => vec![format!("{indent}hide")],
@@ -654,6 +882,31 @@ fn render_statement(
       as_number_token(&input_text("INSTRUMENT", &mut expr_seen))
     )],
     "sound_stopallsounds" => vec![format!("{indent}stop all sounds")],
+    "sound_changeeffectby" => {
+      let effect = get_field_value(block, "EFFECT", "pitch").to_ascii_lowercase();
+      vec![format!(
+        "{indent}change {} effect by {}",
+        as_text_token(&effect),
+        as_number_token(&input_text("VALUE", &mut expr_seen))
+      )]
+    }
+    "sound_seteffectto" => {
+      let effect = get_field_value(block, "EFFECT", "pitch").to_ascii_lowercase();
+      vec![format!(
+        "{indent}set {} effect to {}",
+        as_text_token(&effect),
+        as_number_token(&input_text("VALUE", &mut expr_seen))
+      )]
+    }
+    "sound_cleareffects" => vec![format!("{indent}clear sound effects")],
+    "sound_changevolumeby" => vec![format!(
+      "{indent}change volume by {}",
+      as_number_token(&input_text("VOLUME", &mut expr_seen))
+    )],
+    "sound_setvolumeto" => vec![format!(
+      "{indent}set volume to {} %",
+      as_number_token(&input_text("VOLUME", &mut expr_seen))
+    )],
     "sensing_askandwait" => {
       let question = input_text("QUESTION", &mut expr_seen);
       let final_question = if question.is_empty() {
@@ -663,6 +916,11 @@ fn render_statement(
       };
       vec![format!("{indent}ask {} and wait", as_text_token(&final_question))]
     }
+    "sensing_setdragmode" => {
+      let mode = get_field_value(block, "DRAG_MODE", "draggable").to_ascii_lowercase();
+      vec![format!("{indent}set drag mode {}", as_text_token(&mode))]
+    }
+    "sensing_resettimer" => vec![format!("{indent}reset timer")],
     "data_setvariableto" => {
       let variable = get_field_value(block, "VARIABLE", "variable");
       let value = input_text("VALUE", &mut expr_seen);
@@ -685,6 +943,14 @@ fn render_statement(
         as_text_token(&variable),
         as_number_token(&value)
       )]
+    }
+    "data_showvariable" => {
+      let variable = get_field_value(block, "VARIABLE", "variable");
+      vec![format!("{indent}show variable {}", as_text_token(&variable))]
+    }
+    "data_hidevariable" => {
+      let variable = get_field_value(block, "VARIABLE", "variable");
+      vec![format!("{indent}hide variable {}", as_text_token(&variable))]
     }
     "data_addtolist" => {
       let list = get_field_value(block, "LIST", "list");
@@ -813,6 +1079,32 @@ fn render_statement(
       lines.push(format!("{indent}end"));
       lines
     }
+    "control_while" => {
+      let mut lines = vec![format!(
+        "{indent}// legacy opcode: control_while {}",
+        as_condition_token(&input_text("CONDITION", &mut expr_seen))
+      )];
+      if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
+        lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
+      }
+      lines
+    }
+    "control_for_each" => {
+      let mut lines = vec![format!("{indent}// legacy opcode: control_for_each")];
+      if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
+        lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
+      }
+      lines
+    }
+    "control_all_at_once" => {
+      let mut lines = vec![format!("{indent}// legacy opcode: control_all_at_once")];
+      if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
+        lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
+      }
+      lines
+    }
+    "control_incr_counter" => vec![format!("{indent}// legacy opcode: control_incr_counter")],
+    "control_clear_counter" => vec![format!("{indent}// legacy opcode: control_clear_counter")],
     "control_stop" => {
       let option = get_field_value(block, "STOP_OPTION", "all");
       vec![format!("{indent}stop {}", as_text_token(&option))]
@@ -821,9 +1113,9 @@ fn render_statement(
     "control_create_clone_of" => {
       let clone_input = input_text("CLONE_OPTION", &mut expr_seen);
       let clone = if clone_input.is_empty() {
-        get_field_value(block, "CLONE_OPTION", "_myself_")
+        normalize_clone_target(&get_field_value(block, "CLONE_OPTION", "_myself_"))
       } else {
-        clone_input
+        normalize_clone_target(&clone_input)
       };
       vec![format!("{indent}create clone of {}", as_text_token(&clone))]
     }
@@ -894,6 +1186,7 @@ fn format_script_header(meta: &ScriptCatalogItem) -> String {
 
 fn is_diagnostic_line(line: &str) -> bool {
   line.starts_with("// unsupported opcode:")
+    || line.starts_with("// legacy opcode:")
     || line.starts_with("// missing block")
     || line.starts_with("// cycle detected at block")
 }
@@ -903,6 +1196,110 @@ fn is_effectively_empty_script(lines: &[String]) -> bool {
     let trimmed = line.trim();
     !trimmed.is_empty() && !is_diagnostic_line(trimmed)
   })
+}
+
+fn is_supported_image_format(data_format: &str) -> bool {
+  matches!(data_format, "png" | "jpg" | "jpeg" | "svg")
+}
+
+fn collect_image_assets(root: &Value) -> Result<Vec<ImageAssetCatalogItem>, String> {
+  let targets = root
+    .get("targets")
+    .and_then(Value::as_array)
+    .ok_or_else(|| "project.json has no targets array.".to_string())?;
+
+  let mut assets_out: Vec<ImageAssetCatalogItem> = Vec::new();
+  let mut global_number: usize = 0;
+
+  for target in targets {
+    let Some(target_obj) = target.as_object() else {
+      continue;
+    };
+
+    let target_name = target_obj
+      .get("name")
+      .and_then(Value::as_str)
+      .unwrap_or("Unnamed Target")
+      .to_string();
+
+    let is_stage = target_obj
+      .get("isStage")
+      .and_then(Value::as_bool)
+      .unwrap_or(false);
+
+    let Some(costumes) = target_obj.get("costumes").and_then(Value::as_array) else {
+      continue;
+    };
+
+    let mut local_number: usize = 0;
+
+    for costume in costumes {
+      let Some(costume_obj) = costume.as_object() else {
+        continue;
+      };
+
+      let data_format = costume_obj
+        .get("dataFormat")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+
+      if !is_supported_image_format(&data_format) {
+        continue;
+      }
+
+      let asset_id = costume_obj
+        .get("assetId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .trim()
+        .to_string();
+
+      let mut md5ext = costume_obj
+        .get("md5ext")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .trim()
+        .to_string();
+
+      if md5ext.is_empty() && !asset_id.is_empty() {
+        md5ext = format!("{asset_id}.{data_format}");
+      }
+
+      if md5ext.is_empty() {
+        continue;
+      }
+
+      local_number += 1;
+      global_number += 1;
+
+      let asset_name = costume_obj
+        .get("name")
+        .and_then(Value::as_str)
+        .unwrap_or("Unnamed Asset")
+        .to_string();
+
+      assets_out.push(ImageAssetCatalogItem {
+        number: global_number,
+        local_number,
+        target_name: target_name.clone(),
+        target_kind: target_kind_label(is_stage).to_string(),
+        is_stage,
+        asset_kind: if is_stage {
+          "backdrop".to_string()
+        } else {
+          "costume".to_string()
+        },
+        asset_name,
+        asset_id,
+        md5ext,
+        data_format,
+      });
+    }
+  }
+
+  Ok(assets_out)
 }
 
 fn collect_numbered_scripts(root: &Value) -> Result<Vec<NumberedScript>, String> {
@@ -961,23 +1358,38 @@ fn collect_numbered_scripts(root: &Value) -> Result<Vec<NumberedScript>, String>
   Ok(scripts_out)
 }
 
-fn parse_script_number(script_number_bytes: &[u8]) -> Result<usize, String> {
-  let raw = std::str::from_utf8(script_number_bytes)
-    .map_err(|err| format!("script number argument is not valid UTF-8: {err}"))?;
+fn parse_positive_number_arg(raw_bytes: &[u8], label: &str) -> Result<usize, String> {
+  let raw = std::str::from_utf8(raw_bytes)
+    .map_err(|err| format!("{label} argument is not valid UTF-8: {err}"))?;
   let trimmed = raw.trim();
   if trimmed.is_empty() {
-    return Err("script number argument is empty.".to_string());
+    return Err(format!("{label} argument is empty."));
   }
 
   let parsed: usize = trimmed
     .parse()
-    .map_err(|_| format!("script number '{trimmed}' is not a valid positive integer."))?;
+    .map_err(|_| format!("{label} '{trimmed}' is not a valid positive integer."))?;
 
   if parsed == 0 {
-    return Err("script number must be >= 1.".to_string());
+    return Err(format!("{label} must be >= 1."));
   }
 
   Ok(parsed)
+}
+
+fn parse_non_empty_utf8_arg(raw_bytes: &[u8], label: &str) -> Result<String, String> {
+  let raw = std::str::from_utf8(raw_bytes)
+    .map_err(|err| format!("{label} argument is not valid UTF-8: {err}"))?;
+  let trimmed = raw.trim();
+  if trimmed.is_empty() {
+    return Err(format!("{label} argument is empty."));
+  }
+
+  Ok(trimmed.to_string())
+}
+
+fn parse_script_number(script_number_bytes: &[u8]) -> Result<usize, String> {
+  parse_positive_number_arg(script_number_bytes, "script number")
 }
 
 fn extract_project_json_raw(sb3_bytes: &[u8]) -> Result<String, String> {
@@ -1002,6 +1414,163 @@ fn extract_project_json_raw(sb3_bytes: &[u8]) -> Result<String, String> {
   }
 
   Err("project.json not found inside sb3 archive.".to_string())
+}
+
+fn extract_zip_file_bytes_raw(sb3_bytes: &[u8], filename: &str) -> Result<Vec<u8>, String> {
+  let reader = Cursor::new(sb3_bytes);
+  let mut archive =
+    ZipArchive::new(reader).map_err(|err| format!("Could not open sb3 (zip): {err}"))?;
+
+  let mut out: Vec<u8> = Vec::new();
+
+  if let Ok(mut file) = archive.by_name(filename) {
+    file
+      .read_to_end(&mut out)
+      .map_err(|err| format!("Failed to read '{filename}' from sb3 archive: {err}"))?;
+    return Ok(out);
+  }
+
+  let upper = filename.to_ascii_uppercase();
+  if upper != filename {
+    if let Ok(mut file) = archive.by_name(&upper) {
+      file
+        .read_to_end(&mut out)
+        .map_err(|err| format!("Failed to read '{filename}' from sb3 archive: {err}"))?;
+      return Ok(out);
+    }
+  }
+
+  Err(format!("file '{filename}' not found inside sb3 archive."))
+}
+
+fn find_attr_span(tag: &str, attr: &str) -> Option<(usize, usize)> {
+  let pattern = format!("{attr}=\"");
+  let start = tag.find(&pattern)?;
+  let value_start = start + pattern.len();
+  let end_rel = tag[value_start..].find('"')?;
+  Some((value_start, value_start + end_rel))
+}
+
+fn get_attr_value(tag: &str, attr: &str) -> Option<String> {
+  let (start, end) = find_attr_span(tag, attr)?;
+  Some(tag[start..end].to_string())
+}
+
+fn set_or_insert_attr(tag: &mut String, attr: &str, value: &str) {
+  if let Some((start, end)) = find_attr_span(tag, attr) {
+    tag.replace_range(start..end, value);
+    return;
+  }
+
+  if let Some(pos) = tag.rfind('>') {
+    let insertion = format!(" {attr}=\"{value}\"");
+    tag.insert_str(pos, &insertion);
+  }
+}
+
+fn parse_svg_length(raw: &str) -> Option<f64> {
+  let trimmed = raw.trim();
+  if trimmed.is_empty() {
+    return None;
+  }
+
+  let without_px = trimmed.strip_suffix("px").unwrap_or(trimmed).trim();
+  without_px.parse::<f64>().ok()
+}
+
+fn parse_viewbox(raw: &str) -> Option<[f64; 4]> {
+  let normalized = raw.replace(',', " ");
+  let values: Vec<f64> = normalized
+    .split_whitespace()
+    .filter_map(|part| part.parse::<f64>().ok())
+    .collect();
+
+  if values.len() == 4 {
+    Some([values[0], values[1], values[2], values[3]])
+  } else {
+    None
+  }
+}
+
+fn format_svg_number(value: f64) -> String {
+  if (value - value.round()).abs() < 1e-9 {
+    return format!("{:.0}", value.round());
+  }
+
+  let mut out = format!("{value:.6}");
+  while out.contains('.') && out.ends_with('0') {
+    out.pop();
+  }
+  if out.ends_with('.') {
+    out.pop();
+  }
+  out
+}
+
+fn normalize_svg_for_typst(svg_text: &str) -> String {
+  let Some(svg_start) = svg_text.find("<svg") else {
+    return svg_text.to_string();
+  };
+  let Some(svg_end_rel) = svg_text[svg_start..].find('>') else {
+    return svg_text.to_string();
+  };
+
+  let svg_end = svg_start + svg_end_rel;
+  let mut tag = svg_text[svg_start..=svg_end].to_string();
+
+  let mut width = get_attr_value(&tag, "width").and_then(|raw| parse_svg_length(&raw));
+  let mut height = get_attr_value(&tag, "height").and_then(|raw| parse_svg_length(&raw));
+
+  if width.unwrap_or(0.0) <= 0.0 {
+    width = Some(1.0);
+  }
+  if height.unwrap_or(0.0) <= 0.0 {
+    height = Some(1.0);
+  }
+
+  let mut viewbox = get_attr_value(&tag, "viewBox").and_then(|raw| parse_viewbox(&raw));
+  if let Some(parsed) = viewbox {
+    if parsed[2] <= 0.0 || parsed[3] <= 0.0 {
+      viewbox = None;
+    }
+  }
+
+  let width_val = width.unwrap_or(1.0);
+  let height_val = height.unwrap_or(1.0);
+
+  if viewbox.is_none() {
+    viewbox = Some([0.0, 0.0, width_val, height_val]);
+  }
+
+  let view = viewbox.unwrap_or([0.0, 0.0, 1.0, 1.0]);
+
+  set_or_insert_attr(&mut tag, "width", &format_svg_number(width_val));
+  set_or_insert_attr(&mut tag, "height", &format_svg_number(height_val));
+  set_or_insert_attr(
+    &mut tag,
+    "viewBox",
+    &format!(
+      "{} {} {} {}",
+      format_svg_number(view[0]),
+      format_svg_number(view[1]),
+      format_svg_number(view[2]),
+      format_svg_number(view[3])
+    ),
+  );
+
+  let mut out = String::new();
+  out.push_str(&svg_text[..svg_start]);
+  out.push_str(&tag);
+  out.push_str(&svg_text[svg_end + 1..]);
+  out
+}
+
+fn normalize_svg_bytes_for_typst(bytes: Vec<u8>) -> Vec<u8> {
+  let Ok(text) = String::from_utf8(bytes.clone()) else {
+    return bytes;
+  };
+
+  normalize_svg_for_typst(&text).into_bytes()
 }
 
 fn extract_scripts_json_raw(project_json: &str) -> Result<String, String> {
@@ -1109,6 +1678,53 @@ fn sb3_scripts_catalog_json_raw(sb3_bytes: &[u8]) -> Result<String, String> {
   serde_json::to_string(&catalog).map_err(|err| format!("Failed to serialize scripts catalog: {err}"))
 }
 
+fn sb3_image_assets_catalog_json_raw(sb3_bytes: &[u8]) -> Result<String, String> {
+  let project_json = extract_project_json_raw(sb3_bytes)?;
+  let root: Value =
+    serde_json::from_str(&project_json).map_err(|err| format!("Invalid project.json content: {err}"))?;
+
+  let assets = collect_image_assets(&root)?;
+  let catalog = ImageAssetsCatalog { images: assets };
+
+  serde_json::to_string(&catalog).map_err(|err| format!("Failed to serialize image assets catalog: {err}"))
+}
+
+fn sb3_image_bytes_by_number_raw(sb3_bytes: &[u8], image_number: usize) -> Result<Vec<u8>, String> {
+  let project_json = extract_project_json_raw(sb3_bytes)?;
+  let root: Value =
+    serde_json::from_str(&project_json).map_err(|err| format!("Invalid project.json content: {err}"))?;
+
+  let assets = collect_image_assets(&root)?;
+  if assets.is_empty() {
+    return Err("No supported image assets (png/jpg/jpeg/svg) found in this sb3.".to_string());
+  }
+
+  let Some(asset) = assets.iter().find(|item| item.number == image_number) else {
+    return Err(format!(
+      "image number {} does not exist (available range: 1..={}).",
+      image_number,
+      assets.len()
+    ));
+  };
+
+  let bytes = extract_zip_file_bytes_raw(sb3_bytes, &asset.md5ext)?;
+
+  if asset.data_format == "svg" {
+    Ok(normalize_svg_bytes_for_typst(bytes))
+  } else {
+    Ok(bytes)
+  }
+}
+
+fn sb3_image_bytes_by_md5ext_raw(sb3_bytes: &[u8], md5ext: &str) -> Result<Vec<u8>, String> {
+  let bytes = extract_zip_file_bytes_raw(sb3_bytes, md5ext)?;
+  if md5ext.to_ascii_lowercase().ends_with(".svg") {
+    Ok(normalize_svg_bytes_for_typst(bytes))
+  } else {
+    Ok(bytes)
+  }
+}
+
 #[cfg_attr(target_arch = "wasm32", wasm_func)]
 pub fn extract_project_json(sb3_bytes: &[u8]) -> Vec<u8> {
   match extract_project_json_raw(sb3_bytes) {
@@ -1155,6 +1771,40 @@ pub fn sb3_to_scratch_text_by_number(sb3_bytes: &[u8], script_number_bytes: &[u8
 pub fn sb3_scripts_catalog_json(sb3_bytes: &[u8]) -> Vec<u8> {
   match sb3_scripts_catalog_json_raw(sb3_bytes) {
     Ok(text) => text.into_bytes(),
+    Err(err) => err_bytes(err),
+  }
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
+pub fn sb3_image_assets_catalog_json(sb3_bytes: &[u8]) -> Vec<u8> {
+  match sb3_image_assets_catalog_json_raw(sb3_bytes) {
+    Ok(text) => text.into_bytes(),
+    Err(err) => err_bytes(err),
+  }
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
+pub fn sb3_image_bytes_by_number(sb3_bytes: &[u8], image_number_bytes: &[u8]) -> Vec<u8> {
+  let image_number = match parse_positive_number_arg(image_number_bytes, "image number") {
+    Ok(value) => value,
+    Err(err) => return err_bytes(err),
+  };
+
+  match sb3_image_bytes_by_number_raw(sb3_bytes, image_number) {
+    Ok(bytes) => bytes,
+    Err(err) => err_bytes(err),
+  }
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_func)]
+pub fn sb3_image_bytes_by_md5ext(sb3_bytes: &[u8], md5ext_bytes: &[u8]) -> Vec<u8> {
+  let md5ext = match parse_non_empty_utf8_arg(md5ext_bytes, "md5ext") {
+    Ok(value) => value,
+    Err(err) => return err_bytes(err),
+  };
+
+  match sb3_image_bytes_by_md5ext_raw(sb3_bytes, &md5ext) {
+    Ok(bytes) => bytes,
     Err(err) => err_bytes(err),
   }
 }

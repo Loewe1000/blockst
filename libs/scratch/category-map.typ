@@ -15,4 +15,8 @@
   operator: "operators",
   data:     "variables",  // Default colour for data group; data list entries override to "lists"
   custom:   "custom",
+  picoboard:"sensing",
+  wedo:     "control",
+  wedo2:    "control",
+  grey:     "control",
 )

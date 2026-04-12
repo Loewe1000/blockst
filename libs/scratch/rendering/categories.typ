@@ -1,11 +1,11 @@
 // rendering/categories.typ — Category wrapper blocks, event blocks, reporters,
 //                              custom blocks, variable/list monitors
 
-#import "colors.typ": scratch-block-options, get-colors-from-options, get-stroke-from-options
+#import "colors.typ": get-colors-from-options, get-stroke-from-options, scratch-block-options
 #import "icons.typ": icons
-#import "geometry.typ": block-height, block-offset-y, corner-radius, content-inset, notch-spacing, block-path
-#import "pills.typ": number-or-content, pill-reporter, pill-round, pill-min-height
-#import "blocks.typ": scratch-block, condition
+#import "geometry.typ": block-height, block-offset-y, block-path, content-inset, corner-radius, notch-spacing
+#import "pills.typ": number-or-content, pill-min-height, pill-reporter, pill-round
+#import "blocks.typ": condition, scratch-block
 
 // ------------------------------------------------
 // Category wrappers (statement blocks)
@@ -13,7 +13,7 @@
 
 // Generic base: one function drives all plain category statement blocks.
 // `color-key` must match a field name in the colors dictionary (e.g. "motion").
-#let category-statement(color-key, body, bottom-notch: true) = context {
+#let category-statement(color-key, body, bottom-notch: true) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   scratch-block(
@@ -26,17 +26,17 @@
 }
 
 // Thin aliases — preserved for call-site compatibility
-#let motion(body)              = category-statement("motion",    body)
-#let looks(body)               = category-statement("looks",     body)
-#let sound(body)               = category-statement("sound",     body)
-#let sensing(body)             = category-statement("sensing",   body)
+#let motion(body) = category-statement("motion", body)
+#let looks(body) = category-statement("looks", body)
+#let sound(body) = category-statement("sound", body)
+#let sensing(body) = category-statement("sensing", body)
 #let control(body, bottom-notch: true) = category-statement("control", body, bottom-notch: bottom-notch)
-#let variables(body)           = category-statement("variables", body)
-#let lists(body)               = category-statement("lists",     body)
-#let pen(body)                 = category-statement("pen",       body)
+#let variables(body) = category-statement("variables", body)
+#let lists(body) = category-statement("lists", body)
+#let pen(body) = category-statement("pen", body)
 
 // custom() has its own dark-mode logic — kept separate
-#let custom(body, dark: false) = context {
+#let custom(body, dark: false) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   scratch-block(
@@ -56,26 +56,31 @@
 // ------------------------------------------------
 // Event blocks
 // ------------------------------------------------
-#let event(body, children) = context {
+#let event(body, children) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   scratch-block(colorschema: colors.events, type: "event", body, children)
 }
 
 // When green flag clicked
-#let event-green-flag(children) = context {
+#let event-green-flag(children) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   scratch-block(
     colorschema: colors.events,
     type: "event",
-    grid(columns: 3, gutter: 0.5em, align: horizon, [Wenn], box(image(icon-by-theme("green-flag", theme: options.at("theme", default: "normal")))), [angeklickt wird]),
+    grid(
+      columns: 3,
+      gutter: 0.5em,
+      align: horizon,
+      [Wenn], box(image(icon-by-theme("green-flag", theme: options.at("theme", default: "normal")))), [angeklickt wird],
+    ),
     children,
   )
 }
 
 // When key pressed
-#let event-key-pressed(key, children) = context {
+#let event-key-pressed(key, children) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
@@ -88,7 +93,7 @@
 }
 
 // When sprite clicked
-#let event-sprite-clicked(children) = context {
+#let event-sprite-clicked(children) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   scratch-block(
@@ -100,7 +105,7 @@
 }
 
 // When backdrop switches to
-#let event-backdrop-switches-to(name, children) = context {
+#let event-backdrop-switches-to(name, children) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
@@ -113,20 +118,23 @@
 }
 
 // When greater than threshold
-#let event-greater-than(element, value, children) = context {
+#let event-greater-than(element, value, children) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
   scratch-block(
     colorschema: colors.events,
     type: "event",
-    stack(dir: ltr, spacing: 1.5mm, "Wenn", pill-rect(element, fill: colors.events.primary, stroke: colors.events.tertiary + stroke-thickness, dropdown: true), ">", number-or-content(value, colors.events)),
+    stack(dir: ltr, spacing: 1.5mm, "Wenn", pill-rect(element, fill: colors.events.primary, stroke: colors.events.tertiary + stroke-thickness, dropdown: true), ">", number-or-content(
+      value,
+      colors.events,
+    )),
     children,
   )
 }
 
 // When I receive message
-#let event-message-received(message, children) = context {
+#let event-message-received(message, children) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
@@ -139,14 +147,14 @@
 }
 
 // Event statement block (no hat)
-#let event-statement(body) = context {
+#let event-statement(body) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   scratch-block(colorschema: colors.events, type: "statement", dy: block-offset-y, body)
 }
 
 // Broadcast message
-#let broadcast-message(message, wait: false) = context {
+#let broadcast-message(message, wait: false) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
@@ -158,14 +166,14 @@
 }
 
 // When I start as a clone (event shape with control colors)
-#let when-i-start-as-clone(children, label: "when I start as a clone") = context {
+#let when-i-start-as-clone(children, label: "when I start as a clone") = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   scratch-block(colorschema: colors.control, type: "event", [#label], children)
 }
 
 // Create clone of
-#let create-clone-of(element: "mir selbst") = context {
+#let create-clone-of(element: "mir selbst") = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
@@ -180,7 +188,7 @@
 // Reporter blocks (value blocks)
 // ------------------------------------------------
 // Generic reporter function for all categories
-#let reporter(colorschema: auto, body, dropdown-content: none, body-min-height: pill-min-height, enforce-min-height: false) = context {
+#let reporter(colorschema: auto, body, dropdown-content: none, body-min-height: pill-min-height, enforce-min-height: true) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
   let stroke-thickness = get-stroke-from-options(options)
@@ -193,14 +201,19 @@
     stroke: final-colorschema.tertiary + stroke-thickness,
     text-color: colors.text-color,
     if dropdown-content != none {
-      pill-round(fill: none, stroke: none, text-color: colors.text-color, inset: (x: 0mm, y: 0.5mm), min-height: resolved-body-min-height, stack(dir: ltr, spacing: pill-spacing, box(inset: (left: pill-inset-x), body), pill-reporter(
-        dropdown-content,
-        fill: final-colorschema.secondary,
-        stroke: final-colorschema.tertiary + stroke-thickness,
-        text-color: colors.text-color,
-        dropdown: true,
-        inline: true,
-      )))
+      pill-round(fill: none, stroke: none, text-color: colors.text-color, inset: (x: 0mm, y: 0.5mm), min-height: resolved-body-min-height, stack(
+        dir: ltr,
+        spacing: pill-spacing,
+        box(inset: (left: pill-inset-x), body),
+        pill-reporter(
+          dropdown-content,
+          fill: final-colorschema.secondary,
+          stroke: final-colorschema.tertiary + stroke-thickness,
+          text-color: colors.text-color,
+          dropdown: true,
+          inline: true,
+        ),
+      ))
     } else {
       pill-round(body, fill: none, stroke: none, text-color: colors.text-color, inset: (x: 1.5mm, y: 0.5mm), min-height: resolved-body-min-height)
     },
@@ -208,35 +221,63 @@
 }
 
 // Category-specific reporters — thin aliases over the generic reporter()
-#let motion-reporter(body, dropdown-content: none)    = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.motion,    body, dropdown-content: dropdown-content) }
-#let looks-reporter(body, dropdown-content: none)     = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.looks,     body, dropdown-content: dropdown-content) }
-#let sound-reporter(body, dropdown-content: none)     = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.sound,     body, dropdown-content: dropdown-content) }
-#let sensing-reporter(body, dropdown-content: none)   = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.sensing,   body, dropdown-content: dropdown-content, enforce-min-height: true) }
-#let variables-reporter(body, dropdown-content: none) = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.variables, body, dropdown-content: dropdown-content) }
-#let lists-reporter(body, dropdown-content: none)     = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.lists,     body, dropdown-content: dropdown-content) }
-#let custom-reporter(body, dropdown-content: none)    = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.custom,    body, dropdown-content: dropdown-content) }
-#let pen-reporter(body, dropdown-content: none)       = context { let c = get-colors-from-options(scratch-block-options.get()); reporter(colorschema: c.pen,       body, dropdown-content: dropdown-content) }
+#let motion-reporter(body, dropdown-content: none) = {
+  let c = get-colors-from-options(scratch-block-options.get())
+  reporter(colorschema: c.motion, body, dropdown-content: dropdown-content)
+}
+#let looks-reporter(body, dropdown-content: none) = {
+  let c = get-colors-from-options(scratch-block-options.get())
+  reporter(colorschema: c.looks, body, dropdown-content: dropdown-content)
+}
+#let sound-reporter(body, dropdown-content: none) = {
+  let c = get-colors-from-options(scratch-block-options.get())
+  reporter(colorschema: c.sound, body, dropdown-content: dropdown-content)
+}
+#let sensing-reporter(body, dropdown-content: none) = {
+  let c = get-colors-from-options(scratch-block-options.get())
+  reporter(colorschema: c.sensing, body, dropdown-content: dropdown-content, enforce-min-height: true)
+}
+#let variables-reporter(body, dropdown-content: none) = {
+  let c = get-colors-from-options(scratch-block-options.get())
+  reporter(colorschema: c.variables, body, dropdown-content: dropdown-content)
+}
+#let lists-reporter(body, dropdown-content: none) = {
+  let c = get-colors-from-options(scratch-block-options.get())
+  reporter(colorschema: c.lists, body, dropdown-content: dropdown-content)
+}
+#let custom-reporter(body, dropdown-content: none) = {
+  let c = get-colors-from-options(scratch-block-options.get())
+  reporter(colorschema: c.custom, body, dropdown-content: dropdown-content)
+}
+#let pen-reporter(body, dropdown-content: none) = {
+  let c = get-colors-from-options(scratch-block-options.get())
+  reporter(colorschema: c.pen, body, dropdown-content: dropdown-content)
+}
 
 
 // ------------------------------------------------
 // Parameter reporter (pink) for custom block parameters
 // ------------------------------------------------
-#let parameter(name) = context {
-  let options = scratch-block-options.get()
-  let colors = get-colors-from-options(options)
-  let stroke-thickness = get-stroke-from-options(options)
-  pill-round(name, fill: colors.custom.primary, stroke: colors.custom.tertiary + stroke-thickness)
+#let parameter(name) = {
+  context {
+    let options = scratch-block-options.get()
+    let colors = get-colors-from-options(options)
+    let stroke-thickness = get-stroke-from-options(options)
+    pill-round(name, fill: colors.custom.primary, stroke: colors.custom.tertiary + stroke-thickness)
+  }
 }
 
 // ------------------------------------------------
 // Custom blocks
 // ------------------------------------------------
 // White argument placeholder for custom blocks
-#let custom-input(text) = context {
-  let options = scratch-block-options.get()
-  let colors = get-colors-from-options(options)
-  let stroke-thickness = get-stroke-from-options(options)
-  pill-round(text, stroke: colors.custom.tertiary + stroke-thickness)
+#let custom-input(text) = {
+  context {
+    let options = scratch-block-options.get()
+    let colors = get-colors-from-options(options)
+    let stroke-thickness = get-stroke-from-options(options)
+    pill-round(text, stroke: colors.custom.tertiary + stroke-thickness)
+  }
 }
 
 // Creates a custom statement block with text and placeholders.
@@ -245,87 +286,95 @@
 //   #my-block(45)[ ... ]
 #let custom-block(..body) = {
   let items = body.pos()
-  return (dark: true, ..values) => context {
-    let options = scratch-block-options.get()
-    let colors = get-colors-from-options(options)
-    let stroke-thickness = get-stroke-from-options(options)
+  return (dark: true, ..values) => {
+    context {
+      let options = scratch-block-options.get()
+      let colors = get-colors-from-options(options)
+      let stroke-thickness = get-stroke-from-options(options)
 
-    custom(dark: dark, {
-      let values = values.pos()
-      stack(
-        dir: ltr,
-        spacing: 1.5mm,
-        ..if values.len() == 0 {
-          for item in items {
-            if std.type(item) == str {
-              (item,)
-            } else if std.type(item) == dictionary {
-              (pill-round(stroke: colors.custom.tertiary, fill: colors.custom.primary, text-color: colors.text-color, item.name),)
-            } else {
-              (pill-round(stroke: colors.custom.tertiary, fill: colors.custom.primary, text-color: colors.text-color, str("number or text")),)
+      custom(dark: dark, {
+        let values = values.pos()
+        stack(
+          dir: ltr,
+          spacing: 1.5mm,
+          ..if values.len() == 0 {
+            for item in items {
+              if std.type(item) == str {
+                (item,)
+              } else if std.type(item) == dictionary {
+                (pill-round(stroke: colors.custom.tertiary, fill: colors.custom.primary, text-color: colors.text-color, item.name),)
+              } else {
+                (pill-round(stroke: colors.custom.tertiary, fill: colors.custom.primary, text-color: colors.text-color, str("number or text")),)
+              }
             }
-          }
-        } else {
-          let key = 0
-          for item in items {
-            if std.type(item) == str {
-              (item,)
-            } else {
-              (number-or-content(values.at(calc.rem(key, values.len())), colors.custom),)
-              key += 1
+          } else {
+            let key = 0
+            for item in items {
+              if std.type(item) == str {
+                (item,)
+              } else {
+                (number-or-content(values.at(calc.rem(key, values.len())), colors.custom),)
+                key += 1
+              }
             }
-          }
-        },
-      )
-    })
+          },
+        )
+      })
+    }
   }
 }
 
 // Define block header (signature for custom block definitions)
-#let define(block-label, verb: "define", ..children) = context {
-  let options = scratch-block-options.get()
-  let colors = get-colors-from-options(options)
-  let rendered-label = if std.type(block-label) == function {
-    block-label(dark: true)
-  } else {
-    block-label
+#let define(block-label, verb: "define", ..children) = {
+  context {
+    let options = scratch-block-options.get()
+    let colors = get-colors-from-options(options)
+    let rendered-label = if std.type(block-label) == function {
+      block-label(dark: true)
+    } else {
+      block-label
+    }
+    scratch-block(
+      colorschema: colors.custom,
+      type: "define",
+      dy: 2.5 * corner-radius,
+      stack(dir: ltr, spacing: 1.5mm, verb, rendered-label),
+      ..children,
+    )
   }
-  scratch-block(
-    colorschema: colors.custom,
-    type: "define",
-    dy: 2.5 * corner-radius,
-    stack(dir: ltr, spacing: 1.5mm, verb, rendered-label),
-    ..children,
-  )
 }
 
 
 // ------------------------------------------------
 // Variable monitor (visual display like in Scratch)
 // ------------------------------------------------
-#let variable-monitor(name: "Variable", value: 0) = context {
+#let variable-monitor(name: "Variable", value: 0) = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
-  let stroke-thickness = get-stroke-from-options(options)
 
   box(
-    fill: rgb("#E5F0FF"),
-    stroke: (paint: gray, thickness: 0.5pt),
-    radius: 5pt,
-    inset: (x: 5pt, y: 3pt),
+    fill: rgb("#E6F0FF"),
+    stroke: (paint: rgb("#CAD1D9"), thickness: 1pt),
+    radius: 2pt,
+    inset: (left: 6pt, right: 6pt, y: 2pt),
   )[
-    #set text(size: 9pt, font: "Helvetica Neue", weight: 500)
+    #set text(size: 7.85pt, font: ("Helvetica Neue", "Helvetica", "Arial"), weight: "bold", fill: rgb("#575E75"))
     #grid(
       columns: (auto, auto),
-      column-gutter: 4pt,
+      column-gutter: 7pt,
       align: left + horizon,
-      text(fill: rgb("#4C4C4C"), weight: 600, name),
-      box(
+      name,
+      rect(
         fill: colors.variables.primary,
-        stroke: colors.variables.tertiary + stroke-thickness,
-        radius: 4pt,
-        inset: (x: 5pt, y: 2pt),
-        text(fill: colors.text-color, str(value)),
+        stroke: none,
+        radius: 2pt,
+        inset: (x: 3pt, y: 1.5pt),
+        grid(
+          columns: 1,
+          align: center + horizon,
+          box(width: 20pt, height: 0pt),
+          text(fill: white, size: 10pt, weight: "bold", str(value)),
+        ),
       ),
     )
   ]
@@ -334,69 +383,122 @@
 // ------------------------------------------------
 // List monitor (visual display like in Scratch)
 // ------------------------------------------------
-#let list-monitor(name: "List", items: (), width: 4cm, height: auto, length-label: "Length") = context {
+#let list-monitor(name: "List", items: (), width: 4cm, height: auto, length-label: "Length") = {
   let options = scratch-block-options.get()
   let colors = get-colors-from-options(options)
-  let stroke-thickness = get-stroke-from-options(options)
-
   let len = items.len()
+
+  let bg-blue = rgb("#E6F0FF")
+  let line-color = rgb("#CAD1D9")
 
   box(
     width: width,
-    fill: rgb("#E5F0FF"),
-    stroke: (paint: gray, thickness: 0.5pt),
-    radius: 5pt,
+    height: height,
+    fill: bg-blue,
+    stroke: (paint: line-color, thickness: 1pt),
+    radius: 3pt,
     clip: true,
   )[
-    #set text(size: 9pt, font: "Helvetica Neue", weight: 500)
-    // Header with name
-    #box(
-      fill: white,
-      width: 100%,
-      inset: 5pt,
-      align(center)[
-        #text(fill: rgb("#4C4C4C"), weight: 600, name)
-      ],
-    )
-    // List items
-    #box(height: height, clip: true, inset: (x: 2mm))[
-      #grid(
-        columns: (auto, 1fr),
-        column-gutter: 8pt,
-        row-gutter: 2pt,
-        align: left + horizon,
-        ..items
-          .enumerate()
-          .map(((index, item)) => {
-            (
-              grid.cell(str(index + 1)),
-              grid.cell(box(
+    #set text(font: ("Helvetica Neue", "Helvetica", "Arial"))
+    #grid(
+      columns: 1,
+      rows: (15pt, auto, 15pt),
+      rect(
+        width: 100%,
+        height: 100%,
+        fill: white,
+        stroke: (bottom: line-color + 2pt),
+        inset: (x: 4pt, y: 0pt),
+        align(center + horizon, text(fill: rgb("#575E75"), size: 8pt, weight: "bold", name)),
+      ),
+      box(
+        width: 100%,
+        clip: true,
+        {
+          let needs-scrollbar = false
+          let available-h = 0pt
+          let content-h = 0pt
+          if type(height) == length {
+            // Approx 20pt per row. Header and footer take 30pt.
+            available-h = height - 30pt
+            content-h = len * 20pt
+            if content-h > available-h {
+              needs-scrollbar = true
+            }
+          }
+          let right-inset = if needs-scrollbar { 14pt } else { 4pt }
+
+          let item-rows = items
+            .enumerate()
+            .map(((index, item)) => {
+              rect(
                 width: 100%,
-                height: 5mm,
-                fill: colors.lists.primary,
-                stroke: colors.lists.tertiary + stroke-thickness,
-                radius: 3pt,
-                inset: 3pt,
-                align(left, text(fill: colors.text-color, item)),
-              )),
+                fill: bg-blue,
+                stroke: none,
+                inset: (left: -3pt, right: right-inset, top: 1.5pt, bottom: 1.5pt),
+                grid(
+                  columns: (12pt, 1fr),
+                  column-gutter: 4pt,
+                  align: (right + horizon, left + horizon),
+                  text(fill: rgb("#575E75"), size: 9pt, weight: "bold", str(index + 1)),
+                  rect(
+                    width: 100%,
+                    fill: colors.lists.primary,
+                    stroke: colors.lists.tertiary + 1pt,
+                    radius: 2pt,
+                    inset: (x: 3pt, y: 3.5pt),
+                    text(fill: white, size: 8pt, weight: 400, item),
+                  ),
+                ),
+              )
+            })
+
+          stack(dir: ttb, ..item-rows)
+
+          if needs-scrollbar {
+            let thumb-h = calc.max(10pt, available-h * (available-h / content-h))
+            // Track
+            place(
+              right + top,
+              dx: -2pt,
+              dy: 2pt,
+              rect(
+                width: 7pt,
+                height: available-h - 4pt,
+                fill: rgb("#DBE4F3"),
+                radius: 3.5pt,
+                stroke: none,
+              ),
             )
-          })
-          .flatten(),
-      )
-    ]
-    // Footer with length
-    #box(
-      fill: white,
-      width: 100%,
-      align(center)[
-        #grid(
+            // Thumb
+            place(
+              right + top,
+              dx: -2pt,
+              dy: 2pt,
+              rect(
+                width: 7pt,
+                height: thumb-h,
+                fill: rgb("#6E737B"),
+                radius: 3.5pt,
+                stroke: none,
+              ),
+            )
+          }
+        },
+      ),
+      rect(
+        width: 100%,
+        height: 100%,
+        fill: white,
+        inset: (x: 2.5pt, y: 5pt),
+        grid(
           columns: (auto, 1fr, auto),
-          column-gutter: 5pt,
-          inset: 5pt,
           align: (left + horizon, center + horizon, right + horizon),
-          text(fill: rgb("#4C4C4C"), size: 8pt, "+"), text(fill: rgb("#4C4C4C"), size: 8pt, weight: 600, [#length-label: #len]), text(fill: rgb("#4C4C4C"), size: 8pt, "="),
-        )
-      ],
+          text(fill: rgb("#575E75"), size: 8pt, weight: "bold", "+"),
+          text(fill: rgb("#575E75"), size: 8pt, weight: "bold", length-label + ": " + str(len)),
+          text(fill: rgb("#575E75"), size: 8pt, weight: "bold", "="),
+        ),
+      ),
     )
   ]
 }

@@ -3,6 +3,7 @@
 // =====================================================
 
 #import "libs/scratch/mod.typ": scratch-block-options
+#import "libs/scratch/rendering/colors.typ": get-colors-from-options, get-font-from-options
 
 // Container function for block environments
 // Usage: #blockst[#import scratch.de: * ...]
@@ -26,6 +27,12 @@
   } else {
     scale
   }
+
+  // Apply text styling once at the top level to avoid
+  // per-block set-text show rules that compound nesting depth.
+  let colors = get-colors-from-options(current-opts)
+  let font-family = get-font-from-options(current-opts)
+  set text(font: font-family, fill: colors.text-color, weight: 500)
 
   // Render body with scaling
   block(above: 2em, std.scale(final-scale, reflow: true, body))

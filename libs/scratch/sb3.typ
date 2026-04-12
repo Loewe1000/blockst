@@ -2,7 +2,8 @@
 
 #import "text/en.typ": parse-scratch-text as parse-scratch-text-en
 #import "text/parser.typ": _render-nodes
-#import "core.typ": block as scratch-render-block
+#import "core.typ": block as scratch-render-block, get-template
+#import "rendering/categories.typ": list-monitor, variable-monitor
 
 #let _error-prefix = "ERROR:"
 #let _default-sb3-plugin = plugin("plugins/sb3_wasm.wasm")
@@ -49,15 +50,18 @@
     panic("sb3 helpers: target must not be empty.")
   }
 
-  if normalized in (
-    "stage",
-    "Stage",
-    "scene",
-    "Scene",
-    "buehne",
-    "Buehne",
-    "bühne",
-    "Bühne",
+  if (
+    normalized
+      in (
+        "stage",
+        "Stage",
+        "scene",
+        "Scene",
+        "buehne",
+        "Buehne",
+        "bühne",
+        "Bühne",
+      )
   ) {
     (mode: "stage")
   } else {
@@ -160,6 +164,47 @@
   let normalized = target-variable-name.trim()
   if normalized == "" {
     panic("render-sb3-variables: target-variable-name must not be empty.")
+  }
+
+  normalized
+}
+
+#let _normalize-image-number(image-number) = {
+  if image-number == auto or image-number == none {
+    return auto
+  }
+
+  if type(image-number) != int or image-number < 1 {
+    panic("sb3-image helpers: image-number must be an integer >= 1.")
+  }
+
+  image-number
+}
+
+#let _normalize-target-image-number(target-image-number) = {
+  if target-image-number == auto or target-image-number == none {
+    return auto
+  }
+
+  if type(target-image-number) != int or target-image-number < 1 {
+    panic("sb3-image helpers: target-image-number must be an integer >= 1.")
+  }
+
+  target-image-number
+}
+
+#let _normalize-image-name(image-name) = {
+  if image-name == auto or image-name == none {
+    return auto
+  }
+
+  if type(image-name) != str {
+    panic("sb3-image helpers: image-name must be a string.")
+  }
+
+  let normalized = image-name.trim()
+  if normalized == "" {
+    panic("sb3-image helpers: image-name must not be empty.")
   }
 
   normalized
@@ -442,6 +487,110 @@
   matches.at(0)
 }
 
+#let _pick-image-by-number(images, image-number) = {
+  let matches = ()
+  for item in images {
+    if item.number == image-number {
+      matches.push(item)
+    }
+  }
+
+  if matches.len() == 0 {
+    panic("sb3-image helpers: image-number " + str(image-number) + " does not exist.")
+  }
+
+  if matches.len() > 1 {
+    panic("sb3-image helpers: image-number is ambiguous.")
+  }
+
+  matches.at(0)
+}
+
+#let _pick-target-image-by-number(images, target-image-number) = {
+  let matches = ()
+  for item in images {
+    if item.local_number == target-image-number {
+      matches.push(item)
+    }
+  }
+
+  if matches.len() == 0 {
+    panic("sb3-image helpers: target-image-number " + str(target-image-number) + " does not exist for the selected target.")
+  }
+
+  if matches.len() > 1 {
+    panic("sb3-image helpers: target-image-number is ambiguous for the selected target filter.")
+  }
+
+  matches.at(0)
+}
+
+#let _pick-image-by-name(images, image-name) = {
+  let matches = ()
+  for item in images {
+    if item.asset_name == image-name {
+      matches.push(item)
+    }
+  }
+
+  if matches.len() == 0 {
+    panic("sb3-image helpers: image-name `" + image-name + "` does not exist for the selected target.")
+  }
+
+  if matches.len() > 1 {
+    panic("sb3-image helpers: image-name is ambiguous for the selected target filter.")
+  }
+
+  matches.at(0)
+}
+
+#let _image-format-for-typst(item) = {
+  let format = item.data_format
+  if format in ("png", "jpg", "jpeg", "svg") {
+    format
+  } else {
+    panic("sb3-image helpers: unsupported image format `" + format + "`.")
+  }
+}
+
+#let _image-from-bytes(data, format, width: auto, height: auto) = {
+  if width == auto and height == auto {
+    std.image(data, format: format)
+  } else if width != auto and height == auto {
+    std.image(data, format: format, width: width)
+  } else if width == auto and height != auto {
+    std.image(data, format: format, height: height)
+  } else {
+    std.image(data, format: format, width: width, height: height)
+  }
+}
+
+#let _as-number(value, fallback) = {
+  if type(value) == int or type(value) == float {
+    value
+  } else {
+    fallback
+  }
+}
+
+#let _pick-current-target-image(images, target-name, current-costume) = {
+  let local-number = _as-number(current-costume, 0) + 1
+
+  for item in images {
+    if item.target_name == target-name and item.local_number == local-number {
+      return item
+    }
+  }
+
+  for item in images {
+    if item.target_name == target-name {
+      return item
+    }
+  }
+
+  auto
+}
+
 #let _ui-labels(language) = {
   if language == "de" {
     (
@@ -639,11 +788,14 @@
           #text(weight: "bold", size: 9pt)[#item.number. #target-kind: #item.target_name - #ui.script #item.local_number]
           #v(header-gap)
         ]
-        #_render-scratch-text-localized(sb3-to-scratch-text(
-          sb3-bytes,
-          script-number: item.number,
-          sb3-plugin: active-plugin,
-        ), language)
+        #_render-scratch-text-localized(
+          sb3-to-scratch-text(
+            sb3-bytes,
+            script-number: item.number,
+            sb3-plugin: active-plugin,
+          ),
+          language,
+        )
       ]
     }
 
@@ -651,23 +803,29 @@
       #for item in filtered-scripts [
         #if show-headers [
           #let target-kind = if item.is_stage { ui.stage } else { ui.sprite }
-          #text(weight: "bold", size: 9pt)[#item.number. #target-kind: #item.target_name - #ui.script #item.local_number]
+          #text(weight: "bold", size: 9pt, black)[#item.number. #target-kind: #item.target_name - #ui.script #item.local_number]
           #v(header-gap)
         ]
-        #_render-scratch-text-localized(sb3-to-scratch-text(
-          sb3-bytes,
-          script-number: item.number,
-          sb3-plugin: active-plugin,
-        ), language)
+        #_render-scratch-text-localized(
+          sb3-to-scratch-text(
+            sb3-bytes,
+            script-number: item.number,
+            sb3-plugin: active-plugin,
+          ),
+          language,
+        )
         #v(script-gap)
       ]
     ]
   } else {
-    _render-scratch-text-localized(sb3-to-scratch-text(
-      sb3-bytes,
-      script-number: script-number,
-      sb3-plugin: active-plugin,
-    ), language)
+    _render-scratch-text-localized(
+      sb3-to-scratch-text(
+        sb3-bytes,
+        script-number: script-number,
+        sb3-plugin: active-plugin,
+      ),
+      language,
+    )
   }
 }
 
@@ -837,4 +995,445 @@
       ]
     ]
   ]
+}
+
+#let _validate-image-selector-combination(
+  image-number,
+  target,
+  target-image-number,
+  image-name,
+) = {
+  let target-filter = _normalize-target(target)
+
+  if (
+    image-number != auto
+      and (
+        target-filter.mode != "all" or target-image-number != auto or image-name != auto
+      )
+  ) {
+    panic("sb3-image helpers: image-number cannot be combined with target, target-image-number, or image-name.")
+  }
+
+  if target-image-number != auto and image-name != auto {
+    panic("sb3-image helpers: target-image-number cannot be combined with image-name.")
+  }
+
+  if (target-image-number != auto or image-name != auto) and target-filter.mode == "all" {
+    panic("sb3-image helpers: target-image-number/image-name requires target.")
+  }
+}
+
+// Returns flat metadata for supported image assets in the sb3 archive.
+// Supported formats: png, jpg, jpeg, svg.
+#let sb3-image-assets-catalog(sb3-bytes, target: auto, sb3-plugin: auto) = {
+  let active-plugin = _resolve-plugin(sb3-plugin: sb3-plugin)
+  let target-filter = _normalize-target(target)
+  let text = str(active-plugin.sb3_image_assets_catalog_json(sb3-bytes))
+  let catalog = json(bytes(_check-plugin-output(text)))
+
+  let filtered = ()
+  for item in catalog.images {
+    if _matches-target(item, target-filter) {
+      filtered.push(item)
+    }
+  }
+
+  filtered
+}
+
+// Alias for readability.
+#let sb3-images-catalog(sb3-bytes, target: auto, sb3-plugin: auto) = sb3-image-assets-catalog(
+  sb3-bytes,
+  target: target,
+  sb3-plugin: sb3-plugin,
+)
+
+// Returns raw bytes for a selected image asset.
+// Selector priority:
+// 1) image-number (global)
+// 2) target + target-image-number/image-name
+// 3) first image in catalog (or first image for target filter)
+#let sb3-image-bytes(
+  sb3-bytes,
+  image-number: auto,
+  target: auto,
+  target-image-number: auto,
+  image-name: auto,
+  sb3-plugin: auto,
+) = {
+  let active-plugin = _resolve-plugin(sb3-plugin: sb3-plugin)
+  let image-number = _normalize-image-number(image-number)
+  let target-image-number = _normalize-target-image-number(target-image-number)
+  let image-name = _normalize-image-name(image-name)
+  _validate-image-selector-combination(
+    image-number,
+    target,
+    target-image-number,
+    image-name,
+  )
+
+  if image-number != auto {
+    return active-plugin.sb3_image_bytes_by_number(sb3-bytes, bytes(str(image-number)))
+  }
+
+  let images = sb3-image-assets-catalog(sb3-bytes, target: target, sb3-plugin: active-plugin)
+  if images.len() == 0 {
+    panic("sb3-image helpers: no supported image assets (png/jpg/jpeg/svg) found for the selected target filter.")
+  }
+
+  let selected = if target-image-number != auto {
+    _pick-target-image-by-number(images, target-image-number)
+  } else if image-name != auto {
+    _pick-image-by-name(images, image-name)
+  } else {
+    images.at(0)
+  }
+
+  active-plugin.sb3_image_bytes_by_md5ext(sb3-bytes, bytes(selected.md5ext))
+}
+
+// Convenience: import one sb3 image and render it directly in Typst.
+#let sb3-image(
+  sb3-bytes,
+  image-number: auto,
+  target: auto,
+  target-image-number: auto,
+  image-name: auto,
+  sb3-plugin: auto,
+  width: auto,
+  height: auto,
+) = {
+  let active-plugin = _resolve-plugin(sb3-plugin: sb3-plugin)
+  let image-number = _normalize-image-number(image-number)
+  let target-image-number = _normalize-target-image-number(target-image-number)
+  let image-name = _normalize-image-name(image-name)
+  _validate-image-selector-combination(
+    image-number,
+    target,
+    target-image-number,
+    image-name,
+  )
+
+  let all-images = if image-number != auto {
+    let images = sb3-image-assets-catalog(sb3-bytes, sb3-plugin: active-plugin)
+    if images.len() == 0 {
+      panic("sb3-image helpers: no supported image assets (png/jpg/jpeg/svg) found in this sb3.")
+    }
+    images
+  } else {
+    ()
+  }
+
+  let selected = if image-number != auto {
+    _pick-image-by-number(all-images, image-number)
+  } else {
+    let filtered = sb3-image-assets-catalog(sb3-bytes, target: target, sb3-plugin: active-plugin)
+    if filtered.len() == 0 {
+      panic("sb3-image helpers: no supported image assets (png/jpg/jpeg/svg) found for the selected target filter.")
+    }
+
+    if target-image-number != auto {
+      _pick-target-image-by-number(filtered, target-image-number)
+    } else if image-name != auto {
+      _pick-image-by-name(filtered, image-name)
+    } else {
+      filtered.at(0)
+    }
+  }
+
+  let image-bytes = active-plugin.sb3_image_bytes_by_md5ext(sb3-bytes, bytes(selected.md5ext))
+  _image-from-bytes(
+    image-bytes,
+    _image-format-for-typst(selected),
+    width: width,
+    height: height,
+  )
+}
+
+// Renders a static preview of the current Scratch screen state from an sb3.
+// Uses Stage 480x360 coordinates by default, matching scratch-run.
+// Scratch coordinate system: (0,0) = center, x right, y up.
+#let sb3-screen-preview(
+  sb3-bytes,
+  width: 480,
+  height: 360,
+  unit: 1,
+  background: none,
+  show-border: true,
+  show-backdrop: true,
+  monitor-scale: 1.5,
+  sb3-plugin: auto,
+  language: auto,
+) = {
+  let active-plugin = _resolve-plugin(sb3-plugin: sb3-plugin)
+  let project = json(bytes(_check-plugin-output(str(active-plugin.extract_project_json(sb3-bytes)))))
+  let images = sb3-image-assets-catalog(sb3-bytes, sb3-plugin: active-plugin)
+
+  let stage-width = _as-number(width, 480)
+  let stage-height = _as-number(height, 360)
+  let stage-unit = _as-number(unit, 1)
+
+  // Physical dimensions of the stage box
+  let stage-w = stage-width * stage-unit * 1cm / 100
+  let stage-h = stage-height * stage-unit * 1cm / 100
+
+  let stage-target = auto
+  let sprite-targets = ()
+  for target in project.targets {
+    if target.at("isStage", default: false) {
+      stage-target = target
+    } else {
+      sprite-targets.push(target)
+    }
+  }
+
+  let stage-backdrop = auto
+  if stage-target != auto {
+    let stage-current-costume = _as-number(stage-target.at("currentCostume", default: 0), 0)
+    let stage-images = sb3-image-assets-catalog(
+      sb3-bytes,
+      target: "stage",
+      sb3-plugin: active-plugin,
+    )
+    for item in stage-images {
+      if item.local_number == stage-current-costume + 1 {
+        stage-backdrop = item
+        break
+      }
+    }
+    if stage-backdrop == auto and stage-images.len() > 0 {
+      stage-backdrop = stage-images.at(0)
+    }
+  }
+
+  // Fallback in case a project has unusual stage metadata.
+  if stage-backdrop == auto {
+    for item in images {
+      if item.is_stage {
+        stage-backdrop = item
+        break
+      }
+    }
+  }
+
+  let visible-sprites = ()
+  for target in sprite-targets {
+    if target.at("visible", default: true) == true {
+      visible-sprites.push(target)
+    }
+  }
+
+  // Draw lower layer-order sprites first.
+  let sprites = ()
+  let max-layer-order = 0
+  for target in visible-sprites {
+    let layer-order = _as-number(target.at("layerOrder", default: 0), 0)
+    if layer-order > max-layer-order {
+      max-layer-order = layer-order
+    }
+  }
+  for layer in range(max-layer-order + 1) {
+    for target in visible-sprites {
+      if _as-number(target.at("layerOrder", default: 0), 0) == layer {
+        sprites.push(target)
+      }
+    }
+  }
+  if sprites.len() == 0 {
+    sprites = visible-sprites
+  }
+
+  // 1 scratch unit in physical space
+  let unit-len = stage-unit * 1cm / 100
+
+  box(
+    width: stage-w,
+    height: stage-h,
+    clip: true,
+    stroke: if show-border { 1pt + rgb("e0e0e0") } else { none },
+    radius: 2pt,
+    inset: 0pt,
+    fill: background,
+    {
+      // Backdrop — scale and position using SVG native size + rotation center
+      if show-backdrop and stage-backdrop != auto {
+        let backdrop-bytes = active-plugin.sb3_image_bytes_by_md5ext(
+          sb3-bytes,
+          bytes(stage-backdrop.md5ext),
+        )
+
+        // Get costume metadata from stage target for rotationCenter
+        let stage-costumes = if stage-target != auto { stage-target.at("costumes", default: ()) } else { () }
+        let stage-current-costume = if stage-target != auto { _as-number(stage-target.at("currentCostume", default: 0), 0) } else { 0 }
+        let backdrop-costume = if stage-current-costume < stage-costumes.len() {
+          stage-costumes.at(stage-current-costume)
+        } else {
+          none
+        }
+        let backdrop-bitmap-res = if backdrop-costume != none {
+          _as-number(backdrop-costume.at("bitmapResolution", default: 1), 1)
+        } else { 1 }
+        let backdrop-rot-cx = if backdrop-costume != none {
+          _as-number(backdrop-costume.at("rotationCenterX", default: 0), 0)
+        } else { 0 }
+        let backdrop-rot-cy = if backdrop-costume != none {
+          _as-number(backdrop-costume.at("rotationCenterY", default: 0), 0)
+        } else { 0 }
+
+        // Logical scale: 1 image/SVG pixel → (unit-len / bitmapRes) in physical space
+        let bd-px-scale = unit-len / (backdrop-bitmap-res * 1pt)
+
+        let bd-format = _image-format-for-typst(stage-backdrop)
+        let bd-base = _image-from-bytes(backdrop-bytes, bd-format)
+
+        // Typst naturally assigns 0.75pt to 1px for SVGs (96 DPI CSS). For PNGs, it usually defaults to 1pt (72 DPI).
+        let bd-intrinsic-scale = if bd-format == "svg" { 0.75pt } else { 1pt }
+        let bd-visual-scale = bd-px-scale * (1pt / bd-intrinsic-scale) * 100%
+        let bd-scaled = std.scale(
+          x: bd-visual-scale,
+          y: bd-visual-scale,
+          reflow: true,
+          bd-base,
+        )
+
+        // Position so that rotationCenter lands at stage center (stage-w/2, stage-h/2)
+        // dx/dy offsets are calculated in logical pixels
+        let bd-dx = stage-w / 2 - backdrop-rot-cx * bd-px-scale * 1pt
+        let bd-dy = stage-h / 2 - backdrop-rot-cy * bd-px-scale * 1pt
+
+        place(top + left, dx: bd-dx, dy: bd-dy, bd-scaled)
+      }
+
+      // Sprites
+      for target in sprites {
+        let target-name = target.at("name", default: "Unnamed Sprite")
+        let current-costume = _as-number(target.at("currentCostume", default: 0), 0)
+
+        let sprite-meta = _pick-current-target-image(images, target-name, current-costume)
+        if sprite-meta == auto { continue }
+
+        let sprite-bytes = active-plugin.sb3_image_bytes_by_md5ext(
+          sb3-bytes,
+          bytes(sprite-meta.md5ext),
+        )
+
+        // Get costume metadata from project JSON for bitmapResolution and rotationCenter
+        let costumes = target.at("costumes", default: ())
+        let costume = if current-costume < costumes.len() { costumes.at(current-costume) } else { none }
+        let bitmap-res = if costume != none { _as-number(costume.at("bitmapResolution", default: 1), 1) } else { 1 }
+        let rot-cx = if costume != none { _as-number(costume.at("rotationCenterX", default: 0), 0) } else { 0 }
+        let rot-cy = if costume != none { _as-number(costume.at("rotationCenterY", default: 0), 0) } else { 0 }
+
+        let sprite-size = _as-number(target.at("size", default: 100), 100)
+        let sprite-direction = _as-number(target.at("direction", default: 90), 90)
+        let sprite-x = _as-number(target.at("x", default: 0), 0)
+        let sprite-y = _as-number(target.at("y", default: 0), 0)
+        let rotation-style = target.at("rotationStyle", default: "all around")
+
+        // Logical Scale factor: map image pixels to physical stage units.
+        // In Scratch, 1 costume pixel = 1/bitmapRes scratch units.
+        // So: 1 costume pixel should be (unit-len / bitmapRes) in physical space.
+        let px-scale = unit-len / (bitmap-res * 1pt)
+        let eff-scale = px-scale * (sprite-size / 100)
+
+        let sprite-format = _image-format-for-typst(sprite-meta)
+        let base-content = _image-from-bytes(sprite-bytes, sprite-format)
+
+        // Typst renders 1px implicitly as 0.75pt for SVGs, and ~1pt for PNGs without DPI.
+        let intrinsic-scale = if sprite-format == "svg" { 0.75pt } else { 1pt }
+        let visual-total-pct = px-scale * (sprite-size / 100) * (1pt / intrinsic-scale) * 100%
+
+        let scaled-content = std.scale(
+          x: visual-total-pct,
+          y: visual-total-pct,
+          reflow: true,
+          base-content,
+        )
+
+        let oriented-content = if rotation-style == "left-right" {
+          if sprite-direction < 0 {
+            std.scale(x: -100%, y: 100%, reflow: true, scaled-content)
+          } else {
+            scaled-content
+          }
+        } else {
+          scaled-content
+        }
+
+        let final-content = if rotation-style == "all around" {
+          std.rotate((sprite-direction - 90) * 1deg, reflow: true, oriented-content)
+        } else {
+          oriented-content
+        }
+
+        // Position: align the costume's rotation center with the sprite's (x, y) on stage.
+        // After reflow scaling, the logical rotation center in the image is at:
+        //   (rot-cx * eff-scale * 1pt, rot-cy * eff-scale * 1pt) from top-left
+        let dx = stage-w / 2 + sprite-x * unit-len - rot-cx * eff-scale * 1pt
+        let dy = stage-h / 2 - sprite-y * unit-len - rot-cy * eff-scale * 1pt
+
+        place(top + left, dx: dx, dy: dy, final-content)
+      }
+
+      // Monitors
+      let monitors = project.at("monitors", default: ())
+      let eff-monitor-scale = (unit-len / 1pt) * monitor-scale
+      for monitor in monitors {
+        if not monitor.at("visible", default: false) { continue }
+        let m-x = _as-number(monitor.at("x", default: 0), 0)
+        let m-y = _as-number(monitor.at("y", default: 0), 0)
+        let m-mode = monitor.at("mode", default: "default")
+        let opcode = monitor.at("opcode", default: "")
+
+        let params = monitor.at("params", default: (:))
+        let name = params.at("VARIABLE", default: params.at("LIST", default: ""))
+        let raw-value = monitor.at("value", default: "0")
+
+        let monitor-box = none
+
+        if m-mode == "default" {
+          monitor-box = context variable-monitor(name: name, value: raw-value)
+        } else if m-mode == "large" {
+          let bg-color = rgb(255, 140, 26) // Scratch orange
+          if "list" in opcode { bg-color = rgb(255, 102, 26) }
+          let val-str = if type(raw-value) == array { "[List]" } else { str(raw-value) }
+          monitor-box = rect(
+            fill: bg-color,
+            stroke: 1pt + bg-color.darken(10%),
+            radius: 3pt,
+            inset: (x: 4pt, y: 3pt),
+          )[
+            #grid(
+              columns: 1,
+              align: center + horizon,
+              box(width: 14pt, height: 0pt),
+              text(font: ("Helvetica Neue", "Helvetica", "Arial"), size: 12pt, weight: 500, fill: white, val-str),
+            )
+          ]
+        } else if m-mode == "list" {
+          let items = if type(raw-value) == array { raw-value.map(v => str(v)) } else { (str(raw-value),) }
+          let w = monitor.at("width", default: 0)
+          let h = monitor.at("height", default: 0)
+          let kwargs = (:)
+          if w > 0 { kwargs.insert("width", w * 1pt * 2 / 3) }
+          if h > 0 { kwargs.insert("height", h * 1pt * 2 / 3) }
+          monitor-box = context {
+            let lang-code = if language == auto { text.lang } else { language }
+            let length-label-str = get-template("data.length_label", lang-code)
+            list-monitor(name: name, items: items, length-label: length-label-str, ..kwargs)
+          }
+        }
+
+        if monitor-box != none {
+          let scaled-box = std.scale(
+            x: eff-monitor-scale * 100%,
+            y: eff-monitor-scale * 100%,
+            reflow: true,
+            monitor-box,
+          )
+          place(top + left, dx: m-x * unit-len, dy: m-y * unit-len, scaled-box)
+        }
+      }
+    },
+  )
 }

@@ -52,6 +52,7 @@
     switch_costume_to:          (shape: "stack"),
     next_costume:               (shape: "stack"),
     switch_backdrop_to:         (shape: "stack"),
+    switch_backdrop_to_and_wait:(shape: "stack"),
     next_backdrop:              (shape: "stack"),
     change_size_by:             (shape: "stack"),
     set_size_to:                (shape: "stack"),
@@ -64,6 +65,9 @@
     go_forward_backward_layers: (shape: "stack"),
     costume_number_name:        (shape: "reporter"),
     backdrop_number_name:       (shape: "reporter"),
+    costume_number:             (shape: "reporter"),
+    backdrop_number:            (shape: "reporter"),
+    backdrop_name:              (shape: "reporter"),
     size:                       (shape: "reporter"),
   ),
 
@@ -88,21 +92,26 @@
   music: (
     play_note_for_beats: (shape: "stack"),
     set_instrument_to:   (shape: "stack"),
+    play_drum_for_beats: (shape: "stack"),
+    rest_for_beats:      (shape: "stack"),
+    change_tempo_by:     (shape: "stack"),
+    set_tempo_to:        (shape: "stack"),
+    tempo:               (shape: "reporter"),
   ),
 
   // =====================
   // PEN
   // =====================
   pen: (
-    clear:                  (shape: "stack"),
-    stamp:                  (shape: "stack"),
+    clear:                  (shape: "stack", icon: "pen"),
+    stamp:                  (shape: "stack", icon: "pen"),
     pen_down:               (shape: "stack", icon: "pen"),
     pen_up:                 (shape: "stack", icon: "pen"),
-    set_pen_color_to_color: (shape: "stack"),
-    change_pen_param_by:    (shape: "stack"),
-    set_pen_param_to:       (shape: "stack"),
-    change_pen_size_by:     (shape: "stack"),
-    set_pen_size_to:        (shape: "stack"),
+    set_pen_color_to_color: (shape: "stack", icon: "pen"),
+    change_pen_param_by:    (shape: "stack", icon: "pen"),
+    set_pen_param_to:       (shape: "stack", icon: "pen"),
+    change_pen_size_by:     (shape: "stack", icon: "pen"),
+    set_pen_size_to:        (shape: "stack", icon: "pen"),
   ),
 
   // =====================
@@ -114,6 +123,7 @@
     forever:           (shape: "cap"),
     "if":                (shape: "c-block"),
     if_else:           (shape: "c-block"),
+    forever_if:        (shape: "c-block"),
     wait_until:        (shape: "stack"),
     repeat_until:      (shape: "c-block"),
     stop:              (shape: "cap"),
@@ -144,6 +154,59 @@
     current:                 (shape: "reporter"),
     days_since_2000:         (shape: "reporter"),
     username:                (shape: "reporter"),
+    video_on:                (shape: "reporter"),
+    turn_video:              (shape: "stack"),
+    set_video_transparency:  (shape: "stack"),
+    user_id:                 (shape: "reporter"),
+  ),
+
+  // =====================
+  // PICOBOARD (legacy extension)
+  // =====================
+  picoboard: (
+    when_button_pressed: (shape: "hat", category: "events"),
+    when_slider:         (shape: "hat", category: "events"),
+    sensor_pressed:      (shape: "boolean", category: "sensing"),
+    sensor_value:        (shape: "reporter", category: "sensing"),
+  ),
+
+  // =====================
+  // LEGO WEDO 1.0 (legacy extension)
+  // =====================
+  wedo: (
+    motor_on_for:        (shape: "stack"),
+    motor_on:            (shape: "stack"),
+    motor_off:           (shape: "stack"),
+    set_motor_power:     (shape: "stack"),
+    set_motor_direction: (shape: "stack"),
+    when_distance:       (shape: "hat"),
+    when_tilt:           (shape: "hat"),
+    distance:            (shape: "reporter"),
+    tilt:                (shape: "reporter"),
+  ),
+
+  // =====================
+  // LEGO WEDO 2.0 (extension)
+  // =====================
+  wedo2: (
+    motor_on_for:          (shape: "stack"),
+    motor_on:              (shape: "stack"),
+    motor_off:             (shape: "stack"),
+    set_motor_power:       (shape: "stack"),
+    set_motor_direction:   (shape: "stack"),
+    set_light_color:       (shape: "stack"),
+    play_note_for_seconds: (shape: "stack"),
+    when_distance:         (shape: "hat"),
+    when_tilted:           (shape: "hat"),
+    distance:              (shape: "reporter"),
+    tilt:                  (shape: "reporter"),
+  ),
+
+  // =====================
+  // GREY / PLACEHOLDER
+  // =====================
+  grey: (
+    ellipsis: (shape: "stack"),
   ),
 
   // =====================

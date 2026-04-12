@@ -1,5 +1,5 @@
 // Example – Theme and scale settings
-#import "@preview/blockst:0.2.0": blockst, scratch, set-blockst
+#import "../lib.typ": blockst, scratch, set-blockst
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
