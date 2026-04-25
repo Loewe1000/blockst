@@ -2,56 +2,47 @@
 #import "../lib.typ": blockst, scratch, set-blockst
 
 #set page(width: auto, height: auto, margin: 0pt, fill: none)
-#set text(font: "Inter", fallback: true)
+#set text(font: "Helvetica Neue", fallback: true)
+
+#v(-4em)
 
 #block(inset: (x: 10mm, top: 9mm, bottom: 10mm))[
-  // Block showcase
   #set-blockst(scale: 78%)
+
+  #move(dy: 4em, text(40pt)[
+    *_blockst_*
+  ])
   #grid(
     columns: 4,
     column-gutter: 5mm,
-    align: top,
-
-    // 1. Events + Motion + Looks
-    blockst[
-      #import scratch.en: *
-      #when-flag-clicked[
-        #move(steps: 10)
-        #turn-right(degrees: 15)
-        #say("Hello!")
-      ]
-    ],
-
-    // 2. Control: Repeat forever
-    blockst[
-      #import scratch.en: *
-      #when-key-pressed("space")[
-        #forever[
-          #move(steps: 5)
-          #turn-right(degrees: 3)
-        ]
-      ]
-    ],
-
-    // 3. Variables + if-then-else
-    blockst[
-      #import scratch.en: *
-      #when-message-received("start")[
-        #set-variable-to("score", 0)
-        #if-then-else(
-          touching-object("edge"),
-          turn-right(degrees: 180),
-          change-variable-by("score", 1),
-        )
-      ]
-    ],
-
-    // 4. Custom block definition
-    blockst[
-      #import scratch.en: *
-      #let jump = custom-block("jump ", (name: "h"), " px")
-      #define(jump, change-y(dy: parameter("h")))
-      #when-sprite-clicked(jump(50))
+    align: bottom,
+    scratch("
+when green flag clicked
+move (10) steps
+turn cw (15) degrees
+say [Hello!]
+"),
+    scratch("
+when [space v] key pressed
+forever
+  move (5) steps
+  turn cw (3) degrees
+end
+"),
+    scratch("
+when I receive [start v]
+set [score v] to (0)
+if <touching [edge v]?> then
+  turn cw (180) degrees
+else
+  change [score v] by (1)
+end
+"),
+    [#scratch("
+define jump (h) px
+change y by (var [h]
+")
+      #scratch("call jump (50) px")
     ],
   )
 ]

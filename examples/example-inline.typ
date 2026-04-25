@@ -1,35 +1,14 @@
-// Inline example – scratch blocks without #blockst wrapper
-// #blockst[] only adds scaling; blocks render fine directly in document flow.
-// Practical use case: placing blocks in a grid/table layout.
 #import "../lib.typ": scratch
 
-#set page(width: auto, height: auto, margin: 5mm, fill: white)
-
-#import scratch.en: *
-
-*Without `#blockst` — 1:1 scale, place blocks anywhere in layout:*
-
-#v(3mm)
+#set page(width: 10cm, height: auto, margin: 5mm, fill: white)
 
 #grid(
-  columns: (auto, auto),
-  gutter: 4mm,
-  // Column 1: description
-  [
-    *Step 1* \
-    Move the sprite forward.
-  ],
-  // Column 2: block
-  when-flag-clicked[
-    #move(steps: 10)
-  ],
-
-  [
-    *Step 2* \
-    Repeat and turn.
-  ],
-  repeat(times: 4)[
-    #move(steps: 50)
-    #turn-right(degrees: 90)
-  ],
+  columns: (1fr, auto),
+  gutter: 6mm,
+  [*Step 1*\
+  Trigger the script and walk forward.],
+  [#scratch("when green flag clicked\nmove (20) steps")],
+  [*Step 2*\
+  Repeat a square movement.],
+  [#scratch("repeat (4)\nmove (40) steps\nturn cw (90) degrees\nend")],
 )

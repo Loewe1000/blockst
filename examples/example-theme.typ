@@ -1,45 +1,21 @@
-// Example – Theme and scale settings
-#import "../lib.typ": blockst, scratch, set-blockst
+#import "../lib.typ": blockst, scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
-// Normal theme at 100% scale (default)
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #move(steps: 10)
-    #say-for-secs("Hello!", secs: 2)
-  ]
-]
-
-#v(4mm)
-
-// High-contrast theme at 80% scale
-#set-blockst(theme: "high-contrast", scale: 80%)
+#let script = "when green flag clicked\ngo to (random position v)\nturn cw (30) degrees"
 
 #blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #move(steps: 10)
-    #say-for-secs("Hello!", secs: 2)
-  ]
+  #scratch(script)
 ]
 
-#v(4mm)
+#v(5mm)
 
-// Printer-friendly black/white theme
-#set-blockst(theme: "print", scale: 100%)
-
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #move(steps: 10)
-    #say-for-secs("Hello!", secs: 2)
-  ]
+#blockst(theme: "high-contrast")[
+  #scratch(script)
 ]
 
-// Reset to defaults
-#set-blockst(theme: "normal", scale: 100%)
+#v(5mm)
+
+#blockst(theme: "print")[
+  #scratch(script)
+]

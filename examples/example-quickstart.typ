@@ -1,13 +1,9 @@
-// Quick Start example
-#import "../lib.typ": blockst, scratch
+#import "../lib.typ": scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: white)
 
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #move(steps: 10)
-    #say-for-secs("Hello!", secs: 2)
-  ]
-]
+#scratch("
+when green flag clicked
+move (10) steps
+turn cw (15) degrees
+")

@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::io::{Cursor, Read};
+use std::sync::Mutex;
 
 use serde::Serialize;
 use serde_json::{Map, Value};
@@ -8,8 +9,13 @@ use zip::ZipArchive;
 #[cfg(target_arch = "wasm32")]
 use wasm_minimal_protocol::wasm_func;
 
+static CURRENT_LANG: Mutex<String> = Mutex::new(String::new());
+
 #[cfg(target_arch = "wasm32")]
 wasm_minimal_protocol::initiate_protocol!();
+
+mod generated;
+mod locales;
 
 #[derive(Debug, Serialize)]
 struct ScriptsDump {
@@ -120,12 +126,36 @@ fn as_text_token(value: &str) -> String {
   }
 }
 
+fn as_dropdown_token(value: &str) -> String {
+  let normalized = sanitize_square_brackets(value).trim().to_string();
+  if normalized.starts_with('[') && normalized.ends_with(']') && normalized.len() >= 2 {
+    let inner = &normalized[1..normalized.len() - 1];
+    if inner.ends_with(" v") {
+      normalized
+    } else {
+      format!("[{} v]", inner)
+    }
+  } else {
+    format!("[{} v]", normalized)
+  }
+}
+
+fn as_variable_token(value: &str) -> String {
+  as_dropdown_token(value)
+}
+
+fn as_list_token(value: &str) -> String {
+  as_dropdown_token(value)
+}
+
 fn as_color_arg(value: &str) -> String {
   let normalized = value.trim();
-  if normalized.starts_with('[') && normalized.ends_with(']') && normalized.len() >= 2 {
-    normalized[1..normalized.len() - 1].trim().to_string()
-  } else {
+  if normalized.starts_with('[') && normalized.ends_with(']') {
     normalized.to_string()
+  } else if normalized.is_empty() {
+    "[#000000]".to_string()
+  } else {
+    format!("[{normalized}]")
   }
 }
 
@@ -144,12 +174,24 @@ fn normalize_clone_target(value: &str) -> String {
   }
 }
 
+fn normalize_menu_value(value: &str) -> String {
+  match value.trim() {
+    "_random_" => "random position".to_string(),
+    "_mouse_" => "mouse-pointer".to_string(),
+    "_stage_" => "Stage".to_string(),
+    "_myself_" => "myself".to_string(),
+    other => other.to_string(),
+  }
+}
+
 fn as_condition_token(value: &str) -> String {
   let normalized = value.trim();
   if normalized.is_empty() {
     "< >".to_string()
-  } else {
+  } else if normalized.starts_with('<') && normalized.ends_with('>') {
     normalized.to_string()
+  } else {
+    format!("<{}>", normalized)
   }
 }
 
@@ -164,7 +206,7 @@ fn decode_expression_literal(value: &Value) -> Option<String> {
         .get(1)
         .map(value_to_text)
         .unwrap_or_else(|| "variable".to_string());
-      Some(format!("var {}", as_text_token(&name)))
+      Some(format!("({})", name))
     }
     _ => None,
   }
@@ -335,6 +377,7 @@ fn render_input_expression(
 }
 
 fn render_expression_by_id(blocks: &Map<String, Value>, block_id: &str, seen: &mut HashSet<String>) -> String {
+  let lang = CURRENT_LANG.lock().unwrap_or_else(|e| e.into_inner()).clone();
   if seen.contains(block_id) {
     return "".to_string();
   }
@@ -352,97 +395,45 @@ fn render_expression_by_id(blocks: &Map<String, Value>, block_id: &str, seen: &m
     .unwrap_or("unknown_opcode");
 
   let out = match opcode {
-    "operator_add" => format!(
-      "{} + {}",
-      as_number_token(&input_text("NUM1", seen)),
-      as_number_token(&input_text("NUM2", seen))
-    ),
-    "operator_subtract" => format!(
-      "{} - {}",
-      as_number_token(&input_text("NUM1", seen)),
-      as_number_token(&input_text("NUM2", seen))
-    ),
-    "operator_multiply" => format!(
-      "{} * {}",
-      as_number_token(&input_text("NUM1", seen)),
-      as_number_token(&input_text("NUM2", seen))
-    ),
-    "operator_divide" => format!(
-      "{} / {}",
-      as_number_token(&input_text("NUM1", seen)),
-      as_number_token(&input_text("NUM2", seen))
-    ),
-    "operator_mod" => format!(
-      "{} mod {}",
-      as_number_token(&input_text("NUM1", seen)),
-      as_number_token(&input_text("NUM2", seen))
-    ),
-    "operator_random" => format!(
-      "pick random {} to {}",
-      as_number_token(&input_text("FROM", seen)),
-      as_number_token(&input_text("TO", seen))
-    ),
-    "operator_join" => format!(
-      "join {} {}",
-      as_text_token(&input_text("STRING1", seen)),
-      as_text_token(&input_text("STRING2", seen))
-    ),
-    "operator_letter_of" => format!(
-      "letter {} of {}",
-      as_number_token(&input_text("LETTER", seen)),
-      as_text_token(&input_text("STRING", seen))
-    ),
-    "operator_length" => format!("length of {}", as_text_token(&input_text("STRING", seen))),
-    "operator_round" => format!("round {}", as_number_token(&input_text("NUM", seen))),
+    "operator_add" => crate::locales::fmt_locale(&lang, "OPERATORS_ADD", &[as_number_token(&input_text("NUM1", seen)), as_number_token(&input_text("NUM2", seen))], "%1 + %2"),
+    "operator_subtract" => crate::locales::fmt_locale(&lang, "OPERATORS_SUBTRACT", &[as_number_token(&input_text("NUM1", seen)), as_number_token(&input_text("NUM2", seen))], "%1 - %2"),
+    "operator_multiply" => crate::locales::fmt_locale(&lang, "OPERATORS_MULTIPLY", &[as_number_token(&input_text("NUM1", seen)), as_number_token(&input_text("NUM2", seen))], "%1 * %2"),
+    "operator_divide" => crate::locales::fmt_locale(&lang, "OPERATORS_DIVIDE", &[as_number_token(&input_text("NUM1", seen)), as_number_token(&input_text("NUM2", seen))], "%1 / %2"),
+    "operator_mod" => crate::locales::fmt_locale(&lang, "OPERATORS_MOD", &[as_number_token(&input_text("NUM1", seen)), as_number_token(&input_text("NUM2", seen))], "%1 mod %2"),
+    "operator_random" => crate::locales::fmt_locale(&lang, "OPERATORS_RANDOM", &[as_number_token(&input_text("FROM", seen)), as_number_token(&input_text("TO", seen))], "pick random %1 to %2"),
+    "operator_join" => crate::locales::fmt_locale(&lang, "OPERATORS_JOIN", &[as_text_token(&input_text("STRING1", seen)), as_text_token(&input_text("STRING2", seen))], "join %1 %2"),
+    "operator_letter_of" => crate::locales::fmt_locale(&lang, "OPERATORS_LETTEROF", &[as_number_token(&input_text("LETTER", seen)), as_text_token(&input_text("STRING", seen))], "letter %1 of %2"),
+    "operator_length" => crate::locales::fmt_locale(&lang, "OPERATORS_LENGTH", &[as_text_token(&input_text("STRING", seen))], "length of %1"),
+    "operator_round" => crate::locales::fmt_locale(&lang, "OPERATORS_ROUND", &[as_number_token(&input_text("NUM", seen))], "round %1"),
     "operator_mathop" => {
       let operator = get_field_value(block, "OPERATOR", "abs");
-      format!(
-        "{} of {}",
-        sanitize_square_brackets(&operator),
-        as_number_token(&input_text("NUM", seen))
-      )
+      crate::locales::fmt_locale(&lang, "OPERATORS_MATHOP", &[as_dropdown_token(&operator), as_number_token(&input_text("NUM", seen))], "%1 of %2")
     }
-    "operator_contains" => format!(
-      "{} contains {} ?",
-      as_text_token(&input_text("STRING1", seen)),
-      as_text_token(&input_text("STRING2", seen))
-    ),
-    "operator_gt" => format!(
-      "{} > {}",
-      as_number_token(&input_text("OPERAND1", seen)),
-      as_number_token(&input_text("OPERAND2", seen))
-    ),
-    "operator_lt" => format!(
-      "{} < {}",
-      as_number_token(&input_text("OPERAND1", seen)),
-      as_number_token(&input_text("OPERAND2", seen))
-    ),
-    "operator_equals" => format!(
-      "{} = {}",
-      as_text_token(&input_text("OPERAND1", seen)),
-      as_text_token(&input_text("OPERAND2", seen))
-    ),
-    "operator_and" => format!(
-      "{} and {}",
-      as_condition_token(&input_text("OPERAND1", seen)),
-      as_condition_token(&input_text("OPERAND2", seen))
-    ),
-    "operator_or" => format!(
-      "{} or {}",
-      as_condition_token(&input_text("OPERAND1", seen)),
-      as_condition_token(&input_text("OPERAND2", seen))
-    ),
-    "operator_not" => format!("not {}", as_condition_token(&input_text("OPERAND", seen))),
+    "operator_contains" => crate::locales::fmt_locale(&lang, "OPERATORS_CONTAINS", &[as_text_token(&input_text("STRING1", seen)), as_text_token(&input_text("STRING2", seen))], "<%1 contains %2?>"),
+    "operator_gt" => crate::locales::fmt_locale(&lang, "OPERATORS_GT", &[as_number_token(&input_text("OPERAND1", seen)), as_number_token(&input_text("OPERAND2", seen))], "<%1 > %2>"),
+    "operator_lt" => crate::locales::fmt_locale(&lang, "OPERATORS_LT", &[as_number_token(&input_text("OPERAND1", seen)), as_number_token(&input_text("OPERAND2", seen))], "<%1 < %2>"),
+    "operator_equals" => crate::locales::fmt_locale(&lang, "OPERATORS_EQUALS", &[as_text_token(&input_text("OPERAND1", seen)), as_text_token(&input_text("OPERAND2", seen))], "<%1 = %2>"),
+    "operator_and" => crate::locales::fmt_locale(&lang, "OPERATORS_AND", &[as_condition_token(&input_text("OPERAND1", seen)), as_condition_token(&input_text("OPERAND2", seen))], "<%1 and %2>"),
+    "operator_or" => crate::locales::fmt_locale(&lang, "OPERATORS_OR", &[as_condition_token(&input_text("OPERAND1", seen)), as_condition_token(&input_text("OPERAND2", seen))], "<%1 or %2>"),
+    "operator_not" => crate::locales::fmt_locale(&lang, "OPERATORS_NOT", &[as_condition_token(&input_text("OPERAND", seen))], "<not %1>"),
     "sensing_touchingobject" => {
-      let object = get_field_value(block, "TOUCHINGOBJECTMENU", "mouse-pointer");
-      format!("touching {} ?", as_text_token(&object))
+      let object = normalize_menu_value(&get_field_value(block, "TOUCHINGOBJECTMENU", "mouse-pointer"));
+      crate::locales::fmt_locale(&lang, "SENSING_TOUCHINGOBJECT", &[as_dropdown_token(&object)], "<touching %1?>")
     }
     "sensing_touchingcolor" => {
       let color = as_color_arg(&input_text("COLOR", seen));
-      format!("touching color {} ?", color)
+      crate::locales::fmt_locale(&lang, "SENSING_TOUCHINGCOLOR", &[as_color_arg(&color)], "<touching color %1?>")
     }
-    "sensing_touchingobjectmenu" => get_field_value(block, "TOUCHINGOBJECTMENU", "mouse-pointer"),
-    "motion_glideto_menu" => get_field_value(block, "TO", "random position"),
+    "sensing_touchingobjectmenu" => {
+      normalize_menu_value(&get_field_value(block, "TOUCHINGOBJECTMENU", "mouse-pointer"))
+    }
+    "sensing_distancetomenu" => {
+      normalize_menu_value(&get_field_value(block, "DISTANCETOMENU", "mouse-pointer"))
+    }
+    "event_broadcast_menu" => get_field_value(block, "BROADCAST_OPTION", "message1"),
+    "motion_goto_menu" => normalize_menu_value(&get_field_value(block, "TO", "random position")),
+    "motion_glideto_menu" => normalize_menu_value(&get_field_value(block, "TO", "random position")),
+    "motion_pointtowards_menu" => normalize_menu_value(&get_field_value(block, "TOWARDS", "mouse-pointer")),
     "sensing_keypressed" => {
       let key_input = input_text("KEY_OPTION", seen);
       let key = if key_input.is_empty() {
@@ -450,81 +441,77 @@ fn render_expression_by_id(blocks: &Map<String, Value>, block_id: &str, seen: &m
       } else {
         key_input
       };
-      format!("key {} pressed?", as_text_token(&key))
+      crate::locales::fmt_locale(&lang, "SENSING_KEYPRESSED", &[as_dropdown_token(&key)], "<key %1 pressed?>")
     }
     "sensing_keyoptions" => get_field_value(block, "KEY_OPTION", "space"),
-    "sensing_mousedown" => "mouse down?".to_string(),
-    "sensing_mousex" => "mouse x".to_string(),
-    "sensing_mousey" => "mouse y".to_string(),
-    "motion_xposition" => "x position".to_string(),
-    "motion_yposition" => "y position".to_string(),
-    "motion_direction" => "direction".to_string(),
+    "sensing_mousedown" => crate::locales::fmt_locale(&lang, "SENSING_MOUSEDOWN", &[], "<mouse down?>"),
+    "sensing_mousex" => crate::locales::fmt_locale(&lang, "SENSING_MOUSEX", &[], "(mouse x)"),
+    "sensing_mousey" => crate::locales::fmt_locale(&lang, "SENSING_MOUSEY", &[], "(mouse y)"),
+    "motion_xposition" => crate::locales::fmt_locale(&lang, "MOTION_XPOSITION", &[], "(x position)"),
+    "motion_yposition" => crate::locales::fmt_locale(&lang, "MOTION_YPOSITION", &[], "(y position)"),
+    "motion_direction" => crate::locales::fmt_locale(&lang, "MOTION_DIRECTION", &[], "(direction)"),
     "looks_costume" => get_field_value(block, "COSTUME", "costume1"),
     "looks_backdrops" => get_field_value(block, "BACKDROP", "backdrop1"),
     "music_menu_INSTRUMENT" => get_field_value(block, "INSTRUMENT", "1"),
     "control_create_clone_of_menu" => {
       normalize_clone_target(&get_field_value(block, "CLONE_OPTION", "_myself_"))
     }
-    "sensing_answer" => "answer".to_string(),
-    "sensing_timer" => "timer".to_string(),
-    "sensing_loudness" => "loudness".to_string(),
+    "sensing_answer" => crate::locales::fmt_locale(&lang, "SENSING_ANSWER", &[], "answer"),
+    "sensing_timer" => crate::locales::fmt_locale(&lang, "SENSING_TIMER", &[], "timer"),
+    "sensing_loudness" => crate::locales::fmt_locale(&lang, "SENSING_LOUDNESS", &[], "loudness"),
     "data_itemoflist" => {
       let index = input_text("INDEX", seen);
       let list = get_field_value(block, "LIST", "list");
-      format!("item {} of {}", as_number_token(&index), as_text_token(&list))
+      crate::locales::fmt_locale(&lang, "DATA_ITEMOFLIST", &[as_number_token(&index), as_list_token(&list)], "item %1 of %2")
     }
     "data_lengthoflist" => {
       let list = get_field_value(block, "LIST", "list");
-      format!("length of {}", as_text_token(&list))
+      crate::locales::fmt_locale(&lang, "DATA_LENGTHOFLIST", &[as_list_token(&list)], "length of %1")
     }
     "data_variable" => {
       let variable = get_field_value(block, "VARIABLE", "variable");
-      format!("var {}", as_text_token(&variable))
+      crate::locales::fmt_locale(&lang, "DATA_VARIABLE", &[variable], "(%1)")
     }
     "data_itemnumoflist" => {
       let list = get_field_value(block, "LIST", "list");
       let item = input_text("ITEM", seen);
-      format!("item # of {} in {}", as_text_token(&item), as_text_token(&list))
+      crate::locales::fmt_locale(&lang, "DATA_ITEMNUMOFLIST", &[as_text_token(&item), as_list_token(&list)], "item # of %1 in %2")
     }
     "data_listcontainsitem" => {
       let list = get_field_value(block, "LIST", "list");
       let item = input_text("ITEM", seen);
-      format!("{} contains {} ?", as_text_token(&list), as_text_token(&item))
+      crate::locales::fmt_locale(&lang, "DATA_LISTCONTAINSITEM", &[as_list_token(&list), as_text_token(&item)], "<%1 contains %2?>")
     }
     "data_listcontents" => {
       let list = get_field_value(block, "LIST", "list");
-      as_text_token(&list)
+      crate::locales::fmt_locale(&lang, "DATA_LISTCONTENTS", &[as_list_token(&list)], "%1")
     }
     "argument_reporter_string_number" => {
       let arg_name = get_field_value(block, "VALUE", "input");
-      format!("var {}", as_text_token(&arg_name))
+      crate::locales::fmt_locale(&lang, "ARGUMENT_REPORTER_STRING_NUMBER", &[arg_name], "(var [%1])")
     }
     "argument_reporter_boolean" => {
       let arg_name = get_field_value(block, "VALUE", "condition");
-      format!("<{}>", sanitize_square_brackets(&arg_name))
+      crate::locales::fmt_locale(&lang, "ARGUMENT_REPORTER_BOOLEAN", &[arg_name], "<%1>")
     }
-    "control_get_counter" => "counter".to_string(),
+    "control_get_counter" => crate::locales::fmt_locale(&lang, "CONTROL_GET_COUNTER", &[], "counter"),
     "looks_backdropnumbername" => {
       let property = get_field_value(block, "NUMBER_NAME", "number");
-      format!("backdrop {}", as_text_token(&property))
+      crate::locales::fmt_locale(&lang, "LOOKS_BACKDROPNUMBERNAME", &[as_text_token(&property)], "backdrop %1")
     }
     "looks_costumenumbername" => {
       let property = get_field_value(block, "NUMBER_NAME", "number");
-      format!("costume {}", as_text_token(&property))
+      crate::locales::fmt_locale(&lang, "LOOKS_COSTUMENUMBERNAME", &[as_text_token(&property)], "costume %1")
     }
-    "looks_size" => "size".to_string(),
-    "motion_xscroll" => "x scroll".to_string(),
-    "motion_yscroll" => "y scroll".to_string(),
-    "sensing_coloristouchingcolor" => format!(
-      "color {} is touching {} ?",
-      as_color_arg(&input_text("COLOR", seen)),
-      as_color_arg(&input_text("COLOR2", seen))
-    ),
+    "looks_size" => crate::locales::fmt_locale(&lang, "LOOKS_SIZE", &[], "size"),
+    "motion_xscroll" => crate::locales::fmt_locale(&lang, "MOTION_XSCROLL", &[], "x scroll"),
+    "motion_yscroll" => crate::locales::fmt_locale(&lang, "MOTION_YSCROLL", &[], "y scroll"),
+    "sensing_coloristouchingcolor" => crate::locales::fmt_locale(&lang, "SENSING_COLORISTOUCHINGCOLOR", &[as_color_arg(&input_text("COLOR", seen)), as_color_arg(&input_text("COLOR2", seen))], "<color %1 is touching %2?>"),
     "sensing_current" => {
       let current = get_field_value(block, "CURRENTMENU", "year");
-      format!("current {}", as_text_token(&current))
+      crate::locales::fmt_locale(&lang, "SENSING_CURRENT", &[as_dropdown_token(&current)], "current %1")
     }
-    "sensing_dayssince2000" => "days since 2000".to_string(),
+    "sensing_dayssince2000" => crate::locales::fmt_locale(&lang, "SENSING_DAYSSINCE2000", &[], "days since 2000"),
     "sensing_distanceto" => {
       let object_input = input_text("DISTANCETOMENU", seen);
       let object = if object_input.is_empty() {
@@ -532,9 +519,9 @@ fn render_expression_by_id(blocks: &Map<String, Value>, block_id: &str, seen: &m
       } else {
         object_input
       };
-      format!("distance to {}", as_text_token(&object))
+      crate::locales::fmt_locale(&lang, "SENSING_DISTANCETO", &[normalize_menu_value(&object)], "distance to %1")
     }
-    "sensing_loud" => "loudness > (10)".to_string(),
+    "sensing_loud" => crate::locales::fmt_locale(&lang, "SENSING_LOUD", &[], "loudness > (10)"),
     "sensing_of" => {
       let property = get_field_value(block, "PROPERTY", "x position");
       let object_input = input_text("OBJECT", seen);
@@ -543,15 +530,24 @@ fn render_expression_by_id(blocks: &Map<String, Value>, block_id: &str, seen: &m
       } else {
         object_input
       };
-      format!("{} of {}", as_text_token(&property), as_text_token(&object))
+      crate::locales::fmt_locale(&lang, "SENSING_OF", &[normalize_menu_value(&property), normalize_menu_value(&object)], "%1 of %2")
     }
-    "sensing_userid" => "user id".to_string(),
-    "sensing_username" => "username".to_string(),
+    "sensing_of_object_menu" => get_field_value(block, "OBJECT", "Stage"),
+    "sensing_userid" => crate::locales::fmt_locale(&lang, "SENSING_USERID", &[], "user id"),
+    "sensing_username" => crate::locales::fmt_locale(&lang, "SENSING_USERNAME", &[], "username"),
     "sound_beats_menu" => get_field_value(block, "BEATS", "0.25"),
     "sound_effects_menu" => get_field_value(block, "EFFECT", "pitch"),
     "sound_sounds_menu" => get_field_value(block, "SOUND_MENU", "pop"),
-    "sound_volume" => "volume".to_string(),
+    "sound_volume" => crate::locales::fmt_locale(&lang, "SOUND_VOLUME", &[], "volume"),
+    "music_getTempo" => crate::locales::fmt_locale(&lang, "MUSIC_GETTEMPO", &[], "tempo"),
+    "music_menu_DRUM" => get_field_value(block, "DRUM", "1"),
     "note" => get_field_value(block, "NOTE", "60"),
+    "pen_menu_colorParam" => get_field_value(block, "colorParam", "color"),
+    "videoSensing_videoOn" => {
+      let attribute = get_field_value(block, "ATTRIBUTE", "motion").to_ascii_lowercase();
+      let subject = get_field_value(block, "SUBJECT", "this sprite").to_ascii_lowercase();
+      crate::locales::fmt_locale(&lang, "VIDEOSENSING_VIDEOON", &[as_dropdown_token(&attribute), as_dropdown_token(&subject)], "video %1 on %2")
+    }
     other => sanitize_square_brackets(&format!("unsupported:{other}")),
   };
 
@@ -599,6 +595,7 @@ fn render_statement(
   indent: &str,
   seen: &mut HashSet<String>,
 ) -> Vec<String> {
+  let lang = CURRENT_LANG.lock().unwrap_or_else(|e| e.into_inner()).clone();
   let Some(block) = blocks.get(block_id).and_then(Value::as_object) else {
     return vec![format!("{indent}// missing block: {block_id}")];
   };
@@ -614,26 +611,26 @@ fn render_statement(
     .unwrap_or("unknown_opcode");
 
   match opcode {
-    "event_whenflagclicked" => vec![format!("{indent}when flag clicked")],
+    "event_whenflagclicked" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "EVENT_WHENFLAGCLICKED", &[], "when flag clicked"))],
     "event_whenkeypressed" => {
       let key = get_field_value(block, "KEY_OPTION", "space");
-      vec![format!("{indent}when {} key pressed", as_text_token(&key))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "EVENT_WHENKEYPRESSED", &[as_dropdown_token(&key)], "when %1 key pressed"))]
     }
-    "event_whenthisspriteclicked" => vec![format!("{indent}when this sprite clicked")],
+    "event_whenthisspriteclicked" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "EVENT_WHENTHISSPRITECLICKED", &[], "when this sprite clicked"))],
     "event_whenbackdropswitchesto" => {
       let backdrop = get_field_value(block, "BACKDROP", "backdrop1");
-      vec![format!("{indent}when backdrop switches to {}", as_text_token(&backdrop))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "EVENT_WHENBACKDROPSWITCHESTO", &[as_dropdown_token(&backdrop)], "when backdrop switches to %1"))]
     }
     "event_whenbroadcastreceived" => {
       let message = get_field_value(block, "BROADCAST_OPTION", "message1");
-      vec![format!("{indent}when I receive {}", as_text_token(&message))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "EVENT_WHENBROADCASTRECEIVED", &[as_dropdown_token(&message)], "when I receive %1"))]
     }
     "event_whengreaterthan" => {
       let menu = get_field_value(block, "WHENGREATERTHANMENU", "LOUDNESS").to_ascii_lowercase();
       let element = if menu == "timer" { "timer" } else { "loudness" };
       vec![format!(
         "{indent}when {} > {}",
-        as_text_token(element),
+        as_dropdown_token(element),
         as_number_token(&input_text("VALUE", &mut expr_seen))
       )]
     }
@@ -652,7 +649,7 @@ fn render_statement(
       } else {
         input
       };
-      vec![format!("{indent}broadcast {}", as_text_token(&message))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "EVENT_BROADCAST", &[as_dropdown_token(&message)], "broadcast %1"))]
     }
     "event_broadcastandwait" => {
       let input = input_text("BROADCAST_INPUT", &mut expr_seen);
@@ -661,8 +658,9 @@ fn render_statement(
       } else {
         input
       };
-      vec![format!("{indent}broadcast {} and wait", as_text_token(&message))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "EVENT_BROADCASTANDWAIT", &[as_dropdown_token(&message)], "broadcast %1 and wait"))]
     }
+    "event_broadcast_menu" => Vec::new(),
     "motion_movesteps" => vec![format!(
       "{indent}move {} steps",
       as_number_token(&input_text("STEPS", &mut expr_seen))
@@ -687,7 +685,7 @@ fn render_statement(
       } else {
         to_input
       };
-      vec![format!("{indent}go to {}", as_text_token(&to))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "MOTION_GOTO", &[as_dropdown_token(&normalize_menu_value(&to))], "go to %1"))]
     }
     "motion_glideto" => {
       let to_input = input_text("TO", &mut expr_seen);
@@ -699,7 +697,7 @@ fn render_statement(
       vec![format!(
         "{indent}glide {} secs to {}",
         as_number_token(&input_text("SECS", &mut expr_seen)),
-        as_text_token(&to)
+        as_dropdown_token(&normalize_menu_value(&to))
       )]
     }
     "motion_glidesecstoxy" => vec![format!(
@@ -719,7 +717,7 @@ fn render_statement(
       } else {
         towards_input
       };
-      vec![format!("{indent}point towards {}", as_text_token(&towards))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "MOTION_POINTTOWARDS", &[as_dropdown_token(&normalize_menu_value(&towards))], "point towards %1"))]
     }
     "motion_changexby" => vec![format!(
       "{indent}change x by {}",
@@ -739,7 +737,7 @@ fn render_statement(
     )],
     "motion_setrotationstyle" => {
       let style = get_field_value(block, "STYLE", "all around");
-      vec![format!("{indent}set rotation style {}", as_text_token(&style))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "MOTION_SETROTATIONSTYLE", &[as_dropdown_token(&style)], "set rotation style %1"))]
     }
     "motion_align_scene" => vec![format!("{indent}// legacy opcode: motion_align_scene")],
     "motion_scroll_right" => vec![format!(
@@ -750,7 +748,7 @@ fn render_statement(
       "{indent}// legacy opcode: motion_scroll_up {}",
       as_number_token(&input_text("DISTANCE", &mut expr_seen))
     )],
-    "motion_ifonedgebounce" => vec![format!("{indent}if on edge, bounce")],
+    "motion_ifonedgebounce" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "MOTION_IFONEDGEBOUNCE", &[], "if on edge, bounce"))],
     "looks_say" => vec![format!(
       "{indent}say {}",
       as_text_token(&input_text("MESSAGE", &mut expr_seen))
@@ -776,9 +774,9 @@ fn render_statement(
       } else {
         input
       };
-      vec![format!("{indent}switch costume to {}", as_text_token(&costume))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "LOOKS_SWITCHCOSTUMETO", &[as_dropdown_token(&costume)], "switch costume to %1"))]
     }
-    "looks_nextcostume" => vec![format!("{indent}next costume")],
+    "looks_nextcostume" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "LOOKS_NEXTCOSTUME", &[], "next costume"))],
     "looks_switchbackdropto" => {
       let input = input_text("BACKDROP", &mut expr_seen);
       let backdrop = if input.is_empty() {
@@ -786,7 +784,7 @@ fn render_statement(
       } else {
         input
       };
-      vec![format!("{indent}switch backdrop to {}", as_text_token(&backdrop))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "LOOKS_SWITCHBACKDROPTO", &[as_dropdown_token(&backdrop)], "switch backdrop to %1"))]
     }
     "looks_switchbackdroptoandwait" => {
       let input = input_text("BACKDROP", &mut expr_seen);
@@ -797,10 +795,10 @@ fn render_statement(
       };
       vec![format!(
         "{indent}switch backdrop to {} and wait",
-        as_text_token(&backdrop)
+        as_dropdown_token(&backdrop)
       )]
     }
-    "looks_nextbackdrop" => vec![format!("{indent}next backdrop")],
+    "looks_nextbackdrop" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "LOOKS_NEXTBACKDROP_BLOCK", &[], "next backdrop"))],
     "looks_changesizeby" => vec![format!(
       "{indent}change size by {}",
       as_number_token(&input_text("CHANGE", &mut expr_seen))
@@ -813,7 +811,7 @@ fn render_statement(
       let effect = get_field_value(block, "EFFECT", "color").to_ascii_lowercase();
       vec![format!(
         "{indent}change {} effect by {}",
-        as_text_token(&effect),
+        as_dropdown_token(&effect),
         as_number_token(&input_text("CHANGE", &mut expr_seen))
       )]
     }
@@ -821,28 +819,28 @@ fn render_statement(
       let effect = get_field_value(block, "EFFECT", "color").to_ascii_lowercase();
       vec![format!(
         "{indent}set {} effect to {}",
-        as_text_token(&effect),
+        as_dropdown_token(&effect),
         as_number_token(&input_text("VALUE", &mut expr_seen))
       )]
     }
     "looks_gotofrontback" => {
       let layer = get_field_value(block, "FRONT_BACK", "front").to_ascii_lowercase();
-      vec![format!("{indent}go to {} layer", as_text_token(&layer))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "LOOKS_GOTOFRONTBACK", &[as_dropdown_token(&layer)], "go to %1 layer"))]
     }
     "looks_goforwardbackwardlayers" => {
       let direction = get_field_value(block, "FORWARD_BACKWARD", "forward").to_ascii_lowercase();
       vec![format!(
         "{indent}go {} {} layers",
-        as_text_token(&direction),
+        as_dropdown_token(&direction),
         as_number_token(&input_text("NUM", &mut expr_seen))
       )]
     }
     "looks_changestretchby" => vec![format!("{indent}// legacy opcode: looks_changestretchby")],
     "looks_setstretchto" => vec![format!("{indent}// legacy opcode: looks_setstretchto")],
     "looks_hideallsprites" => vec![format!("{indent}// legacy opcode: looks_hideallsprites")],
-    "looks_cleargraphiceffects" => vec![format!("{indent}clear graphic effects")],
-    "looks_show" => vec![format!("{indent}show")],
-    "looks_hide" => vec![format!("{indent}hide")],
+    "looks_cleargraphiceffects" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "LOOKS_CLEARGRAPHICEFFECTS", &[], "clear graphic effects"))],
+    "looks_show" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "LOOKS_SHOW", &[], "show"))],
+    "looks_hide" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "LOOKS_HIDE", &[], "hide"))],
     "sound_playuntildone" => {
       let input = input_text("SOUND_MENU", &mut expr_seen);
       let sound = if input.is_empty() {
@@ -850,7 +848,7 @@ fn render_statement(
       } else {
         input
       };
-      vec![format!("{indent}play sound {} until done", as_text_token(&sound))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "SOUND_PLAYUNTILDONE", &[as_dropdown_token(&sound)], "play sound %1 until done"))]
     }
     "sound_play" => {
       let input = input_text("SOUND_MENU", &mut expr_seen);
@@ -859,7 +857,7 @@ fn render_statement(
       } else {
         input
       };
-      vec![format!("{indent}start sound {}", as_text_token(&sound))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "SOUND_PLAY", &[as_dropdown_token(&sound)], "start sound %1"))]
     }
     "music_playNoteForBeats" => {
       let note = if let Some(entry) = get_input_entry(block, "NOTE") {
@@ -877,16 +875,33 @@ fn render_statement(
         as_number_token(&input_text("BEATS", &mut expr_seen))
       )]
     }
+    "music_playDrumForBeats" => vec![format!(
+      "{indent}play drum {} for {} beats",
+      as_number_token(&input_text("DRUM", &mut expr_seen)),
+      as_number_token(&input_text("BEATS", &mut expr_seen))
+    )],
+    "music_restForBeats" => vec![format!(
+      "{indent}rest for {} beats",
+      as_number_token(&input_text("BEATS", &mut expr_seen))
+    )],
     "music_setInstrument" => vec![format!(
       "{indent}set instrument to {}",
       as_number_token(&input_text("INSTRUMENT", &mut expr_seen))
     )],
-    "sound_stopallsounds" => vec![format!("{indent}stop all sounds")],
+    "music_changeTempo" => vec![format!(
+      "{indent}change tempo by {}",
+      as_number_token(&input_text("TEMPO", &mut expr_seen))
+    )],
+    "music_setTempo" => vec![format!(
+      "{indent}set tempo to {}",
+      as_number_token(&input_text("TEMPO", &mut expr_seen))
+    )],
+    "sound_stopallsounds" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "SOUND_STOPALLSOUNDS", &[], "stop all sounds"))],
     "sound_changeeffectby" => {
       let effect = get_field_value(block, "EFFECT", "pitch").to_ascii_lowercase();
       vec![format!(
         "{indent}change {} effect by {}",
-        as_text_token(&effect),
+        as_dropdown_token(&effect),
         as_number_token(&input_text("VALUE", &mut expr_seen))
       )]
     }
@@ -894,11 +909,11 @@ fn render_statement(
       let effect = get_field_value(block, "EFFECT", "pitch").to_ascii_lowercase();
       vec![format!(
         "{indent}set {} effect to {}",
-        as_text_token(&effect),
+        as_dropdown_token(&effect),
         as_number_token(&input_text("VALUE", &mut expr_seen))
       )]
     }
-    "sound_cleareffects" => vec![format!("{indent}clear sound effects")],
+    "sound_cleareffects" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "SOUND_CLEAREFFECTS", &[], "clear sound effects"))],
     "sound_changevolumeby" => vec![format!(
       "{indent}change volume by {}",
       as_number_token(&input_text("VOLUME", &mut expr_seen))
@@ -914,13 +929,25 @@ fn render_statement(
       } else {
         question
       };
-      vec![format!("{indent}ask {} and wait", as_text_token(&final_question))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "SENSING_ASKANDWAIT", &[as_text_token(&final_question)], "ask %1 and wait"))]
     }
     "sensing_setdragmode" => {
       let mode = get_field_value(block, "DRAG_MODE", "draggable").to_ascii_lowercase();
-      vec![format!("{indent}set drag mode {}", as_text_token(&mode))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "SENSING_SETDRAGMODE", &[as_dropdown_token(&mode)], "set drag mode %1"))]
     }
-    "sensing_resettimer" => vec![format!("{indent}reset timer")],
+    "sensing_resettimer" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "SENSING_RESETTIMER", &[], "reset timer"))],
+    "videoSensing_whenMotionGreaterThan" => vec![format!(
+      "{indent}when video motion > {}",
+      as_number_token(&input_text("REFERENCE", &mut expr_seen))
+    )],
+    "videoSensing_videoToggle" => {
+      let state = get_field_value(block, "VIDEO_STATE", "on").to_ascii_lowercase();
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "VIDEOSENSING_VIDEOTOGGLE", &[as_dropdown_token(&state)], "turn video %1"))]
+    }
+    "videoSensing_setVideoTransparency" => vec![format!(
+      "{indent}set video transparency to {} %",
+      as_number_token(&input_text("TRANSPARENCY", &mut expr_seen))
+    )],
     "data_setvariableto" => {
       let variable = get_field_value(block, "VARIABLE", "variable");
       let value = input_text("VALUE", &mut expr_seen);
@@ -931,7 +958,7 @@ fn render_statement(
       };
       vec![format!(
         "{indent}set {} to {}",
-        as_text_token(&variable),
+        as_variable_token(&variable),
         rendered_value
       )]
     }
@@ -940,17 +967,17 @@ fn render_statement(
       let value = input_text("VALUE", &mut expr_seen);
       vec![format!(
         "{indent}change {} by {}",
-        as_text_token(&variable),
+        as_variable_token(&variable),
         as_number_token(&value)
       )]
     }
     "data_showvariable" => {
       let variable = get_field_value(block, "VARIABLE", "variable");
-      vec![format!("{indent}show variable {}", as_text_token(&variable))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "DATA_SHOWVARIABLE", &[as_variable_token(&variable)], "show variable %1"))]
     }
     "data_hidevariable" => {
       let variable = get_field_value(block, "VARIABLE", "variable");
-      vec![format!("{indent}hide variable {}", as_text_token(&variable))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "DATA_HIDEVARIABLE", &[as_variable_token(&variable)], "hide variable %1"))]
     }
     "data_addtolist" => {
       let list = get_field_value(block, "LIST", "list");
@@ -960,7 +987,7 @@ fn render_statement(
       } else {
         as_text_token(&item)
       };
-      vec![format!("{indent}add {} to {}", rendered_item, as_text_token(&list))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "DATA_ADDTOLIST", &[rendered_item, as_list_token(&list)], "add %1 to %2"))]
     }
     "data_deleteoflist" => {
       let list = get_field_value(block, "LIST", "list");
@@ -968,12 +995,12 @@ fn render_statement(
       vec![format!(
         "{indent}delete {} of {}",
         as_number_token(&index),
-        as_text_token(&list)
+        as_list_token(&list)
       )]
     }
     "data_deletealloflist" => {
       let list = get_field_value(block, "LIST", "list");
-      vec![format!("{indent}delete all of {}", as_text_token(&list))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "DATA_DELETEALLOFLIST", &[as_list_token(&list)], "delete all of %1"))]
     }
     "data_insertatlist" => {
       let list = get_field_value(block, "LIST", "list");
@@ -988,7 +1015,7 @@ fn render_statement(
         "{indent}insert {} at {} of {}",
         rendered_item,
         as_number_token(&index),
-        as_text_token(&list)
+        as_list_token(&list)
       )]
     }
     "data_replaceitemoflist" => {
@@ -1003,80 +1030,65 @@ fn render_statement(
       vec![format!(
         "{indent}replace item {} of {} with {}",
         as_number_token(&index),
-        as_text_token(&list),
+        as_list_token(&list),
         rendered_item
       )]
     }
     "data_showlist" => {
       let list = get_field_value(block, "LIST", "list");
-      vec![format!("{indent}show list {}", as_text_token(&list))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "DATA_SHOWLIST", &[as_list_token(&list)], "show list %1"))]
     }
     "data_hidelist" => {
       let list = get_field_value(block, "LIST", "list");
-      vec![format!("{indent}hide list {}", as_text_token(&list))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "DATA_HIDELIST", &[as_list_token(&list)], "hide list %1"))]
     }
     "control_wait" => vec![format!(
       "{indent}wait {} seconds",
       as_number_token(&input_text("DURATION", &mut expr_seen))
     )],
-    "control_wait_until" => vec![format!(
-      "{indent}wait until {}",
-      as_condition_token(&input_text("CONDITION", &mut expr_seen))
-    )],
+    "control_wait_until" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_WAITUNTIL", &[as_condition_token(&input_text("CONDITION", &mut expr_seen))], "wait until %1"))],
     "control_repeat" => {
-      let mut lines = vec![format!(
-        "{indent}repeat {}",
-        as_number_token(&input_text("TIMES", &mut expr_seen))
-      )];
+      let mut lines = vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_REPEAT", &[as_number_token(&input_text("TIMES", &mut expr_seen))], "repeat %1"))];
       if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
         lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
       }
-      lines.push(format!("{indent}end"));
+      lines.push(format!("{indent}{}", end_keyword(&lang)));
       lines
     }
     "control_forever" => {
-      let mut lines = vec![format!("{indent}forever")];
+      let mut lines = vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_FOREVER", &[], "forever"))];
       if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
         lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
       }
-      lines.push(format!("{indent}end"));
+      lines.push(format!("{indent}{}", end_keyword(&lang)));
       lines
     }
     "control_if" => {
-      let mut lines = vec![format!(
-        "{indent}if {} then",
-        as_condition_token(&input_text("CONDITION", &mut expr_seen))
-      )];
+      let mut lines = vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_IF", &[as_condition_token(&input_text("CONDITION", &mut expr_seen))], "if %1 then"))];
       if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
         lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
       }
-      lines.push(format!("{indent}end"));
+      lines.push(format!("{indent}{}", end_keyword(&lang)));
       lines
     }
     "control_if_else" => {
-      let mut lines = vec![format!(
-        "{indent}if {} then",
-        as_condition_token(&input_text("CONDITION", &mut expr_seen))
-      )];
+      let mut lines = vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_IF", &[as_condition_token(&input_text("CONDITION", &mut expr_seen))], "if %1 then"))];
       if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
         lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
       }
-      lines.push(format!("{indent}else"));
+      lines.push(format!("{indent}{}", else_keyword(&lang)));
       if let Some(start) = get_substack_start(blocks, block, "SUBSTACK2") {
         lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
       }
-      lines.push(format!("{indent}end"));
+      lines.push(format!("{indent}{}", end_keyword(&lang)));
       lines
     }
     "control_repeat_until" => {
-      let mut lines = vec![format!(
-        "{indent}repeat until {}",
-        as_condition_token(&input_text("CONDITION", &mut expr_seen))
-      )];
+      let mut lines = vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_REPEATUNTIL", &[as_condition_token(&input_text("CONDITION", &mut expr_seen))], "repeat until %1"))];
       if let Some(start) = get_substack_start(blocks, block, "SUBSTACK") {
         lines.extend(render_stack(blocks, &start, &format!("{indent}  "), seen));
       }
-      lines.push(format!("{indent}end"));
+      lines.push(format!("{indent}{}", end_keyword(&lang)));
       lines
     }
     "control_while" => {
@@ -1107,9 +1119,9 @@ fn render_statement(
     "control_clear_counter" => vec![format!("{indent}// legacy opcode: control_clear_counter")],
     "control_stop" => {
       let option = get_field_value(block, "STOP_OPTION", "all");
-      vec![format!("{indent}stop {}", as_text_token(&option))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_STOP", &[as_dropdown_token(&option)], "stop %1"))]
     }
-    "control_start_as_clone" => vec![format!("{indent}when I start as a clone")],
+    "control_start_as_clone" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_STARTASCLONE", &[], "when I start as a clone"))],
     "control_create_clone_of" => {
       let clone_input = input_text("CLONE_OPTION", &mut expr_seen);
       let clone = if clone_input.is_empty() {
@@ -1117,9 +1129,9 @@ fn render_statement(
       } else {
         normalize_clone_target(&clone_input)
       };
-      vec![format!("{indent}create clone of {}", as_text_token(&clone))]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_CREATECLONEOF", &[as_dropdown_token(&clone)], "create clone of %1"))]
     }
-    "control_delete_this_clone" => vec![format!("{indent}delete this clone")],
+    "control_delete_this_clone" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_DELETETHISCLONE", &[], "delete this clone"))],
     "procedures_definition" => {
       let (proccode, arg_names) = resolve_procedure_signature(blocks, block);
       let rendered_slots: Vec<String> = arg_names
@@ -1127,23 +1139,81 @@ fn render_statement(
         .map(|name| procedure_slot_token(name))
         .collect();
       let label = fill_procedure_placeholders(&proccode, &rendered_slots);
-      vec![format!("{indent}define {label}")]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "PROCEDURES_DEFINITION", &[label], "define %1"))]
     }
-    "procedures_prototype" => Vec::new(),
     "procedures_call" => {
       let proccode = get_mutation_value(block, "proccode").unwrap_or_else(|| "my block".to_string());
       let arg_ids = parse_string_array(get_mutation_value(block, "argumentids"));
       let rendered_slots: Vec<String> = arg_ids
         .iter()
-        .map(|arg_id| procedure_slot_token(&input_text(arg_id, &mut expr_seen)))
+        .map(|arg_id| {
+          let rendered = input_text(arg_id, &mut expr_seen);
+          if rendered.starts_with('(') || rendered.starts_with('<') {
+            rendered
+          } else {
+            procedure_slot_token(&rendered)
+          }
+        })
         .collect();
       let label = fill_procedure_placeholders(&proccode, &rendered_slots);
-      vec![format!("{indent}call {label}")]
+      vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "PROCEDURES_CALL", &[label], "call %1"))]
     }
     "music_menu_INSTRUMENT" => Vec::new(),
+    "music_menu_DRUM" => Vec::new(),
     "sensing_keyoptions" => Vec::new(),
     "control_create_clone_of_menu" => Vec::new(),
     "note" => Vec::new(),
+    "pen_menu_colorParam" => Vec::new(),
+    "pen_clear" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "PEN_CLEAR", &[], "erase all"))],
+    "pen_stamp" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "PEN_STAMP", &[], "stamp"))],
+    "pen_penDown" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "PEN_PENDOWN", &[], "pen down"))],
+    "pen_penUp" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "PEN_PENUP", &[], "pen up"))],
+    "pen_setPenSizeTo" => vec![format!(
+      "{indent}set pen size to {}",
+      as_number_token(&input_text("SIZE", &mut expr_seen))
+    )],
+    "pen_changePenSizeBy" => vec![format!(
+      "{indent}change pen size by {}",
+      as_number_token(&input_text("SIZE", &mut expr_seen))
+    )],
+    "pen_setPenColorToColor" => vec![format!(
+      "{indent}set pen color to {}",
+      as_color_arg(&input_text("COLOR", &mut expr_seen))
+    )],
+    "pen_changePenColorParamBy" => {
+      let param = input_text("COLOR_PARAM", &mut expr_seen);
+      let value = input_text("VALUE", &mut expr_seen);
+      vec![format!(
+        "{indent}change pen {} by {}",
+        as_text_token(&param),
+        as_number_token(&value)
+      )]
+    }
+    "pen_setPenColorParamTo" => {
+      let param = input_text("COLOR_PARAM", &mut expr_seen);
+      let value = input_text("VALUE", &mut expr_seen);
+      vec![format!(
+        "{indent}set pen {} to {}",
+        as_text_token(&param),
+        as_number_token(&value)
+      )]
+    }
+    "pen_setPenHueToNumber" => vec![format!(
+      "{indent}set pen color to {}",
+      as_number_token(&input_text("HUE", &mut expr_seen))
+    )],
+    "pen_changePenHueBy" => vec![format!(
+      "{indent}change pen color by {}",
+      as_number_token(&input_text("HUE", &mut expr_seen))
+    )],
+    "pen_setPenShadeToNumber" => vec![format!(
+      "{indent}set pen shade to {}",
+      as_number_token(&input_text("SHADE", &mut expr_seen))
+    )],
+    "pen_changePenShadeBy" => vec![format!(
+      "{indent}change pen shade by {}",
+      as_number_token(&input_text("SHADE", &mut expr_seen))
+    )],
     _ => vec![format!("{indent}// unsupported opcode: {opcode}")],
   }
 }
@@ -1196,6 +1266,26 @@ fn is_effectively_empty_script(lines: &[String]) -> bool {
     let trimmed = line.trim();
     !trimmed.is_empty() && !is_diagnostic_line(trimmed)
   })
+}
+
+fn render_top_level_script(blocks: &Map<String, Value>, block_id: &str) -> Vec<String> {
+  let statement_lines = render_stack(blocks, block_id, "", &HashSet::new());
+  if !is_effectively_empty_script(&statement_lines) {
+    return statement_lines;
+  }
+
+  let mut seen = HashSet::new();
+  let expression = render_expression_by_id(blocks, block_id, &mut seen);
+  let trimmed = expression.trim();
+  if trimmed.is_empty() || trimmed.starts_with("unsupported:") {
+    statement_lines
+  } else if trimmed.starts_with('<') && trimmed.ends_with('>') {
+    vec![trimmed.to_string()]
+  } else if trimmed.starts_with('(') && trimmed.ends_with(')') {
+    vec![trimmed.to_string()]
+  } else {
+    vec![format!("({trimmed})")]
+  }
 }
 
 fn is_supported_image_format(data_format: &str) -> bool {
@@ -1335,7 +1425,7 @@ fn collect_numbered_scripts(root: &Value) -> Result<Vec<NumberedScript>, String>
     let mut local_number: usize = 0;
 
     for top_id in &top_scripts {
-      let lines = render_stack(blocks, top_id, "", &HashSet::new());
+      let lines = render_top_level_script(blocks, top_id);
       if is_effectively_empty_script(&lines) {
         continue;
       }
@@ -1747,7 +1837,10 @@ pub fn extract_scripts_json(project_json_bytes: &[u8]) -> Vec<u8> {
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_func)]
-pub fn sb3_to_scratch_text(sb3_bytes: &[u8]) -> Vec<u8> {
+pub fn sb3_to_scratch_text(sb3_bytes: &[u8], lang_bytes: &[u8]) -> Vec<u8> {
+  locales::init();
+  let lang = std::str::from_utf8(lang_bytes).unwrap_or("en");
+  *CURRENT_LANG.lock().unwrap() = lang.to_string();
   match sb3_to_scratch_text_raw(sb3_bytes) {
     Ok(text) => text.into_bytes(),
     Err(err) => err_bytes(err),
@@ -1755,7 +1848,10 @@ pub fn sb3_to_scratch_text(sb3_bytes: &[u8]) -> Vec<u8> {
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_func)]
-pub fn sb3_to_scratch_text_by_number(sb3_bytes: &[u8], script_number_bytes: &[u8]) -> Vec<u8> {
+pub fn sb3_to_scratch_text_by_number(sb3_bytes: &[u8], script_number_bytes: &[u8], lang_bytes: &[u8]) -> Vec<u8> {
+  locales::init();
+  let lang = std::str::from_utf8(lang_bytes).unwrap_or("en");
+  *CURRENT_LANG.lock().unwrap() = lang.to_string();
   let script_number = match parse_script_number(script_number_bytes) {
     Ok(value) => value,
     Err(err) => return err_bytes(err),
@@ -1768,7 +1864,10 @@ pub fn sb3_to_scratch_text_by_number(sb3_bytes: &[u8], script_number_bytes: &[u8
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_func)]
-pub fn sb3_scripts_catalog_json(sb3_bytes: &[u8]) -> Vec<u8> {
+pub fn sb3_scripts_catalog_json(sb3_bytes: &[u8], lang_bytes: &[u8]) -> Vec<u8> {
+  locales::init();
+  let lang = std::str::from_utf8(lang_bytes).unwrap_or("en");
+  *CURRENT_LANG.lock().unwrap() = lang.to_string();
   match sb3_scripts_catalog_json_raw(sb3_bytes) {
     Ok(text) => text.into_bytes(),
     Err(err) => err_bytes(err),
@@ -1806,5 +1905,148 @@ pub fn sb3_image_bytes_by_md5ext(sb3_bytes: &[u8], md5ext_bytes: &[u8]) -> Vec<u
   match sb3_image_bytes_by_md5ext_raw(sb3_bytes, &md5ext) {
     Ok(bytes) => bytes,
     Err(err) => err_bytes(err),
+  }
+}
+
+fn end_keyword(lang: &str) -> &str {
+  match lang {
+    "de" => "ende",
+    "fr" => "fin",
+    _ => "end",
+  }
+}
+
+fn else_keyword(lang: &str) -> &str {
+  match lang {
+    "de" => "sonst",
+    "fr" => "sinon",
+    _ => "else",
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use serde_json::json;
+
+  fn object(value: Value) -> Map<String, Value> {
+    value.as_object().expect("object").clone()
+  }
+
+  #[test]
+  fn list_contains_expression_uses_list_dropdown_syntax() {
+    let mut blocks = Map::new();
+    blocks.insert(
+      "contains".to_string(),
+      json!({
+        "opcode": "data_listcontainsitem",
+        "fields": {
+          "LIST": ["things", "list-id"]
+        },
+        "inputs": {
+          "ITEM": [1, [10, "needle"]]
+        }
+      }),
+    );
+
+    let mut seen = HashSet::new();
+    let rendered = render_expression_by_id(&blocks, "contains", &mut seen);
+    assert_eq!(rendered, "<[things v] contains [needle]?>");
+  }
+
+  #[test]
+  fn math_operator_expression_uses_dropdown_syntax() {
+    let mut blocks = Map::new();
+    blocks.insert(
+      "math".to_string(),
+      json!({
+        "opcode": "operator_mathop",
+        "fields": {
+          "OPERATOR": ["sqrt"]
+        },
+        "inputs": {
+          "NUM": [1, [4, "9"]]
+        }
+      }),
+    );
+
+    let mut seen = HashSet::new();
+    let rendered = render_expression_by_id(&blocks, "math", &mut seen);
+    assert_eq!(rendered, "[sqrt v] of (9)");
+  }
+
+  #[test]
+  fn data_statement_uses_dropdowns_for_variable_and_list_slots() {
+    let set_variable = object(json!({
+      "opcode": "data_setvariableto",
+      "fields": {
+        "VARIABLE": ["score", "var-id"]
+      },
+      "inputs": {
+        "VALUE": [1, [10, "0"]]
+      }
+    }));
+    let mut set_blocks = Map::new();
+    set_blocks.insert("set".to_string(), Value::Object(set_variable));
+    let mut seen = HashSet::new();
+    assert_eq!(
+      render_statement(&set_blocks, "set", "", &mut seen),
+      vec!["set [score v] to [0]".to_string()]
+    );
+
+    let add_list = object(json!({
+      "opcode": "data_addtolist",
+      "fields": {
+        "LIST": ["items", "list-id"]
+      },
+      "inputs": {
+        "ITEM": [1, [10, "thing"]]
+      }
+    }));
+    let mut list_blocks = Map::new();
+    list_blocks.insert("add".to_string(), Value::Object(add_list));
+    let mut seen = HashSet::new();
+    assert_eq!(
+      render_statement(&list_blocks, "add", "", &mut seen),
+      vec!["add [thing] to [items v]".to_string()]
+    );
+  }
+
+  #[test]
+  fn bundled_example_project_does_not_emit_unsupported_expressions() {
+    let virtual_ukulele = include_bytes!("../../../examples/Virtual Ukulele.sb3");
+    let rendered = sb3_to_scratch_text_raw(virtual_ukulele).expect("virtual ukulele sb3 parses");
+    assert!(
+      !rendered.contains("unsupported:"),
+      "unexpected unsupported expression in generated scratchblocks text:\n{rendered}"
+    );
+  }
+
+  #[test]
+  fn all_blocks_project_normalizes_scratch_vm_menu_sentinels() {
+    let all_blocks = include_bytes!("../tests/fixtures/all-blocks.sb3");
+    let rendered = sb3_to_scratch_text_raw(all_blocks).expect("all-blocks sb3 parses");
+    assert!(
+      !rendered.contains("[_random_ v]") && !rendered.contains("[_mouse_ v]"),
+      "Scratch VM sentinel menu values leaked into scratchblocks text:\n{rendered}"
+    );
+    assert!(rendered.contains("go to [random position v]"));
+    assert!(rendered.contains("point towards [mouse-pointer v]"));
+    assert!(rendered.contains("glide (1) secs to [random position v]"));
+    assert!(rendered.contains("when [loudness v] > (10)"));
+    assert!(rendered.contains("(x position)"));
+    assert!(rendered.contains("<mouse down?>"));
+    assert!(rendered.contains("(0) + (0)"));
+    let catalog = sb3_scripts_catalog_json_raw(all_blocks).expect("all-blocks catalog encodes");
+    let parsed: Value = serde_json::from_str(&catalog).expect("catalog json parses");
+    let scripts_len = parsed
+      .get("scripts")
+      .and_then(Value::as_array)
+      .map(Vec::len)
+      .unwrap_or(0);
+    assert!(
+      scripts_len >= 110,
+      "expected all-blocks catalog to include top-level reporter/boolean blocks, got {scripts_len}"
+    );
   }
 }

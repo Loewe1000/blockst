@@ -1,9 +1,7 @@
 // sb3.typ — Typst-side helpers for direct SB3 import via plugin()
 
-#import "text/en.typ": parse-scratch-text as parse-scratch-text-en
-#import "text/parser.typ": _render-nodes
-#import "core.typ": block as scratch-render-block, get-template
-#import "rendering/categories.typ": list-monitor, variable-monitor
+#import "text/parser.typ": render-scratch-text as _render-scratch-generic
+#import "monitors.typ": list-monitor, variable-monitor
 
 #let _error-prefix = "ERROR:"
 #let _default-sb3-plugin = plugin("plugins/sb3_wasm.wasm")
@@ -597,14 +595,15 @@
       no-scripts: "Keine Top-Level-Skripte in dieser sb3 gefunden.",
       no-target-scripts: "Keine Top-Level-Skripte fuer den gewaehlten Ziel-Filter gefunden.",
       no-lists: "Keine Listen fuer den gewaehlten Ziel-Filter gefunden.",
-      no-variables: "Keine Variablen fuer den gewaehlten Ziel-Filter gefunden.",
-      stage: "Buehne (Hintergrund)",
+      no-variables: "Keine Variablen für den gewaehlten Ziel-Filter gefunden.",
+      stage: "Bühne (Hintergrund)",
       sprite: "Figur",
       script: "Skript",
       list: "Liste",
       variable: "Variable",
       values: "Werte",
       value: "Wert",
+      length: "Länge",
     )
   } else if language == "fr" {
     (
@@ -619,6 +618,7 @@
       variable: "Variable",
       values: "Valeurs",
       value: "Valeur",
+      length: "longueur",
     )
   } else {
     (
@@ -633,6 +633,7 @@
       variable: "Variable",
       values: "Values",
       value: "Value",
+      length: "Length",
     )
   }
 }
@@ -643,21 +644,19 @@
 }
 
 #let _render-scratch-text-localized(text, language) = {
-  // SB3 importer currently emits English parser text.
-  // Parse in English, then render nodes in the target UI language.
-  let nodes = parse-scratch-text-en(text)
-  _render-nodes(nodes, language)
+  // SB3 importer emits English parser text; render via WASM with target UI language.
+  _render-scratch-generic(text, lang-code: language)
 }
 
 // Returns metadata for top-level scripts with global numbering.
 // Optional target filter: stage or exact target name.
 // Optional parsed_text field per item (enabled by default).
 // Output format: ((target_name: "...", is_stage: true/false, scripts: ((number: 1, ...), ...)), ...)
-#let sb3-scripts-catalog(sb3-bytes, target: auto, include-parser-text: true, sb3-plugin: auto) = {
+#let sb3-scripts-catalog(sb3-bytes, target: auto, include-parser-text: true, language: "en", sb3-plugin: auto) = {
   let active-plugin = _resolve-plugin(sb3-plugin: sb3-plugin)
   let target-filter = _normalize-target(target)
   let include-parser-text = _normalize-include-parser-text(include-parser-text)
-  let text = str(active-plugin.sb3_scripts_catalog_json(sb3-bytes))
+  let text = str(active-plugin.sb3_scripts_catalog_json(sb3-bytes, bytes(language)))
   let catalog = json(bytes(_check-plugin-output(text)))
 
   let filtered = ()
@@ -674,7 +673,7 @@
   let enriched = ()
   for item in filtered {
     let parser-text = _strip-script-header(_check-plugin-output(str(
-      active-plugin.sb3_to_scratch_text_by_number(sb3-bytes, bytes(str(item.number))),
+      active-plugin.sb3_to_scratch_text_by_number(sb3-bytes, bytes(str(item.number)), bytes(language)),
     )))
     enriched.push((
       number: item.number,
@@ -714,24 +713,34 @@
 
 // Low-level: convert SB3 bytes to parser text through the plugin.
 // script-number is global and 1-based across all targets.
-#let sb3-bytes-to-scratch-text(sb3-bytes, script-number: auto, sb3-plugin: auto) = {
+#let sb3-bytes-to-scratch-text(sb3-bytes, script-number: auto, language: "en", sb3-plugin: auto) = {
   let active-plugin = _resolve-plugin(sb3-plugin: sb3-plugin)
   let text = if script-number == auto {
-    str(active-plugin.sb3_to_scratch_text(sb3-bytes))
+    str(active-plugin.sb3_to_scratch_text(sb3-bytes, bytes(language)))
   } else {
     if type(script-number) != int or script-number < 1 {
       panic("render-sb3-scripts: script-number must be an integer >= 1.")
     }
-    str(active-plugin.sb3_to_scratch_text_by_number(sb3-bytes, bytes(str(script-number))))
+    str(active-plugin.sb3_to_scratch_text_by_number(sb3-bytes, bytes(str(script-number)), bytes(language)))
   }
   _check-plugin-output(text)
 }
 
 // Alias for readability in call sites.
-#let sb3-to-scratch-text(sb3-bytes, script-number: auto, sb3-plugin: auto) = sb3-bytes-to-scratch-text(
+#let sb3-to-scratch-text(sb3-bytes, script-number: auto, language: "en", sb3-plugin: auto) = sb3-bytes-to-scratch-text(
   sb3-bytes,
   script-number: script-number,
+  language: language,
   sb3-plugin: sb3-plugin,
+)
+
+#let _sb3-to-renderable-scratch-text(sb3-bytes, script-number: auto, language: "en", sb3-plugin: auto) = _strip-script-header(
+  sb3-to-scratch-text(
+    sb3-bytes,
+    script-number: script-number,
+    language: language,
+    sb3-plugin: sb3-plugin,
+  ),
 )
 
 // Convenience: directly render imported scripts as blockst content.
@@ -789,9 +798,10 @@
           #v(header-gap)
         ]
         #_render-scratch-text-localized(
-          sb3-to-scratch-text(
+          _sb3-to-renderable-scratch-text(
             sb3-bytes,
             script-number: item.number,
+            language: language,
             sb3-plugin: active-plugin,
           ),
           language,
@@ -807,9 +817,10 @@
           #v(header-gap)
         ]
         #_render-scratch-text-localized(
-          sb3-to-scratch-text(
+          _sb3-to-renderable-scratch-text(
             sb3-bytes,
             script-number: item.number,
+            language: language,
             sb3-plugin: active-plugin,
           ),
           language,
@@ -819,9 +830,10 @@
     ]
   } else {
     _render-scratch-text-localized(
-      sb3-to-scratch-text(
+      _sb3-to-renderable-scratch-text(
         sb3-bytes,
         script-number: script-number,
+        language: language,
         sb3-plugin: active-plugin,
       ),
       language,
@@ -868,15 +880,7 @@
         #text(weight: "bold", size: 9pt)[#_target-title(match.target_state, ui)]
         #v(1mm)
       ]
-      #scratch-render-block(
-        "data.monitor_list",
-        args: (
-          name: match.list_item.name,
-          items: match.list_item.values,
-          width: 5.2cm,
-        ),
-        lang-code: language,
-      )
+      #list-monitor(name: match.list_item.name, items: match.list_item.values, width: 5.2cm, length-label: ui.length)
     ]
   }
 
@@ -897,15 +901,7 @@
           #v(1mm)
         ]
         #for list-item in target-state.lists [
-          #scratch-render-block(
-            "data.monitor_list",
-            args: (
-              name: list-item.name,
-              items: list-item.values,
-              width: 5.2cm,
-            ),
-            lang-code: language,
-          )
+          #list-monitor(name: list-item.name, items: list-item.values, width: 5.2cm, length-label: ui.length)
           #v(item-gap)
         ]
         #v(target-gap)
@@ -953,14 +949,7 @@
         #text(weight: "bold", size: 9pt)[#_target-title(match.target_state, ui)]
         #v(1mm)
       ]
-      #scratch-render-block(
-        "data.monitor_variable",
-        args: (
-          name: match.variable_item.name,
-          value: match.variable_item.value,
-        ),
-        lang-code: language,
-      )
+      #variable-monitor(name: match.variable_item.name, value: match.variable_item.value)
     ]
   }
 
@@ -981,14 +970,7 @@
           #v(1mm)
         ]
         #for variable-item in target-state.variables [
-          #scratch-render-block(
-            "data.monitor_variable",
-            args: (
-              name: variable-item.name,
-              value: variable-item.value,
-            ),
-            lang-code: language,
-          )
+          #variable-monitor(name: variable-item.name, value: variable-item.value)
           #v(item-gap)
         ]
         #v(target-gap)
@@ -1419,8 +1401,8 @@
           if h > 0 { kwargs.insert("height", h * 1pt * 2 / 3) }
           monitor-box = context {
             let lang-code = if language == auto { text.lang } else { language }
-            let length-label-str = get-template("data.length_label", lang-code)
-            list-monitor(name: name, items: items, length-label: length-label-str, ..kwargs)
+            let labels = _ui-labels(lang-code)
+            list-monitor(name: name, items: items, length-label: labels.length, ..kwargs)
           }
         }
 

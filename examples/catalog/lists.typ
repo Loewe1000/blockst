@@ -1,25 +1,33 @@
-#import "@preview/blockst:0.2.0": scratch, set-blockst
-#set page(width: auto, height: auto, margin: (x: 3mm, y: 3mm), fill: none)
-#import scratch.en: *
-#set-blockst(scale: 82%)
+#import "../../lib.typ": blockst, scratch
 
-#let c(s) = raw(lang: "typst", s)
+#set page(width: auto, height: auto, margin: 4mm, fill: white)
+#set text(16pt, font: "Helvetica Neue", weight: 500)
 
-#table(
-  columns: (auto, auto),
-  align: (left + horizon, left + horizon),
-  row-gutter: 4pt,
-  inset: (x: 6pt, y: 5pt),
-  stroke: (x, y) => (top: if y > 0 { 0.4pt + luma(215) } else { none }, bottom: none, left: none, right: none),
-  c("#add-to-list(\"thing\", \"list\")"),                  add-to-list("thing", "list"),
-  c("#delete-of-list(1, \"list\")"),                       delete-of-list(1, "list"),
-  c("#delete-all-of-list(\"list\")"),                      delete-all-of-list("list"),
-  c("#insert-at-list(\"thing\", 1, \"list\")"),            insert-at-list("thing", 1, "list"),
-  c("#replace-item-of-list(1, \"list\", \"thing\")"),      replace-item-of-list(1, "list", "thing"),
-  c("#item-of-list(1, \"list\")"),                         item-of-list(1, "list"),
-  c("#item-number-of-list(\"thing\", \"list\")"),          item-number-of-list("thing", "list"),
-  c("#length-of-list(\"list\")"),                          length-of-list("list"),
-  c("#list-contains-item(\"list\", \"thing\")"),           list-contains-item("list", "thing"),
-  c("#show-list(\"list\")"),                               show-list("list"),
-  c("#hide-list(\"list\")"),                               hide-list("list"),
+#let blocks = ("add [thing] to [my list v]
+delete (1) of [my list v]
+delete all of [my list v]
+insert [thing] at (1) of [my list v]
+replace item (1) of [my list v] with [thing]
+(item (1) of [my list v])
+(item # of [thing] in [my list v])
+(length of [my list v])
+<[my list v] contains [thing]?>
+show list [my list v]
+hide list [my list v]").split("\n")
+
+
+#grid(
+	columns: (auto, auto),
+	align: horizon,
+	gutter: 0mm,
+	inset: 2mm,
+	grid.header(
+		[*Block*],
+		[*Code*],
+	),
+	grid.hline(),
+	..blocks.map(block => (
+		grid.cell[#scratch(block)],
+		grid.cell[#block]
+	)).flatten()
 )

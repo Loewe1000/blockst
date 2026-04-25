@@ -1,32 +1,40 @@
-#import "@preview/blockst:0.2.0": scratch, set-blockst
-#set page(width: auto, height: auto, margin: (x: 3mm, y: 3mm), fill: none)
-#import scratch.en: *
-#set-blockst(scale: 82%)
+#import "../../lib.typ": blockst, scratch
 
-#let c(s) = raw(lang: "typst", s)
+#set page(width: auto, height: auto, margin: 4mm, fill: white)
+#set text(16pt, font: "Helvetica Neue", weight: 500)
 
-#table(
+#let blocks = ("move (10) steps
+turn cw (15) degrees
+turn ccw (15) degrees
+point in direction (90)
+point towards [mouse-pointer v]
+go to x: (0) y: (0)
+go to [mouse-pointer v]
+glide (1) secs to x: (0) y: (0)
+glide (1) secs to [mouse-pointer v]
+change x by (10)
+set x to (0)
+change y by (10)
+set y to (0)
+if on edge, bounce
+set rotation style [left-right v]
+(x position)
+(y position)
+(direction)").split("\n")
+
+
+#grid(
   columns: (auto, auto),
-  align: (left + horizon, left + horizon),
-  row-gutter: 4pt,
-  inset: (x: 6pt, y: 5pt),
-  stroke: (x, y) => (top: if y > 0 { 0.4pt + luma(215) } else { none }, bottom: none, left: none, right: none),
-  c("#move(steps: 10)"),                               move(steps: 10),
-  c("#turn-right(degrees: 15)"),                       turn-right(degrees: 15),
-  c("#turn-left(degrees: 15)"),                        turn-left(degrees: 15),
-  c("#goto(\"random position\")"),                     goto("random position"),
-  c("#goto-xy(x: 0, y: 0)"),                          goto-xy(x: 0, y: 0),
-  c("#glide(secs: 1, \"random position\")"),           glide(secs: 1, "random position"),
-  c("#glide-to-xy(secs: 1, x: 0, y: 0)"),             glide-to-xy(secs: 1, x: 0, y: 0),
-  c("#point-in-direction(direction: 90)"),             point-in-direction(direction: 90),
-  c("#point-towards(\"mouse-pointer\")"),              point-towards("mouse-pointer"),
-  c("#change-x(dx: 10)"),                             change-x(dx: 10),
-  c("#set-x(x: 0)"),                                  set-x(x: 0),
-  c("#change-y(dy: 10)"),                             change-y(dy: 10),
-  c("#set-y(y: 0)"),                                  set-y(y: 0),
-  c("#if-on-edge-bounce()"),                          if-on-edge-bounce(),
-  c("#set-rotation-style(\"left-right\")"),           set-rotation-style("left-right"),
-  c("#x-position()"),                                 x-position(),
-  c("#y-position()"),                                 y-position(),
-  c("#direction()"),                                  direction(),
+  align: horizon,
+  gutter: 0mm,
+  inset: 2mm,
+  grid.header(
+    [*Block*],
+    [*Code*],
+  ),
+  grid.hline(),
+  ..blocks.map(block => (
+    grid.cell[#scratch(block)],
+    grid.cell[#block]
+  )).flatten()
 )

@@ -1,21 +1,11 @@
-// Example 1 – German blocks
-#import "../lib.typ": blockst, scratch
+#import "../lib.typ": set-blockst, scratch
 
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
+#set page(width: auto, height: auto, margin: 0pt, fill: none)
 
-#blockst[
-  #import scratch.de: *
+#set-blockst(scale: 67.5%)
 
-  #wenn-gruene-flagge-geklickt[
-    #setze-variable("Punkte", 0)
-    #wiederhole(anzahl: 5)[
-      #gehe(schritte: 10)
-      #falls-sonst(
-        wird-beruehrt("Rand"),
-        drehe-rechts(grad: 180),
-        aendere-variable("Punkte", 1),
-      )
-    ]
-    #sage-fuer-sekunden(eigene-eingabe("Punkte"), sekunden: 2)
-  ]
-]
+#scratch("Wenn die grüne Flagge angeklickt
+wiederhole (4) mal 
+  gehe (30) er Schritt
+  drehe dich nach rechts um (90) Grad
+end", language: "de")

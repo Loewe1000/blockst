@@ -1,0 +1,1135 @@
+# Scratch 3 Block Definitions
+
+[blocks.MOTION_MOVESTEPS]
+shape = "stack"
+category = "motion"
+inputs = ["%n"]
+
+[blocks.MOTION_TURNRIGHT]
+shape = "stack"
+category = "motion"
+inputs = ["%n"]
+
+[blocks.MOTION_TURNLEFT]
+shape = "stack"
+category = "motion"
+inputs = ["%n"]
+
+[blocks.MOTION_POINTINDIRECTION]
+shape = "stack"
+category = "motion"
+inputs = ["%d.direction"]
+
+[blocks.MOTION_POINTTOWARDS]
+shape = "stack"
+category = "motion"
+inputs = ["%m.spriteOrMouse"]
+
+[blocks.MOTION_GOTOXY]
+shape = "stack"
+category = "motion"
+inputs = ["%n", "%n"]
+
+[blocks.MOTION_GOTO]
+shape = "stack"
+category = "motion"
+inputs = ["%m.location"]
+
+[blocks.MOTION_GLIDESECSTOXY]
+shape = "stack"
+category = "motion"
+inputs = ["%n", "%n", "%n"]
+
+[blocks.MOTION_GLIDETO]
+shape = "stack"
+category = "motion"
+inputs = ["%n", "%m.location"]
+
+[blocks.MOTION_CHANGEXBY]
+shape = "stack"
+category = "motion"
+inputs = ["%n"]
+
+[blocks.MOTION_SETX]
+shape = "stack"
+category = "motion"
+inputs = ["%n"]
+
+[blocks.MOTION_CHANGEYBY]
+shape = "stack"
+category = "motion"
+inputs = ["%n"]
+
+[blocks.MOTION_SETY]
+shape = "stack"
+category = "motion"
+inputs = ["%n"]
+
+[blocks.MOTION_SETROTATIONSTYLE]
+shape = "stack"
+category = "motion"
+inputs = ["%m.rotationStyle"]
+
+[blocks.LOOKS_SAYFORSECS]
+shape = "stack"
+category = "looks"
+inputs = ["%s", "%n"]
+
+[blocks.LOOKS_SAY]
+shape = "stack"
+category = "looks"
+inputs = ["%s"]
+
+[blocks.LOOKS_THINKFORSECS]
+shape = "stack"
+category = "looks"
+inputs = ["%s", "%n"]
+
+[blocks.LOOKS_THINK]
+shape = "stack"
+category = "looks"
+inputs = ["%s"]
+
+[blocks.LOOKS_SHOW]
+shape = "stack"
+category = "looks"
+inputs = []
+
+[blocks.LOOKS_HIDE]
+shape = "stack"
+category = "looks"
+inputs = []
+
+[blocks.LOOKS_SWITCHCOSTUMETO]
+shape = "stack"
+category = "looks"
+inputs = ["%m.costume"]
+
+[blocks.LOOKS_NEXTCOSTUME]
+shape = "stack"
+category = "looks"
+inputs = []
+
+[blocks.LOOKS_NEXTBACKDROP_BLOCK]
+shape = "stack"
+category = "looks"
+inputs = []
+
+[blocks.LOOKS_SWITCHBACKDROPTO]
+shape = "stack"
+category = "looks"
+inputs = ["%m.backdrop"]
+
+[blocks.LOOKS_SWITCHBACKDROPTOANDWAIT]
+shape = "stack"
+category = "looks"
+inputs = ["%m.backdrop"]
+
+[blocks.LOOKS_CHANGEEFFECTBY]
+shape = "stack"
+category = "looks"
+inputs = ["%m.effect", "%n"]
+
+[blocks.LOOKS_SETEFFECTTO]
+shape = "stack"
+category = "looks"
+inputs = ["%m.effect", "%n"]
+
+[blocks.LOOKS_CLEARGRAPHICEFFECTS]
+shape = "stack"
+category = "looks"
+inputs = []
+
+[blocks.LOOKS_CHANGESIZEBY]
+shape = "stack"
+category = "looks"
+inputs = ["%n"]
+
+[blocks.LOOKS_SETSIZETO]
+shape = "stack"
+category = "looks"
+inputs = ["%n"]
+
+[blocks.LOOKS_GOTOFRONTBACK]
+shape = "stack"
+category = "looks"
+inputs = ["%m"]
+
+[blocks.LOOKS_GOFORWARDBACKWARDLAYERS]
+shape = "stack"
+category = "looks"
+inputs = ["%m", "%n"]
+
+[blocks.SOUND_PLAY]
+shape = "stack"
+category = "sound"
+inputs = ["%m.sound"]
+
+[blocks.SOUND_CHANGEEFFECTBY]
+shape = "stack"
+category = "sound"
+inputs = ["%m", "%n"]
+
+[blocks.SOUND_SETEFFECTO]
+shape = "stack"
+category = "sound"
+inputs = ["%m", "%n"]
+
+[blocks.SOUND_CLEAREFFECTS]
+shape = "stack"
+category = "sound"
+inputs = []
+
+[blocks.SOUND_PLAYUNTILDONE]
+shape = "stack"
+category = "sound"
+inputs = ["%m.sound"]
+
+[blocks.SOUND_STOPALLSOUNDS]
+shape = "stack"
+category = "sound"
+inputs = []
+
+[blocks."music.playDrumForBeats"]
+shape = "stack"
+category = "music"
+inputs = ["%d.drum", "%n"]
+
+[blocks."music.restForBeats"]
+shape = "stack"
+category = "music"
+inputs = ["%n"]
+
+[blocks."music.playNoteForBeats"]
+shape = "stack"
+category = "music"
+inputs = ["%d.note", "%n"]
+
+[blocks."music.setInstrument"]
+shape = "stack"
+category = "music"
+inputs = ["%d.instrument"]
+
+[blocks.SOUND_CHANGEVOLUMEBY]
+shape = "stack"
+category = "sound"
+inputs = ["%n"]
+
+[blocks.SOUND_SETVOLUMETO]
+shape = "stack"
+category = "sound"
+inputs = ["%n"]
+
+[blocks."music.changeTempo"]
+shape = "stack"
+category = "music"
+inputs = ["%n"]
+
+[blocks."music.setTempo"]
+shape = "stack"
+category = "music"
+inputs = ["%n"]
+
+[blocks."pen.clear"]
+shape = "stack"
+category = "pen"
+inputs = []
+
+[blocks."pen.stamp"]
+shape = "stack"
+category = "pen"
+inputs = []
+
+[blocks."pen.penDown"]
+shape = "stack"
+category = "pen"
+inputs = []
+
+[blocks."pen.penUp"]
+shape = "stack"
+category = "pen"
+inputs = []
+
+[blocks."pen.setColor"]
+shape = "stack"
+category = "pen"
+inputs = ["%c"]
+
+[blocks."pen.changeHue"]
+shape = "stack"
+category = "pen"
+inputs = ["%n"]
+
+[blocks."pen.setColorParam"]
+shape = "stack"
+category = "pen"
+inputs = ["%m.color", "%c"]
+
+[blocks."pen.changeColorParam"]
+shape = "stack"
+category = "pen"
+inputs = ["%m.color", "%n"]
+
+[blocks."pen.setHue"]
+shape = "stack"
+category = "pen"
+inputs = ["%n"]
+
+[blocks."pen.changeShade"]
+shape = "stack"
+category = "pen"
+inputs = ["%n"]
+
+[blocks."pen.setShade"]
+shape = "stack"
+category = "pen"
+inputs = ["%n"]
+
+[blocks."pen.changeSize"]
+shape = "stack"
+category = "pen"
+inputs = ["%n"]
+
+[blocks."pen.setSize"]
+shape = "stack"
+category = "pen"
+inputs = ["%n"]
+
+[blocks.EVENT_WHENFLAGCLICKED]
+shape = "hat"
+category = "events"
+inputs = []
+
+[blocks.EVENT_WHENKEYPRESSED]
+shape = "hat"
+category = "events"
+inputs = ["%m.key"]
+
+[blocks.EVENT_WHENTHISSPRITECLICKED]
+shape = "hat"
+category = "events"
+inputs = []
+
+[blocks.EVENT_WHENSTAGECLICKED]
+shape = "hat"
+category = "events"
+inputs = []
+
+[blocks.EVENT_WHENBACKDROPSWITCHESTO]
+shape = "hat"
+category = "events"
+inputs = ["%m.backdrop"]
+
+[blocks.EVENT_WHENGREATERTHAN]
+shape = "hat"
+category = "events"
+inputs = ["%m.triggerSensor", "%n"]
+
+[blocks.EVENT_WHENBROADCASTRECEIVED]
+shape = "hat"
+category = "events"
+inputs = ["%m.broadcast"]
+
+[blocks.EVENT_BROADCAST]
+shape = "stack"
+category = "events"
+inputs = ["%m.broadcast"]
+
+[blocks.EVENT_BROADCASTANDWAIT]
+shape = "stack"
+category = "events"
+inputs = ["%m.broadcast"]
+
+[blocks.CONTROL_WAIT]
+shape = "stack"
+category = "control"
+inputs = ["%n"]
+
+[blocks.CONTROL_REPEAT]
+shape = "c-block"
+category = "control"
+inputs = ["%n"]
+
+[blocks.CONTROL_FOREVER]
+shape = "c-block cap"
+category = "control"
+inputs = []
+
+[blocks.CONTROL_IF]
+shape = "c-block"
+category = "control"
+inputs = ["%b"]
+
+[blocks.CONTROL_WAITUNTIL]
+shape = "stack"
+category = "control"
+inputs = ["%b"]
+
+[blocks.CONTROL_REPEATUNTIL]
+shape = "c-block"
+category = "control"
+inputs = ["%b"]
+
+[blocks.CONTROL_STOP]
+shape = "cap"
+category = "control"
+inputs = ["%m.stop"]
+
+[blocks.CONTROL_STARTASCLONE]
+shape = "hat"
+category = "control"
+inputs = []
+
+[blocks.CONTROL_CREATECLONEOF]
+shape = "stack"
+category = "control"
+inputs = ["%m.spriteOnly"]
+
+[blocks.CONTROL_DELETETHISCLONE]
+shape = "cap"
+category = "control"
+inputs = []
+
+[blocks.SENSING_ASKANDWAIT]
+shape = "stack"
+category = "sensing"
+inputs = ["%s"]
+
+[blocks."videoSensing.videoToggle"]
+shape = "stack"
+category = "video"
+inputs = ["%m.videoState"]
+
+[blocks."videoSensing.setVideoTransparency"]
+shape = "stack"
+category = "video"
+inputs = ["%n"]
+
+[blocks."videoSensing.whenMotionGreaterThan"]
+shape = "hat"
+category = "video"
+inputs = ["%n"]
+
+[blocks.SENSING_RESETTIMER]
+shape = "stack"
+category = "sensing"
+inputs = []
+
+[blocks.DATA_SETVARIABLETO]
+shape = "stack"
+category = "variables"
+inputs = ["%m.var", "%s"]
+
+[blocks.DATA_CHANGEVARIABLEBY]
+shape = "stack"
+category = "variables"
+inputs = ["%m.var", "%n"]
+
+[blocks.DATA_SHOWVARIABLE]
+shape = "stack"
+category = "variables"
+inputs = ["%m.var"]
+
+[blocks.DATA_HIDEVARIABLE]
+shape = "stack"
+category = "variables"
+inputs = ["%m.var"]
+
+[blocks.DATA_ADDTOLIST]
+shape = "stack"
+category = "list"
+inputs = ["%s", "%m.list"]
+
+[blocks.DATA_DELETEOFLIST]
+shape = "stack"
+category = "list"
+inputs = ["%d.listDeleteItem", "%m.list"]
+
+[blocks.DATA_DELETEALLOFLIST]
+shape = "stack"
+category = "list"
+inputs = ["%m.list"]
+
+[blocks.MOTION_IFONEDGEBOUNCE]
+shape = "stack"
+category = "motion"
+inputs = []
+
+[blocks.DATA_INSERTATLIST]
+shape = "stack"
+category = "list"
+inputs = ["%s", "%d.listItem", "%m.list"]
+
+[blocks.DATA_REPLACEITEMOFLIST]
+shape = "stack"
+category = "list"
+inputs = ["%d.listItem", "%m.list", "%s"]
+
+[blocks.DATA_SHOWLIST]
+shape = "stack"
+category = "list"
+inputs = ["%m.list"]
+
+[blocks.DATA_HIDELIST]
+shape = "stack"
+category = "list"
+inputs = ["%m.list"]
+
+[blocks.SENSING_OF_XPOSITION]
+shape = "reporter"
+category = "motion"
+inputs = []
+
+[blocks.SENSING_OF_YPOSITION]
+shape = "reporter"
+category = "motion"
+inputs = []
+
+[blocks.SENSING_OF_DIRECTION]
+shape = "reporter"
+category = "motion"
+inputs = []
+
+[blocks.SENSING_OF_COSTUMENUMBER]
+shape = "reporter"
+category = "looks"
+inputs = []
+
+[blocks.LOOKS_COSTUMENUMBERNAME]
+shape = "reporter"
+category = "looks"
+inputs = ["%m"]
+
+[blocks.SENSING_OF_SIZE]
+shape = "reporter"
+category = "looks"
+inputs = []
+
+[blocks.SENSING_OF_BACKDROPNAME]
+shape = "reporter"
+category = "looks"
+inputs = []
+
+[blocks.LOOKS_BACKDROPNUMBERNAME]
+shape = "reporter"
+category = "looks"
+inputs = ["%m"]
+
+[blocks.SENSING_OF_BACKDROPNUMBER]
+shape = "reporter"
+category = "looks"
+inputs = []
+
+[blocks.SOUND_VOLUME]
+shape = "reporter"
+category = "sound"
+inputs = []
+
+[blocks."music.getTempo"]
+shape = "reporter"
+category = "music"
+inputs = []
+
+[blocks.SENSING_TOUCHINGOBJECT]
+shape = "boolean"
+category = "sensing"
+inputs = ["%m.touching"]
+
+[blocks.SENSING_TOUCHINGCOLOR]
+shape = "boolean"
+category = "sensing"
+inputs = ["%c"]
+
+[blocks.SENSING_COLORISTOUCHINGCOLOR]
+shape = "boolean"
+category = "sensing"
+inputs = ["%c", "%c"]
+
+[blocks.SENSING_DISTANCETO]
+shape = "reporter"
+category = "sensing"
+inputs = ["%m.spriteOrMouse"]
+
+[blocks.SENSING_ANSWER]
+shape = "reporter"
+category = "sensing"
+inputs = []
+
+[blocks.SENSING_KEYPRESSED]
+shape = "boolean"
+category = "sensing"
+inputs = ["%m.key"]
+
+[blocks.SENSING_MOUSEDOWN]
+shape = "boolean"
+category = "sensing"
+inputs = []
+
+[blocks.SENSING_MOUSEX]
+shape = "reporter"
+category = "sensing"
+inputs = []
+
+[blocks.SENSING_MOUSEY]
+shape = "reporter"
+category = "sensing"
+inputs = []
+
+[blocks.SENSING_SETDRAGMODE]
+shape = "stack"
+category = "sensing"
+inputs = ["%m"]
+
+[blocks.SENSING_LOUDNESS]
+shape = "reporter"
+category = "sensing"
+inputs = []
+
+[blocks."videoSensing.videoOn"]
+shape = "reporter"
+category = "video"
+inputs = ["%m.videoMotionType", "%m.stageOrThis"]
+
+[blocks.SENSING_TIMER]
+shape = "reporter"
+category = "sensing"
+inputs = []
+
+[blocks.SENSING_OF]
+shape = "reporter"
+category = "sensing"
+inputs = ["%m.attribute", "%m.spriteOrStage"]
+
+[blocks.SENSING_CURRENT]
+shape = "reporter"
+category = "sensing"
+inputs = ["%m.timeAndDate"]
+
+[blocks.SENSING_DAYSSINCE2000]
+shape = "reporter"
+category = "sensing"
+inputs = []
+
+[blocks.SENSING_USERNAME]
+shape = "reporter"
+category = "sensing"
+inputs = []
+
+[blocks.SENSING_ONLINE]
+shape = "boolean"
+category = "sensing"
+inputs = []
+
+[blocks.OPERATORS_ADD]
+shape = "reporter"
+category = "operators"
+inputs = ["%n", "%n"]
+
+[blocks.OPERATORS_SUBTRACT]
+shape = "reporter"
+category = "operators"
+inputs = ["%n", "%n"]
+
+[blocks.OPERATORS_MULTIPLY]
+shape = "reporter"
+category = "operators"
+inputs = ["%n", "%n"]
+
+[blocks.OPERATORS_DIVIDE]
+shape = "reporter"
+category = "operators"
+inputs = ["%n", "%n"]
+
+[blocks.OPERATORS_RANDOM]
+shape = "reporter"
+category = "operators"
+inputs = ["%n", "%n"]
+
+[blocks.OPERATORS_LT]
+shape = "boolean"
+category = "operators"
+inputs = ["%s", "%s"]
+
+[blocks.OPERATORS_EQUALS]
+shape = "boolean"
+category = "operators"
+inputs = ["%s", "%s"]
+
+[blocks.OPERATORS_GT]
+shape = "boolean"
+category = "operators"
+inputs = ["%s", "%s"]
+
+[blocks.OPERATORS_AND]
+shape = "boolean"
+category = "operators"
+inputs = ["%b", "%b"]
+
+[blocks.OPERATORS_OR]
+shape = "boolean"
+category = "operators"
+inputs = ["%b", "%b"]
+
+[blocks.OPERATORS_NOT]
+shape = "boolean"
+category = "operators"
+inputs = ["%b"]
+
+[blocks.OPERATORS_JOIN]
+shape = "reporter"
+category = "operators"
+inputs = ["%s", "%s"]
+
+[blocks.OPERATORS_LETTEROF]
+shape = "reporter"
+category = "operators"
+inputs = ["%n", "%s"]
+
+[blocks.OPERATORS_LENGTH]
+shape = "reporter"
+category = "operators"
+inputs = ["%s"]
+
+[blocks.OPERATORS_MOD]
+shape = "reporter"
+category = "operators"
+inputs = ["%n", "%n"]
+
+[blocks.OPERATORS_ROUND]
+shape = "reporter"
+category = "operators"
+inputs = ["%n"]
+
+[blocks.OPERATORS_MATHOP]
+shape = "reporter"
+category = "operators"
+inputs = ["%m.mathOp", "%n"]
+
+[blocks.OPERATORS_CONTAINS]
+shape = "boolean"
+category = "operators"
+inputs = ["%s", "%s"]
+
+[blocks.DATA_ITEMOFLIST]
+shape = "reporter"
+category = "list"
+inputs = ["%d.listItem", "%m.list"]
+
+[blocks.DATA_ITEMNUMOFLIST]
+shape = "reporter"
+category = "list"
+inputs = ["%s", "%m.list"]
+
+[blocks.DATA_LENGTHOFLIST]
+shape = "reporter"
+category = "list"
+inputs = ["%m.list"]
+
+[blocks.DATA_LISTCONTAINSITEM]
+shape = "boolean"
+category = "list"
+inputs = ["%m.list", "%s"]
+
+[blocks.CONTROL_ELSE]
+shape = "celse"
+category = "control"
+inputs = []
+
+[blocks.SENSING_USERID]
+shape = "reporter"
+category = "obsolete"
+inputs = []
+
+[blocks.SENSING_LOUD]
+shape = "boolean"
+category = "obsolete"
+inputs = []
+
+[blocks."facesensing.goToPart"]
+shape = "stack"
+category = "facesensing"
+inputs = ["%m"]
+
+[blocks."facesensing.pointInFaceTiltDirection"]
+shape = "stack"
+category = "facesensing"
+inputs = []
+
+[blocks."facesensing.setSizeToFaceSize"]
+shape = "stack"
+category = "facesensing"
+inputs = []
+
+[blocks."facesensing.whenTilted"]
+shape = "hat"
+category = "facesensing"
+inputs = ["%m"]
+
+[blocks."facesensing.whenSpriteTouchesPart"]
+shape = "hat"
+category = "facesensing"
+inputs = ["%m"]
+
+[blocks."facesensing.whenFaceDetected"]
+shape = "hat"
+category = "facesensing"
+inputs = []
+
+[blocks."facesensing.faceIsDetected"]
+shape = "boolean"
+category = "facesensing"
+inputs = []
+
+[blocks."facesensing.faceTilt"]
+shape = "reporter"
+category = "facesensing"
+inputs = []
+
+[blocks."facesensing.faceSize"]
+shape = "reporter"
+category = "facesensing"
+inputs = []
+
+[blocks."text2speech.speakAndWaitBlock"]
+shape = "stack"
+category = "tts"
+inputs = ["%s"]
+
+[blocks."text2speech.setVoiceBlock"]
+shape = "stack"
+category = "tts"
+inputs = ["%m"]
+
+[blocks."text2speech.setLanguageBlock"]
+shape = "stack"
+category = "tts"
+inputs = ["%m"]
+
+[blocks."translate.translateBlock"]
+shape = "reporter"
+category = "translate"
+inputs = ["%s", "%m"]
+
+[blocks."translate.viewerLanguage"]
+shape = "reporter"
+category = "translate"
+inputs = []
+
+[blocks."makeymakey.whenKeyPressed"]
+shape = "hat"
+category = "makeymakey"
+inputs = ["%m"]
+
+[blocks."makeymakey.whenKeysPressedInOrder"]
+shape = "hat"
+category = "makeymakey"
+inputs = ["%m"]
+
+[blocks."microbit.whenButtonPressed"]
+shape = "hat"
+category = "microbit"
+inputs = ["%m"]
+
+[blocks."microbit.isButtonPressed"]
+shape = "boolean"
+category = "microbit"
+inputs = ["%m"]
+
+[blocks."microbit.whenGesture"]
+shape = "hat"
+category = "microbit"
+inputs = ["%m"]
+
+[blocks."microbit.displaySymbol"]
+shape = "stack"
+category = "microbit"
+inputs = ["%m"]
+
+[blocks."microbit.displayText"]
+shape = "stack"
+category = "microbit"
+inputs = ["%s"]
+
+[blocks."microbit.clearDisplay"]
+shape = "stack"
+category = "microbit"
+inputs = []
+
+[blocks."microbit.whenTilted"]
+shape = "hat"
+category = "microbit"
+inputs = ["%m"]
+
+[blocks."microbit.isTilted"]
+shape = "boolean"
+category = "microbit"
+inputs = ["%m"]
+
+[blocks."microbit.tiltAngle"]
+shape = "reporter"
+category = "microbit"
+inputs = ["%m"]
+
+[blocks."microbit.whenPinConnected"]
+shape = "hat"
+category = "microbit"
+inputs = ["%m"]
+
+[blocks."ev3.motorTurnClockwise"]
+shape = "stack"
+category = "ev3"
+inputs = ["%m", "%n"]
+
+[blocks."ev3.motorTurnCounterClockwise"]
+shape = "stack"
+category = "ev3"
+inputs = ["%m", "%n"]
+
+[blocks."ev3.motorSetPower"]
+shape = "stack"
+category = "ev3"
+inputs = ["%m", "%n"]
+
+[blocks."ev3.getMotorPosition"]
+shape = "reporter"
+category = "ev3"
+inputs = ["%m"]
+
+[blocks."ev3.whenButtonPressed"]
+shape = "hat"
+category = "ev3"
+inputs = ["%m"]
+
+[blocks."ev3.whenDistanceLessThan"]
+shape = "hat"
+category = "ev3"
+inputs = ["%n"]
+
+[blocks."ev3.whenBrightnessLessThan"]
+shape = "hat"
+category = "ev3"
+inputs = ["%n"]
+
+[blocks."ev3.buttonPressed"]
+shape = "boolean"
+category = "ev3"
+inputs = ["%m"]
+
+[blocks."ev3.getDistance"]
+shape = "reporter"
+category = "ev3"
+inputs = []
+
+[blocks."ev3.getBrightness"]
+shape = "reporter"
+category = "ev3"
+inputs = []
+
+[blocks."ev3.beepNote"]
+shape = "stack"
+category = "ev3"
+inputs = ["%d.note", "%n"]
+
+[blocks."wedo2.motorOn"]
+shape = "stack"
+category = "wedo"
+inputs = ["%m.motor"]
+
+[blocks."wedo2.motorOff"]
+shape = "stack"
+category = "wedo"
+inputs = ["%m.motor"]
+
+[blocks."wedo2.startMotorPower"]
+shape = "stack"
+category = "wedo"
+inputs = ["%m.motor", "%n"]
+
+[blocks."wedo2.setMotorDirection"]
+shape = "stack"
+category = "wedo"
+inputs = ["%m.motor2", "%m.motorDirection"]
+
+[blocks."wedo2.whenDistance"]
+shape = "hat"
+category = "wedo"
+inputs = ["%m.lessMore", "%n"]
+
+[blocks."wedo2.getDistance"]
+shape = "reporter"
+category = "wedo"
+inputs = []
+
+[blocks."wedo2.motorOnFor"]
+shape = "stack"
+category = "wedo"
+inputs = ["%m.motor", "%n"]
+
+[blocks."wedo2.setLightHue"]
+shape = "stack"
+category = "wedo"
+inputs = ["%n"]
+
+[blocks."wedo2.playNoteFor"]
+shape = "stack"
+category = "wedo"
+inputs = ["%n", "%n"]
+
+[blocks."wedo2.whenTilted"]
+shape = "hat"
+category = "wedo"
+inputs = ["%m.xxx"]
+
+[blocks."wedo2.isTilted"]
+shape = "boolean"
+category = "wedo"
+inputs = ["%m"]
+
+[blocks."wedo2.getTiltAngle"]
+shape = "reporter"
+category = "wedo"
+inputs = ["%m.xxx"]
+
+[blocks."gdxfor.whenGesture"]
+shape = "hat"
+category = "gdxfor"
+inputs = ["%m"]
+
+[blocks."gdxfor.whenForcePushedOrPulled"]
+shape = "hat"
+category = "gdxfor"
+inputs = ["%m"]
+
+[blocks."gdxfor.getForce"]
+shape = "reporter"
+category = "gdxfor"
+inputs = []
+
+[blocks."gdxfor.whenTilted"]
+shape = "hat"
+category = "gdxfor"
+inputs = ["%m"]
+
+[blocks."gdxfor.isTilted"]
+shape = "boolean"
+category = "gdxfor"
+inputs = ["%m"]
+
+[blocks."gdxfor.getTilt"]
+shape = "reporter"
+category = "gdxfor"
+inputs = ["%m"]
+
+[blocks."gdxfor.isFreeFalling"]
+shape = "boolean"
+category = "gdxfor"
+inputs = []
+
+[blocks."gdxfor.getSpin"]
+shape = "reporter"
+category = "gdxfor"
+inputs = ["%m"]
+
+[blocks."gdxfor.getAcceleration"]
+shape = "reporter"
+category = "gdxfor"
+inputs = ["%m"]
+
+[blocks."boost.motorOnFor"]
+shape = "stack"
+category = "boost"
+inputs = ["%m", "%n"]
+
+[blocks."boost.motorOnForRotation"]
+shape = "stack"
+category = "boost"
+inputs = ["%m", "%n"]
+
+[blocks."boost.motorOn"]
+shape = "stack"
+category = "boost"
+inputs = ["%m"]
+
+[blocks."boost.motorOff"]
+shape = "stack"
+category = "boost"
+inputs = ["%m"]
+
+[blocks."boost.setMotorPower"]
+shape = "stack"
+category = "boost"
+inputs = ["%m", "%n"]
+
+[blocks."boost.setMotorDirection"]
+shape = "stack"
+category = "boost"
+inputs = ["%m", "%m"]
+
+[blocks."boost.getMotorPosition"]
+shape = "reporter"
+category = "boost"
+inputs = ["%m"]
+
+[blocks."boost.whenColor"]
+shape = "hat"
+category = "boost"
+inputs = ["%m"]
+
+[blocks."boost.seeingColor"]
+shape = "boolean"
+category = "boost"
+inputs = ["%m"]
+
+[blocks."boost.whenTilted"]
+shape = "hat"
+category = "boost"
+inputs = ["%m"]
+
+[blocks."boost.getTiltAngle"]
+shape = "reporter"
+category = "boost"
+inputs = ["%m"]
+
+[blocks."boost.setLightHue"]
+shape = "stack"
+category = "boost"
+inputs = ["%n"]
+
+
+# Internal scratchblocks markers
+[blocks."scratchblocks:end"]
+shape = "cend"
+category = "control"
+inputs = []
+
+[blocks."scratchblocks:ellipsis"]
+shape = "stack"
+category = "grey"
+inputs = []
+
+[blocks."scratchblocks:addInput"]
+shape = "ring"
+category = "grey"
+inputs = ["%n"]
+
+
+# Procedure / Custom blocks
+[blocks.procedures_definition]
+shape = "define-hat"
+category = "custom"
+inputs = []
+
+[blocks.procedures_call]
+shape = "stack"
+category = "custom"
+inputs = []
+
+[blocks.argument_reporter_string_number]
+shape = "reporter"
+category = "custom-arg"
+inputs = []
+
+[blocks.argument_reporter_boolean]
+shape = "boolean"
+category = "custom-arg"
+inputs = []

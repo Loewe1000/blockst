@@ -1,19 +1,27 @@
-#import "@preview/blockst:0.2.0": scratch, set-blockst
-#set page(width: auto, height: auto, margin: (x: 3mm, y: 3mm), fill: none)
-#import scratch.en: *
-#set-blockst(scale: 82%)
+#import "../../lib.typ": blockst, scratch
 
-#let c(s) = raw(lang: "typst", s)
+#set page(width: auto, height: auto, margin: 4mm, fill: white)
+#set text(16pt, font: "Helvetica Neue", weight: 500)
 
-#table(
-  columns: (auto, auto),
-  align: (left + horizon, left + horizon),
-  row-gutter: 4pt,
-  inset: (x: 6pt, y: 5pt),
-  stroke: (x, y) => (top: if y > 0 { 0.4pt + luma(215) } else { none }, bottom: none, left: none, right: none),
-  c("#set-variable-to(\"score\", 0)"),                     set-variable-to("score", 0),
-  c("#change-variable-by(\"score\", 1)"),                  change-variable-by("score", 1),
-  c("#show-variable(\"score\")"),                          show-variable("score"),
-  c("#hide-variable(\"score\")"),                          hide-variable("score"),
-  c("#variable-display(name: \"score\", value: 42)"),      variable-display(name: "score", value: 42),
+#let blocks = ("set [my variable v] to (0)
+change [my variable v] by (1)
+show variable [my variable v]
+hide variable [my variable v]
+(my variable)").split("\n")
+
+
+#grid(
+	columns: (auto, auto),
+	align: horizon,
+	gutter: 0mm,
+	inset: 2mm,
+	grid.header(
+		[*Block*],
+		[*Code*],
+	),
+	grid.hline(),
+	..blocks.map(block => (
+		grid.cell[#scratch(block)],
+		grid.cell[#block]
+	)).flatten()
 )

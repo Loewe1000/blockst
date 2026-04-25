@@ -1,2 +1,5 @@
 .DS_Store
 *.pdf
+target/
+examples/comparison-*
+examples/compiled-blocks*
