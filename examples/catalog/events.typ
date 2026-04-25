@@ -1,22 +1,30 @@
-#import "@preview/blockst:0.2.0": scratch, set-blockst
-#set page(width: auto, height: auto, margin: (x: 3mm, y: 3mm), fill: none)
-#import scratch.en: *
-#set-blockst(scale: 82%)
+#import "../../lib.typ": blockst, scratch
 
-#let c(s) = raw(lang: "typst", s)
+#set page(width: auto, height: auto, margin: 4mm, fill: white)
+#set text(16pt, font: "Helvetica Neue", weight: 500)
 
-#table(
-  columns: (auto, auto),
-  align: (left + horizon, left + horizon),
-  row-gutter: 4pt,
-  inset: (x: 6pt, y: 5pt),
-  stroke: (x, y) => (top: if y > 0 { 0.4pt + luma(215) } else { none }, bottom: none, left: none, right: none),
-  c("#when-flag-clicked[...]"),                          when-flag-clicked([]),
-  c("#when-key-pressed(\"space\")[...]"),                when-key-pressed("space", []),
-  c("#when-sprite-clicked[...]"),                        when-sprite-clicked([]),
-  c("#when-backdrop-switches(\"backdrop\")[...]"),        when-backdrop-switches("backdrop", []),
-  c("#when-exceeds(\"timer\", 5)[...]"),                 when-exceeds("timer", 5, []),
-  c("#when-message-received(\"start\")[...]"),           when-message-received("start", []),
-  c("#broadcast(\"message\")"),                          broadcast("message"),
-  c("#broadcast-and-wait(\"message\")"),                 broadcast-and-wait("message"),
+#let blocks = ("when green flag clicked
+when [space v] key pressed
+when this sprite clicked
+when backdrop switches to [backdrop1 v]
+when [loudness v] > (10)
+when I receive [message1 v]
+broadcast [message1 v]
+broadcast [message1 v] and wait").split("\n")
+
+
+#grid(
+	columns: (auto, auto),
+	align: horizon,
+	gutter: 0mm,
+	inset: 2mm,
+	grid.header(
+		[*Block*],
+		[*Code*],
+	),
+	grid.hline(),
+	..blocks.map(block => (
+		grid.cell[#scratch(block)],
+		grid.cell[#block]
+	)).flatten()
 )

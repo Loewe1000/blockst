@@ -1,23 +1,33 @@
-#import "@preview/blockst:0.2.0": scratch, set-blockst
-#set page(width: auto, height: auto, margin: (x: 3mm, y: 3mm), fill: none)
-#import scratch.en: *
-#set-blockst(scale: 82%)
+#import "../../lib.typ": blockst, scratch
 
-#let c(s) = raw(lang: "typst", s)
+#set page(width: auto, height: auto, margin: 4mm, fill: white)
+#set text(16pt, font: "Helvetica Neue", weight: 500)
 
-#table(
-  columns: (auto, auto),
-  align: (left + horizon, left + horizon),
-  row-gutter: 4pt,
-  inset: (x: 6pt, y: 5pt),
-  stroke: (x, y) => (top: if y > 0 { 0.4pt + luma(215) } else { none }, bottom: none, left: none, right: none),
-  c("#erase-all()"),                                erase-all(),
-  c("#stamp()"),                                    stamp(),
-  c("#pen-down()"),                                 pen-down(),
-  c("#pen-up()"),                                   pen-up(),
-  c("#set-pen-color-to(blue)"),                     set-pen-color-to(blue),
-  c("#change-pen-param-by(\"color\", value: 10)"),  change-pen-param-by("color", value: 10),
-  c("#set-pen-param-to(\"color\", value: 50)"),     set-pen-param-to("color", value: 50),
-  c("#change-pen-size-by(size: 1)"),                change-pen-size-by(size: 1),
-  c("#set-pen-size-to(size: 1)"),                   set-pen-size-to(size: 1),
+#let blocks = ("erase all
+stamp
+pen down
+pen up
+set pen color to [#ff0000]
+change pen color by (10)
+set pen color to (50)
+change pen shade by (10)
+set pen shade to (50)
+change pen size by (1)
+set pen size to (1)").split("\n")
+
+
+#grid(
+	columns: (auto, auto),
+	align: horizon,
+	gutter: 0mm,
+	inset: 2mm,
+	grid.header(
+		[*Block*],
+		[*Code*],
+	),
+	grid.hline(),
+	..blocks.map(block => (
+		grid.cell[#scratch(block)],
+		grid.cell[#block]
+	)).flatten()
 )

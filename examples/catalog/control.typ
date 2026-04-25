@@ -1,25 +1,39 @@
-#import "@preview/blockst:0.2.0": scratch, set-blockst
-#set page(width: auto, height: auto, margin: (x: 3mm, y: 3mm), fill: none)
-#import scratch.en: *
-#set-blockst(scale: 82%)
+#import "../../lib.typ": blockst, scratch
 
-#let c(s) = raw(lang: "typst", s)
+#set page(width: auto, height: auto, margin: 4mm, fill: white)
+#set text(16pt, font: "Helvetica Neue", weight: 500)
 
-#table(
-  columns: (auto, auto),
-  align: (left + horizon, left + horizon),
-  row-gutter: 4pt,
-  inset: (x: 6pt, y: 5pt),
-  stroke: (x, y) => (top: if y > 0 { 0.4pt + luma(215) } else { none }, bottom: none, left: none, right: none),
-  c("#wait(duration: 1)"),                                    wait(duration: 1),
-  c("#repeat(times: 10)[...]"),                               repeat(times: 10, []),
-  c("#forever[...]"),                                         forever([]),
-  c("#if-then(condition)[...]"),                              if-then([], []),
-  c("#if-then-else(condition, [...], [...])"),                 if-then-else([], [], []),
-  c("#wait-until(condition)"),                                wait-until([]),
-  c("#repeat-until(condition)[...]"),                          repeat-until([], []),
-  c("#stop(\"all\")"),                                        stop("all"),
-  c("#when-i-start-as-clone[...]"),                           when-i-start-as-clone([]),
-  c("#create-clone-of(\"myself\")"),                          create-clone-of("myself"),
-  c("#delete-this-clone()"),                                  delete-this-clone(),
+#let blocks = ("wait (1) seconds
+repeat (10)
+end
+forever
+end
+if <> then
+end
+if <> then
+else
+end
+wait until <>
+repeat until <>
+end
+stop [all v]
+when I start as a clone
+create clone of [myself v]
+delete this clone").split("\n")
+
+
+#grid(
+	columns: (auto, auto),
+	align: horizon,
+	gutter: 0mm,
+	inset: 2mm,
+	grid.header(
+		[*Block*],
+		[*Code*],
+	),
+	grid.hline(),
+	..blocks.map(block => (
+		grid.cell[#scratch(block)],
+		grid.cell[#block]
+	)).flatten()
 )

@@ -1,34 +1,42 @@
-#import "@preview/blockst:0.2.0": scratch, set-blockst
-#set page(width: auto, height: auto, margin: (x: 3mm, y: 3mm), fill: none)
-#import scratch.en: *
-#set-blockst(scale: 82%)
+#import "../../lib.typ": blockst, scratch
 
-#let c(s) = raw(lang: "typst", s)
+#set page(width: auto, height: auto, margin: 4mm, fill: white)
+#set text(16pt, font: "Helvetica Neue", weight: 500)
 
-#table(
-  columns: (auto, auto),
-  align: (left + horizon, left + horizon),
-  row-gutter: 4pt,
-  inset: (x: 6pt, y: 5pt),
-  stroke: (x, y) => (top: if y > 0 { 0.4pt + luma(215) } else { none }, bottom: none, left: none, right: none),
-  c("#say-for-secs(\"Hello!\", secs: 2)"),          say-for-secs("Hello!", secs: 2),
-  c("#say(\"Hello!\")"),                            say("Hello!"),
-  c("#think-for-secs(\"Hmm...\", secs: 2)"),        think-for-secs("Hmm...", secs: 2),
-  c("#think(\"Hmm...\")"),                          think("Hmm..."),
-  c("#switch-costume-to(\"costume1\")"),             switch-costume-to("costume1"),
-  c("#next-costume()"),                             next-costume(),
-  c("#switch-backdrop-to(\"backdrop1\")"),           switch-backdrop-to("backdrop1"),
-  c("#next-backdrop()"),                            next-backdrop(),
-  c("#change-size-by(change: 10)"),                 change-size-by(change: 10),
-  c("#set-size-to(size: 100)"),                     set-size-to(size: 100),
-  c("#change-effect-by(\"color\", change: 25)"),    change-effect-by("color", change: 25),
-  c("#set-effect-to(\"color\", value: 0)"),         set-effect-to("color", value: 0),
-  c("#clear-graphic-effects()"),                    clear-graphic-effects(),
-  c("#show-sprite()"),                              show-sprite(),
-  c("#hide-sprite()"),                              hide-sprite(),
-  c("#goto-layer(\"front\")"),                      goto-layer("front"),
-  c("#go-layers(num: 1, \"forward\")"),             go-layers(num: 1, "forward"),
-  c("#costume-property(\"number\")"),               costume-property("number"),
-  c("#backdrop-property(\"number\")"),              backdrop-property("number"),
-  c("#size()"),                                     size(),
+#let blocks = ("say [Hello!] for (2) seconds
+say [Hello!]
+think [Hmm...] for (2) seconds
+think [Hmm...]
+show
+hide
+switch costume to [costume1 v]
+next costume
+switch backdrop to [backdrop1 v]
+next backdrop
+change [color v] effect by (25)
+set [color v] effect to (0)
+clear graphic effects
+change size by (10)
+set size to (100) %
+go to [front v] layer
+go [forward v] (1) layers
+(costume [number v])
+(backdrop [number v])
+(size)").split("\n")
+
+
+#grid(
+	columns: (auto, auto),
+	align: horizon,
+	gutter: 0mm,
+	inset: 2mm,
+	grid.header(
+		[*Block*],
+		[*Code*],
+	),
+	grid.hline(),
+	..blocks.map(block => (
+		grid.cell[#scratch(block)],
+		grid.cell[#block]
+	)).flatten()
 )

@@ -335,21 +335,14 @@
         } else if path.type == "circle" {
           circle(path.center, radius: path.radius, fill: path.fill, stroke: none)
         } else if path.type == "text" {
-          content(path.position, [#path.text], anchor: "south")
+          content(path.position, text(path.text), anchor: "south")
         }
       }
 
       // Turtle cursor
       if show-cursor {
-        import "mod.typ": icons
         on-layer(0, {
-          let rotation = state.angle - 90
-          content(
-            (state.x, state.y),
-            angle: rotation * 1deg,
-            image(icons.pencil, height: 25pt),
-            anchor: "south-west",
-          )
+          circle((state.x, state.y), radius: 5pt, fill: rgb("#3d3d3d"), stroke: 0.8pt + white)
         })
       }
     }),

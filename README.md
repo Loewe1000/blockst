@@ -1,595 +1,308 @@
 # Blockst - Scratch Blocks in Typst
 
-![Blockst header](examples/header.png)
+<p align="left">
+  <a href="https://typst.app/universe/package/blockst"><img src="https://img.shields.io/badge/typst-preview%20package-239dad?style=flat" alt="Typst package blockst" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen?style=flat" alt="License MIT" /></a>
+</p>
+
+![Blockst header](examples/header.svg)
 
 Blockst renders Scratch-style programming blocks directly in Typst documents.
 It is made for worksheets, tutorials, teaching material, and visual programming explanations.
 
-## Features
+The current renderer is text-based: Typst passes Scratch text to a bundled WASM plugin, the plugin parses and renders SVG, and Typst embeds the SVG output.
 
-- All major Scratch categories (events, motion, looks, sound, control, sensing, operators, data, custom)
-- Nested control structures and custom block definitions
-- Reporter/boolean/input pills and monitor widgets
-- Three themes: normal, high-contrast, and print (black/white, printer-friendly)
-- Localized APIs: English, German, and French
-- Optional scratch-run turtle-graphics helpers
+Starting with version 0.3.0, Blockst uses only the WASM-based text parser and renderer. The earlier native Typst rendering approach was dropped because it ran into Typst's limits on more complex Scratch layouts.
+
+## Contents
+
+- [Highlights](#highlights)
+- [Install and Import](#install-and-import)
+- [Quick Start](#quick-start)
+- [Example Gallery](#example-gallery)
+- [SB3 Import via Typst Plugin WASM](#sb3-import-via-typst-plugin-wasm)
+- [Catalog](#catalog)
+- [Contributing](#contributing)
+
+## Highlights
+
+- Scratchblocks-style syntax for scripts, reporters, booleans, inputs, dropdowns, and nested control blocks
+- Themes: normal, high-contrast, print
+- Localized text rendering through the WASM locale data
+- **experimental:** SB3 import helpers for scripts, lists, variables, images, and static screen previews
+
+## Install and Import
+
+```typst
+#import "@preview/blockst:0.2.0": blockst, scratch, raw-scratch, sb3
+```
+
+> Font requirement: Blockst is designed for Helvetica Neue (Scratch-like look).
+> On Linux/Windows install a compatible font, for example Nimbus Sans,
+> or override globally with `set-blockst(font: "...")`.
 
 ## Quick Start
 
-```typst
-#import "@preview/blockst:0.2.0": blockst, scratch
-
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #move(steps: 10)
-    #say-for-secs("Hello!", secs: 2)
-  ]
-]
-```
-
-![Quick Start example](examples/example-quickstart.png)
-
-## Text Parser: Scratchblocks-Style (EN/DE/FR)
-
-Blockst includes a language-aware scratchblocks-style parser that maps text lines
-to visual blocks. Use one of these modules:
-
-- `scratch.text.en`
-- `scratch.text.de`
-- `scratch.text.fr`
-
-Each module exposes two entry points:
-
-- `render-scratch-text(text)` - parse and render directly
-- `parse-scratch-text(text)` - parse only (returns AST-like nodes)
-
-```typst
-#import "@preview/blockst:0.2.0": blockst, scratch
-
-#blockst[
-  #import scratch.text.en: *
-
-  #render-scratch-text("when flag clicked
-repeat 4
-move 40 steps
-if <touching [mouse-pointer] ?> then
-say [Hello parser]
-else
-turn right 15 degrees
-end
-end")
-]
-```
-
-Parser behavior:
-
-- Explicit control flow markers per language:
-  - English: `end`, `else`
-  - German: `ende`, `sonst`
-  - French: `fin`, `sinon`
-- Input wrappers are supported: `(number)`, `[text/dropdown]`, `<condition>`
-- Nested reporters/booleans are parsed recursively
-- Unary math operators like `abs`, `floor`, and `ceiling` are parsed as structured expressions
-- Line comments with `//` are ignored by the parser
-- Unknown or unsupported lines fail fast with a clear parser error
-- Scratch-style dropdown marker text like `[mouse-pointer v]` is accepted and normalized
-
-Examples:
-
-- Scratchblocks parser example: [examples/example-parser-scratchblocks.typ](examples/example-parser-scratchblocks.typ)
-
-To keep parser docs focused and concise, the parser examples in this README use English.
-
-> **Font requirement:** Blockst uses **Helvetica Neue** (the same font Scratch itself uses).
-> This font is pre-installed on macOS. On Linux and Windows you need to install it manually,
-> or provide a compatible substitute (e.g. *Nimbus Sans* on Linux).
-> Without the font, Typst will fall back to a system default and the blocks will look different.
-> You can override the font globally with `set-blockst(font: "…")` — see [Custom Font example](#custom-font-set-blockst) below.
-
-## Examples
-
-### Events and Control Flow
-
-```typst
-#import "@preview/blockst:0.2.0": blockst, scratch
-
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
-
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #set-variable-to("Score", 0)
-    #repeat(times: 5)[
-      #move(steps: 10)
-      #if-then-else(
-        touching-object("edge"),
-        turn-right(degrees: 180),
-        change-variable-by("Score", 1),
-      )
-    ]
-    #say-for-secs(custom-input("Score"), secs: 2)
-  ]
-]
-```
-
-![Events and control flow example](examples/example-en.png)
-
-### Custom Block Definition
-
-```typst
-#import "@preview/blockst:0.2.0": blockst, scratch
-
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
-
-#blockst[
-  #import scratch.en: *
-
-  #let draw-n-gon = custom-block(
-    "draw ",
-    (name: "n"),
-    "-gon with side length ",
-    (name: "s"),
-  )
-
-  #define(draw-n-gon, repeat(times: parameter("n"))[
-    #move(steps: parameter("s"))
-    #turn-right(degrees: divide(360, parameter("n")))
-  ])
-
-  #when-flag-clicked[
-    #draw-n-gon(6, 40)
-    #draw-n-gon(4, 60)
-  ]
-]
-```
-
-![Custom block definition example](examples/example-custom.png)
-
-### Variable and List Monitors
-
-```typst
-#import "@preview/blockst:0.2.0": blockst, scratch
-
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
-
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #set-variable-to("Highscore", 0)
-    #add-to-list("Anna", "Players")
-    #add-to-list("Ben", "Players")
-    #add-to-list("Clara", "Players")
-  ]
-
-  // Visual monitors (like on the Scratch stage)
-  #variable-display(name: "Highscore", value: 100)
-
-  #list(
-    name: "Players",
-    items: ("Anna", "Ben", "Clara"),
-  )
-]
-```
-
-![Variable and list monitor example](examples/example-monitors.png)
-
-### Inline Usage (without `#blockst`)
-
-`#blockst[]` only adds scaling. Blocks render at 1:1 size in normal document flow — useful for worksheets that mix explanatory text with individual blocks:
-
-```typst
-#import "@preview/blockst:0.2.0": scratch
-
-#set page(width: auto, height: auto, margin: 5mm, fill: white)
-
-#import scratch.en: *
-
-*Without `#blockst` — 1:1 scale, place blocks anywhere in layout:*
-
-#grid(
-  columns: (auto, auto),
-  gutter: 4mm,
-  [*Step 1* \ Move the sprite forward.],
-  when-flag-clicked[
-    #move(steps: 10)
-  ],
-
-  [*Step 2* \ Repeat and turn.],
-  repeat(times: 4)[
-    #move(steps: 50)
-    #turn-right(degrees: 90)
-  ],
-)
-```
-
-![Inline usage example](examples/example-inline.png)
-
-### Content Blocks: When to Use `[...]`
-
-When a branch contains **multiple statements**, wrap them in a content block `[...]`.
-When a branch contains only a **single statement**, pass it directly — no `[...]` needed.
-
-```typst
-#import "@preview/blockst:0.2.0": blockst, scratch
-
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
-
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #if-then-else(
-      touching-object("edge"),
-      // Two statements → wrap in [...]
-      [
-        #turn-right(degrees: 180)
-        #move(steps: 10)
-      ],
-      // Single statement → pass directly, no [...] needed
-      change-variable-by("Score", 1),
-    )
-  ]
-]
-```
-
-![if-then-else with multi- and single-block branches](examples/example-if.png)
-
-### Scratch-Run (Turtle Graphics)
-
-`scratch-run` executes a list of turtle-graphics commands and renders them onto a canvas.
-Import the executable API from `scratch.exec.en` (or `.de`, `.fr`).
-
-```typst
-#import "@preview/blockst:0.2.0": blockst, scratch, scratch-run, set-scratch-run
-
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
-
-#import scratch.exec.en: *
-
-// Simple square
-#scratch-run(
-  pen-down(),
-  square(size: 70),
-)
-
-// Coloured square spiral — each side grows by 5 units
-#set-scratch-run(show-grid: true, show-axes: true, show-cursor: false)
-
-#scratch-run(
-  set-pen-color(color: rgb("#4C97FF")),
-  set-pen-size(size: 1),
-  pen-down(),
-  ..for i in range(1, 20) {
-    (move(steps: i * 5), turn-right(degrees: 90))
-  },
-)
-
-#set-scratch-run(show-grid: false, show-axes: false)
-```
-
-![Scratch-Run turtle graphics example](examples/example-run.png)
-
-### Theme and Scale (`set-blockst`)
-
-Use `set-blockst` to change the visual theme or scale of all following blocks.
-Available themes: `"normal"` (default), `"high-contrast"`, and `"print"`.
-
-```typst
-#import "@preview/blockst:0.2.0": blockst, scratch, set-blockst
-
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
-
-// Default: normal theme, 100% scale
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #move(steps: 10)
-    #say-for-secs("Hello!", secs: 2)
-  ]
-]
-
-// High-contrast theme at 80% scale
-#set-blockst(theme: "high-contrast", scale: 80%)
-
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #move(steps: 10)
-    #say-for-secs("Hello!", secs: 2)
-  ]
-]
-
-// Printer-friendly black/white theme
-#set-blockst(theme: "print", scale: 100%)
-
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #move(steps: 10)
-    #say-for-secs("Hello!", secs: 2)
-  ]
-]
-
-// Reset to defaults
-#set-blockst(theme: "normal", scale: 100%)
-```
-
-![Theme example (normal, high-contrast, print)](examples/example-theme.png)
-
-### Custom Font (`set-blockst`) {#custom-font-set-blockst}
+![Quick Start example](examples/example-quickstart.svg)
 
 <details>
-<summary><strong>Example: Comic Sans MS</strong></summary>
+<summary><strong>Show code</strong></summary>
 
 ```typst
-#import "@preview/blockst:0.2.0": blockst, scratch, set-blockst
-
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
-
-#set-blockst(font: "Comic Sans MS")
-
-#blockst[
-  #import scratch.en: *
-
-  #when-flag-clicked[
-    #say-for-secs("Look, Ma — Comic Sans!", secs: 2)
-    #repeat(times: 3)[
-      #move(steps: 10)
-      #turn-right(degrees: 120)
-    ]
-  ]
-]
+#scratch("
+when green flag clicked
+move (10) steps
+turn cw (15) degrees
+")
 ```
-
-![Custom font (Comic Sans) example](examples/example-font.png)
 
 </details>
 
-### German Localization
+Source: [examples/example-quickstart.typ](examples/example-quickstart.typ)
 
-All block names, labels, and inputs are translated. Here the same control-flow pattern as example 1 in German:
+## Example Gallery
+
+All long snippets below use the same pattern: result first, code in a collapsible block.
+
+### Localized Text
+
+![German localization example](examples/example-de.svg)
+
+<details>
+<summary><strong>Show code</strong></summary>
 
 ```typst
-#import "@preview/blockst:0.2.0": blockst, scratch
+#set-blockst(scale: 67.5%)
 
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
+#scratch("Wenn die grüne Flagge angeklickt
+wiederhole (4) mal 
+  gehe (30) er Schritt
+  drehe dich nach rechts um (90) Grad
+end", language: "de")
+```
+
+</details>
+
+Source: [examples/example-de.typ](examples/example-de.typ)
+
+### Inline Usage Without blockst Container
+
+![Inline usage example](examples/example-inline.svg)
+
+<details>
+<summary><strong>Show code</strong></summary>
+
+```typst
+#grid(
+  columns: (1fr, auto),
+  gutter: 6mm,
+  [*Step 1*\
+  Trigger the script and walk forward.],
+  [#scratch("when green flag clicked\nmove (20) steps")],
+  [*Step 2*\
+  Repeat a square movement.],
+  [#scratch("repeat (4)\nmove (40) steps\nturn cw (90) degrees\nend")],
+)
+```
+
+</details>
+
+Source: [examples/example-inline.typ](examples/example-inline.typ)
+
+### Theme and Scale
+
+![Theme example (normal, high-contrast, print)](examples/example-theme.svg)
+
+<details>
+<summary><strong>Show code</strong></summary>
+
+```typst
+#let script = "when green flag clicked
+go to (random position v)
+turn cw (30) degrees"
 
 #blockst[
-  #import scratch.de: *
+  #scratch(script)
+]
 
-  #wenn-gruene-flagge-geklickt[
-    #setze-variable("Punkte", 0)
-    #wiederhole(anzahl: 5)[
-      #gehe(schritte: 10)
-      #falls-sonst(
-        wird-beruehrt("Rand"),
-        drehe-rechts(grad: 180),
-        aendere-variable("Punkte", 1),
-      )
-    ]
-    #sage-fuer-sekunden(eigene-eingabe("Punkte"), sekunden: 2)
-  ]
+#v(5mm)
+
+#blockst(theme: "high-contrast")[
+  #scratch(script)
+]
+
+#v(5mm)
+
+#blockst(theme: "print")[
+  #scratch(script)
 ]
 ```
 
-![German localization example](examples/example-de.png)
+</details>
 
-### Container and Settings
+Source: [examples/example-theme.typ](examples/example-theme.typ)
 
-```typst
-#blockst[ ... ]
-#set-blockst(theme: "normal", scale: 100%, stroke-width: 1pt)
-```
-
-### Language Modules
-
-```typst
-#import scratch.en: *
-#import scratch.de: *
-#import scratch.fr: *
-
-#import scratch.text.en: *
-#import scratch.text.de: *
-#import scratch.text.fr: *
-
-#import scratch.sb3: *
-```
-
-### scratch-run
-
-```typst
-#import "@preview/blockst:0.2.0": scratch-run, set-scratch-run
-#import scratch.exec.en: *
-```
-
-## Import Scratch `.sb3` via Typst Plugin (WASM)
+## Experimental: SB3 Import via Typst Plugin WASM
 
 Recommended workflow:
 
-1. Read `.sb3` bytes with `read(..., encoding: none)`
-2. Use helpers from `scratch.sb3`
-3. Render imported scripts, lists, and variables directly in Blockst
+1. Read `.sb3` as bytes via `read(..., encoding: none)`.
+2. Use the `sb3` helpers to extract scripts, monitors, images, or screen previews.
+3. Render imported scripts through the same text-to-WASM pipeline as `scratch(...)`.
 
-`scratch.sb3` uses the bundled SB3 plugin by default, so no manual
-`plugin("...")` call is needed for standard usage.
+### SB3 Scripts and Screen Preview
 
-### Quick Start
+![SB3 import example](examples/example-sb3-import.svg)
+
+<details>
+<summary><strong>Show code</strong></summary>
 
 ```typst
-#import "@preview/blockst:0.2.0": blockst, scratch
-#let sb3-bytes = read("project.sb3", encoding: none)
+#let project = read("Mampf-Matze Lösung.sb3", encoding: none)
 
 #blockst[
-  #import scratch.sb3: render-sb3-scripts
-  #render-sb3-scripts(sb3-bytes)
+  #sb3.sb3-screen-preview(project, unit: 1.5)
+
+  #v(4mm)
+
+  #sb3.render-sb3-scripts(
+    project,
+    language: "en",
+    target: "Pacman",
+    target-script-number: 2,
+    show-headers: true,
+  )
 ]
 ```
 
-### Script Rendering Options
+</details>
 
-```typst
-// Render language for labels/headers (same imported SB3 data)
-#render-sb3-scripts(sb3-bytes, language: "de")
+Source: [examples/example-sb3-import.typ](examples/example-sb3-import.typ)
 
-// Filter by target ("stage" or exact sprite name)
-#render-sb3-scripts(sb3-bytes, target: "stage")
-#render-sb3-scripts(sb3-bytes, target: "Player")
+### Variable and List Monitors
 
-// Pick one script by global number (1-based across all targets)
-#render-sb3-scripts(sb3-bytes, script-number: 2)
-
-// Pick one script by local number inside one selected target
-#render-sb3-scripts(sb3-bytes, target: "Player", target-script-number: 1)
-```
-
-Header behavior defaults:
-
-- Without `target`: headers are shown
-- With `target`: headers are hidden
-- Override with `show-headers: true/false`
-
-### Lists and Variables
-
-```typst
-#import scratch.sb3: render-sb3-lists, render-sb3-variables
-
-// All lists/variables from one target
-#render-sb3-lists(sb3-bytes, target: "stage")
-#render-sb3-variables(sb3-bytes, target: "stage")
-
-// Select one item by name (recommended)
-#render-sb3-lists(sb3-bytes, target: "stage", target-list-name: "Players")
-#render-sb3-variables(sb3-bytes, target: "stage", target-variable-name: "Score")
-
-// Or by local number within the selected target
-#render-sb3-lists(sb3-bytes, target: "stage", target-list-number: 1)
-#render-sb3-variables(sb3-bytes, target: "stage", target-variable-number: 1)
-```
-
-### Catalog APIs (Metadata)
-
-```typst
-#import scratch.sb3: sb3-scripts-catalog, sb3-state-catalog
-
-// Script catalog (grouped by target)
-#let catalog = sb3-scripts-catalog(sb3-bytes)
-
-// Skip parsed_text for faster metadata-only lookup
-#let fast-catalog = sb3-scripts-catalog(sb3-bytes, include-parser-text: false)
-
-// Compact target state snapshots (variables, lists, stage/sprite props)
-#let state = sb3-state-catalog(sb3-bytes)
-```
-
-### Advanced
-
-You can convert SB3 bytes to parser text directly with `sb3-to-scratch-text(...)`
-and optionally pass a custom plugin via `sb3-plugin: plugin("...")`.
-
-If you maintain the SB3 plugin itself, build details are in
-[scripts/sb3-wasm/README.md](scripts/sb3-wasm/README.md).
-
-### Validate SB3 Import Coverage
-
-To test whether all opcodes in a specific `.sb3` are currently imported by the
-SB3 parser, run:
-
-```bash
-./scripts/sb3-wasm/check-sb3-import-coverage.sh examples/Listen.sb3
-```
-
-Strict mode (exit with error if unsupported opcodes are found):
-
-```bash
-./scripts/sb3-wasm/check-sb3-import-coverage.sh examples/Listen.sb3 --strict
-```
-
-## Complete English Block Catalog
+![SB3 variable and list monitors](examples/example-monitors.svg)
 
 <details>
-<summary><strong>Events</strong></summary>
+<summary><strong>Show code</strong></summary>
 
-<img src="examples/catalog/events.svg" alt="Events catalog">
+```typst
+#let project = read("Mampf-Matze Lösung.sb3", encoding: none)
+
+#stack(
+  spacing: 4mm,
+  sb3.render-sb3-variables(project, language: "en", show-target-headers: false),
+  sb3.render-sb3-lists(project, language: "en", show-target-headers: false),
+)
+```
 
 </details>
+
+Source: [examples/example-monitors.typ](examples/example-monitors.typ)
+
+### SB3 API at a Glance
+
+- Scripts: `sb3.render-sb3-scripts(...)` with target and script filters
+- Lists: `sb3.render-sb3-lists(...)` by target, name, or local index
+- Variables: `sb3.render-sb3-variables(...)` by target, name, or local index
+- Images: `sb3.sb3-images-catalog(...)`, `sb3.sb3-image(...)`
+- Screen: `sb3.sb3-screen-preview(...)`
+- Catalogs: `sb3.sb3-scripts-catalog(...)`, `sb3.sb3-state-catalog(...)`
+
+## Catalog
+
+The catalog is split by Scratch 3 category so each file stays readable and can be regenerated independently.
 
 <details>
 <summary><strong>Motion</strong></summary>
 
-<img src="examples/catalog/motion.svg" alt="Motion catalog">
+![Motion blocks](examples/catalog/motion.svg)
+
+Source: [examples/catalog/motion.typ](examples/catalog/motion.typ)
 
 </details>
 
 <details>
 <summary><strong>Looks</strong></summary>
 
-<img src="examples/catalog/looks.svg" alt="Looks catalog">
+![Looks blocks](examples/catalog/looks.svg)
+
+Source: [examples/catalog/looks.typ](examples/catalog/looks.typ)
 
 </details>
 
 <details>
 <summary><strong>Sound</strong></summary>
 
-<img src="examples/catalog/sound.svg" alt="Sound catalog">
+![Sound blocks](examples/catalog/sound.svg)
+
+Source: [examples/catalog/sound.typ](examples/catalog/sound.typ)
 
 </details>
 
 <details>
 <summary><strong>Pen</strong></summary>
 
-<img src="examples/catalog/pen.svg" alt="Pen catalog">
+![Pen blocks](examples/catalog/pen.svg)
 
-</details>
-
-<details>
-<summary><strong>Control</strong></summary>
-
-<img src="examples/catalog/control.svg" alt="Control catalog">
-
-</details>
-
-<details>
-<summary><strong>Sensing</strong></summary>
-
-<img src="examples/catalog/sensing.svg" alt="Sensing catalog">
-
-</details>
-
-<details>
-<summary><strong>Operators</strong></summary>
-
-<img src="examples/catalog/operators.svg" alt="Operators catalog">
+Source: [examples/catalog/pen.typ](examples/catalog/pen.typ)
 
 </details>
 
 <details>
 <summary><strong>Variables</strong></summary>
 
-<img src="examples/catalog/variables.svg" alt="Variables catalog">
+![Variable blocks](examples/catalog/variables.svg)
+
+Source: [examples/catalog/variables.typ](examples/catalog/variables.typ)
 
 </details>
 
 <details>
 <summary><strong>Lists</strong></summary>
 
-<img src="examples/catalog/lists.svg" alt="Lists catalog">
+![List blocks](examples/catalog/lists.svg)
+
+Source: [examples/catalog/lists.typ](examples/catalog/lists.typ)
 
 </details>
 
 <details>
-<summary><strong>Custom Blocks</strong></summary>
+<summary><strong>Events</strong></summary>
 
-<img src="examples/catalog/custom.svg" alt="Custom Blocks catalog">
+![Event blocks](examples/catalog/events.svg)
+
+Source: [examples/catalog/events.typ](examples/catalog/events.typ)
+
+</details>
+
+<details>
+<summary><strong>Control</strong></summary>
+
+![Control blocks](examples/catalog/control.svg)
+
+Source: [examples/catalog/control.typ](examples/catalog/control.typ)
+
+</details>
+
+<details>
+<summary><strong>Sensing</strong></summary>
+
+![Sensing blocks](examples/catalog/sensing.svg)
+
+Source: [examples/catalog/sensing.typ](examples/catalog/sensing.typ)
+
+</details>
+
+<details>
+<summary><strong>Operators</strong></summary>
+
+![Operator blocks](examples/catalog/operators.svg)
+
+Source: [examples/catalog/operators.typ](examples/catalog/operators.typ)
 
 </details>
 
 ## Contributing
 
-Contributions are welcome: bug reports, missing blocks, API polish, docs, and new localizations.
+Contributions are welcome: bug reports, missing blocks, parser improvements, rendering polish, docs, and new localizations.
