@@ -122,7 +122,12 @@ pub enum PublicPart {
     #[serde(rename = "icon")]
     Icon { name: String },
     #[serde(rename = "input")]
-    Input { shape: String, value: String },
+    Input {
+        shape: String,
+        value: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        nested: Option<Box<PublicNode>>,
+    },
 }
 
 static DATA: OnceLock<ParserData> = OnceLock::new();
@@ -389,6 +394,7 @@ fn to_public_node(block: ParsedBlock) -> PublicNode {
                 Child::Input(input) => PublicPart::Input {
                     shape: input.shape,
                     value: input.value,
+                    nested: input.nested.map(|nested| Box::new(to_public_node(*nested))),
                 },
             })
             .collect(),
@@ -406,6 +412,9 @@ fn to_public_node(block: ParsedBlock) -> PublicNode {
 /// round (input_value shadow, darker fill).
 fn is_square_dropdown_index(block_id: &str, input_idx: usize) -> bool {
     match block_id {
+        // Pen color-parameter dropdown (color/saturation/brightness/transparency)
+        // is an input-value dropdown and should stay round.
+        "pen.changeColorParam" | "pen.setColorParam" => false,
         // SENSING_OF: first input (%m.attribute = PROPERTY field_dropdown) is
         // square, second (%m.spriteOrStage = OBJECT input_value shadow) is round.
         "SENSING_OF" => input_idx == 0,
@@ -448,9 +457,17 @@ fn to_render_block(block: ParsedBlock) -> BlockSpec {
     let mut segments = Vec::new();
     let mut dropdown_idx = 0;
     let is_proc_def = block.id == "procedures_definition";
+    let is_proc_call = block.id == "procedures_call";
+    let mut skipped_proc_call_prefix = false;
     for child in block.children {
         match child {
-            Child::Label(value) => segments.push(SegmentSpec::Text { value }),
+            Child::Label(value) => {
+                if is_proc_call && !skipped_proc_call_prefix {
+                    skipped_proc_call_prefix = true;
+                    continue;
+                }
+                segments.push(SegmentSpec::Text { value })
+            }
             Child::Icon(name) => segments.push(SegmentSpec::Icon { name }),
             Child::Input(input) => {
                 // Reporter inputs with a nested block are rendered as inline blocks

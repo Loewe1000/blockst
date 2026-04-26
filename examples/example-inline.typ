@@ -1,4 +1,4 @@
-#import "../lib.typ": scratch
+#import "@preview/blockst:0.2.0": scratch
 
 #set page(width: 10cm, height: auto, margin: 5mm, fill: white)
 

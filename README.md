@@ -12,7 +12,7 @@ It is made for worksheets, tutorials, teaching material, and visual programming 
 
 The current renderer is text-based: Typst passes Scratch text to a bundled WASM plugin, the plugin parses and renders SVG, and Typst embeds the SVG output.
 
-Starting with version 0.3.0, Blockst uses only the WASM-based text parser and renderer. The earlier native Typst rendering approach was dropped because it ran into Typst's limits on more complex Scratch layouts.
+Starting with version 0.2.0, Blockst uses only the WASM-based text parser and renderer. The earlier native Typst rendering approach was dropped because it ran into Typst's limits on more complex Scratch layouts.
 
 ## Contents
 
@@ -109,6 +109,29 @@ Source: [examples/example-de.typ](examples/example-de.typ)
 
 Source: [examples/example-inline.typ](examples/example-inline.typ)
 
+### Markdown Code Blocks with raw-scratch
+
+![raw-scratch example](examples/example-raw-scratch.svg)
+
+<details>
+<summary><strong>Show code</strong></summary>
+
+````typst
+#show: raw-scratch()
+
+```scratch
+when green flag clicked
+repeat (4)
+  move (30) steps
+  turn cw (90) degrees
+end
+```
+````
+
+</details>
+
+Source: [examples/example-raw-scratch.typ](examples/example-raw-scratch.typ)
+
 ### Theme and Scale
 
 ![Theme example (normal, high-contrast, print)](examples/example-theme.svg)
@@ -141,6 +164,122 @@ turn cw (30) degrees"
 </details>
 
 Source: [examples/example-theme.typ](examples/example-theme.typ)
+
+### Executable Preview (scratch-run)
+
+![Executable square example](examples/example-executable.svg)
+
+<details>
+<summary><strong>Show code</strong></summary>
+
+```typst
+#let square-program = "
+go to x: (-45) y: (-45)
+pen down
+set pen [color v] to (0)
+set pen size to (45)
+repeat (4)
+  move (90) steps
+  turn cw (90) degrees
+  change pen [color v] by (25)
+end"
+
+#let star-rosette-program = "
+go to x: (0) y: (0)
+point in direction (90)
+pen down
+set pen size to (3)
+repeat (9)
+  repeat (5)
+    move (90) steps
+    turn cw (144) degrees
+  end
+  turn cw (40) degrees
+  change pen [color v] by (18)
+end"
+
+#let spiral-program = "
+go to x: (-95) y: (-10)
+point in direction (90)
+pen down
+set pen size to (50)
+repeat (60)
+  move (10) steps
+  turn cw (6) degrees
+  change pen [color v] by (8)
+  change pen size by (-0.5)
+end"
+
+#let custom-block-program = "
+define triangle (var [size]) (color)
+set pen [color v] to (var [color])
+pen down
+repeat (3)
+  move (var [size]) steps
+  turn cw (120) degrees
+end
+pen up
+
+when green flag clicked
+set pen size to (8)
+go to x: (-50) y: (-50)
+call triangle (100) (200)
+go to x: (50) y: (50)
+call triangle (50) (60)
+"
+
+#set-scratch-run(
+  width: 300,
+  height: 240,
+  start-x: 0,
+  start-y: 0,
+  start-angle: 90,
+  show-grid: 10,
+  show-axes: false,
+  show-cursor: true,
+)
+
+#stack(
+  spacing: 6mm,
+
+  [*1) Hue Square*],
+  grid(
+    columns: (auto, auto),
+    gutter: 6mm,
+    [#scratch(square-program)],
+    [#scratch-run(..scratch-execute(square-program), unit: 2)],
+  ),
+
+  [*2) Star Rosette (Nested repeat)*],
+  grid(
+    columns: (auto, auto),
+    gutter: 6mm,
+    [#scratch(star-rosette-program)],
+    [#scratch-run(..scratch-execute(star-rosette-program), unit: 2)],
+  ),
+
+  [*3) Colored Spiral (Hue + pen size)*],
+  grid(
+    columns: (auto, auto),
+    gutter: 6mm,
+    [#scratch(spiral-program)],
+    [#scratch-run(..scratch-execute(spiral-program), unit: 2)],
+  ),
+
+  [*4) Custom Block: Triangle Pattern*],
+  grid(
+    columns: (auto, auto),
+    gutter: 6mm,
+    [#scratch(custom-block-program)],
+    [#scratch-run(..scratch-execute(custom-block-program), unit: 2, show-cursor: false)],
+  ),
+)
+
+```
+
+</details>
+
+Source: [examples/example-executable.typ](examples/example-executable.typ)
 
 ## Experimental: SB3 Import via Typst Plugin WASM
 

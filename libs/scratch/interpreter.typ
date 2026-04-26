@@ -8,6 +8,10 @@
 
 #let blockst-run-options = state("blockst-run-options", (:))
 
+// Internal package scale for Scratch pen sizes.
+// Intentionally not exposed as a user setting.
+#let _pen-size-scale = 0.2834646
+
 // Global settings for scratch-run
 // Usage: #set-scratch-run(show-grid: 50, show-axes: true)
 #let set-scratch-run(
@@ -66,6 +70,108 @@
 ) = context {
   import "@preview/cetz:0.4.2": canvas, draw
 
+  let normalize-color(value, default: black, allow-none: false) = {
+    if value == none and allow-none {
+      return none
+    }
+    if type(value) == color {
+      return value
+    }
+    if type(value) == str {
+      let s = lower(value.trim())
+      if s.starts-with("#") { return rgb(s) }
+      if s == "black" { return black }
+      if s == "white" { return white }
+      if s == "red" { return red }
+      if s == "green" { return green }
+      if s == "blue" { return blue }
+      if s == "yellow" { return yellow }
+      if s == "orange" { return orange }
+      if s == "purple" { return purple }
+      if s == "pink" { return pink }
+      if s == "brown" { return brown }
+      if s == "gray" or s == "grey" { return gray }
+      if s == "cyan" { return cyan }
+      if s == "magenta" { return magenta }
+    }
+    default
+  }
+
+  let normalize-hue(h) = {
+    let wrapped = calc.rem(h, 100)
+    if wrapped < 0 { wrapped + 100 } else { wrapped }
+  }
+
+  let hue-to-degrees(h) = normalize-hue(h) * 3.6
+
+  let clamp-percent(value) = calc.max(0, calc.min(100, value))
+
+  let normalize-pen-param(param) = {
+    let p = lower(str(param).trim())
+    if p == "hue" or p == "color" or p == "farbe" {
+      "hue"
+    } else if p == "saturation" or p == "sättigung" or p == "saettigung" {
+      "saturation"
+    } else if p == "brightness" or p == "helligkeit" or p == "shade" or p == "farbstärke" or p == "farbstaerke" {
+      "brightness"
+    } else if p == "transparency" or p == "durchsichtigkeit" or p == "transparenz" {
+      "transparency"
+    } else {
+      p
+    }
+  }
+
+  // Convert pen params from Scratch scale to RGB.
+  // Scratch uses hue/saturation/brightness in the 0..100 range.
+  // HSV conversion expects hue in degrees (0..360), so hue is scaled here.
+  // Transparency is approximated by mixing towards white.
+  let pen-color(hue, saturation, brightness, transparency) = {
+    let h = hue-to-degrees(hue)
+    let s = clamp-percent(saturation) / 100
+    let v = clamp-percent(brightness) / 100
+    let t = clamp-percent(transparency) / 100
+    let c = v * s
+    let x = 1.0 - calc.abs(calc.rem(h / 60, 2) - 1.0)
+    x = c * x
+    let m = v - c
+
+    let r1 = 0.0
+    let g1 = 0.0
+    let b1 = 0.0
+
+    if h < 60 {
+      r1 = c
+      g1 = x
+      b1 = 0.0
+    } else if h < 120 {
+      r1 = x
+      g1 = c
+      b1 = 0.0
+    } else if h < 180 {
+      r1 = 0.0
+      g1 = c
+      b1 = x
+    } else if h < 240 {
+      r1 = 0.0
+      g1 = x
+      b1 = c
+    } else if h < 300 {
+      r1 = x
+      g1 = 0.0
+      b1 = c
+    } else {
+      r1 = c
+      g1 = 0.0
+      b1 = x
+    }
+
+    let r = (r1 + m) * (1.0 - t) + t
+    let g = (g1 + m) * (1.0 - t) + t
+    let b = (b1 + m) * (1.0 - t) + t
+
+    rgb(int(calc.round(r * 255)), int(calc.round(g * 255)), int(calc.round(b * 255)))
+  }
+
   // Read global options
   let opts = blockst-run-options.get()
 
@@ -79,14 +185,16 @@
   let start-x = get-option(start-x, "start-x", 0)
   let start-y = get-option(start-y, "start-y", 0)
   let start-angle = get-option(start-angle, "start-angle", 90)
-  let start-color = get-option(start-color, "start-color", rgb("#1A1AFF"))
+  let start-color = normalize-color(get-option(start-color, "start-color", rgb("#1A1AFF")), default: rgb("#1A1AFF"))
   let start-thickness = get-option(start-thickness, "start-thickness", 0.5)
   let unit = get-option(unit, "unit", 1)
-  let background = get-option(background, "background", none)
+  let background = normalize-color(get-option(background, "background", none), default: none, allow-none: true)
   let show-axes = get-option(show-axes, "show-axes", false)
   let show-grid = get-option(show-grid, "show-grid", false)
   let show-border = get-option(show-border, "show-border", true)
   let show-cursor = get-option(show-cursor, "show-cursor", true)
+  let unit-scale = calc.max(0.01, unit)
+  let pen-thickness(size) = calc.max(0.1pt * unit-scale, size * _pen-size-scale * unit-scale * 1pt)
 
   // Collect all commands from arguments
   let commands-array = commands.pos()
@@ -199,103 +307,190 @@
       }
 
       // Initial turtle state
-      let state = (
+      let initial-state = (
         x: start-x,
         y: start-y,
         angle: start-angle,
         pen-down: false,
         color: start-color,
+        hue: 66.6666667,
+        saturation: 100,
+        brightness: 100,
+        transparency: 0,
         size: start-thickness,
       )
-      let vars = (:)
-      let draw-commands = ()
+
+      let execute_commands(cmds, state, vars, draw-commands) = {
+        for cmd in cmds {
+          if type(cmd) != dictionary or "type" not in cmd { continue }
+          let cmd-type = cmd.type
+
+          // ---- CONTROL ----
+          if cmd-type == "if" {
+            let cond = eval-value(cmd.condition, state, vars)
+            if cond {
+              let nested = execute_commands(cmd.at("then_body", default: ()), state, vars, draw-commands)
+              state = nested.state
+              vars = nested.vars
+              draw-commands = nested.draw-commands
+            } else {
+              let nested = execute_commands(cmd.at("else_body", default: ()), state, vars, draw-commands)
+              state = nested.state
+              vars = nested.vars
+              draw-commands = nested.draw-commands
+            }
+          } else if cmd-type == "repeat" {
+            let count = int(calc.max(0, eval-value(cmd.count, state, vars)))
+            for _i in range(count) {
+              let nested = execute_commands(cmd.at("body", default: ()), state, vars, draw-commands)
+              state = nested.state
+              vars = nested.vars
+              draw-commands = nested.draw-commands
+            }
+          } else if cmd-type == "repeat-until" {
+            let limit = int(cmd.at("limit", default: 1000))
+            for _i in range(limit) {
+              if eval-value(cmd.condition, state, vars) { break }
+              let nested = execute_commands(cmd.at("body", default: ()), state, vars, draw-commands)
+              state = nested.state
+              vars = nested.vars
+              draw-commands = nested.draw-commands
+            }
+          } else if cmd-type == "forever" {
+            let limit = int(cmd.at("limit", default: 20))
+            for _i in range(limit) {
+              let nested = execute_commands(cmd.at("body", default: ()), state, vars, draw-commands)
+              state = nested.state
+              vars = nested.vars
+              draw-commands = nested.draw-commands
+            }
+          } else if cmd-type == "wait" {
+            // No timeline yet; keep as no-op for deterministic static rendering.
+
+          // ---- MOTION ----
+          } else if cmd-type == "move" {
+            let steps = eval-value(cmd.steps, state, vars)
+            let rad = state.angle * calc.pi / 180
+            let new-x = state.x + steps * calc.cos(rad)
+            let new-y = state.y + steps * calc.sin(rad)
+            if state.pen-down {
+              draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, new-y), stroke: (paint: state.color, thickness: pen-thickness(state.size), join: "round", cap: "round", miter-limit: 10)))
+            }
+            state.x = new-x
+            state.y = new-y
+          } else if cmd-type == "turn-right" {
+            state.angle -= eval-value(cmd.degrees, state, vars)
+          } else if cmd-type == "turn-left" {
+            state.angle += eval-value(cmd.degrees, state, vars)
+          } else if cmd-type == "set-direction" {
+            state.angle = eval-value(cmd.angle, state, vars)
+          } else if cmd-type == "goto" {
+            let new-x = eval-value(cmd.x, state, vars)
+            let new-y = eval-value(cmd.y, state, vars)
+            if state.pen-down {
+              draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, new-y), stroke: (paint: state.color, thickness: pen-thickness(state.size), join: "round",  cap: "round", miter-limit: 10)))
+            }
+            state.x = new-x
+            state.y = new-y
+          } else if cmd-type == "set-x" {
+            let new-x = eval-value(cmd.x, state, vars)
+            if state.pen-down {
+              draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, state.y), stroke: (paint: state.color, thickness: pen-thickness(state.size), join: "round",  cap: "round", miter-limit: 10)))
+            }
+            state.x = new-x
+          } else if cmd-type == "set-y" {
+            let new-y = eval-value(cmd.y, state, vars)
+            if state.pen-down {
+              draw-commands.push((type: "line", from: (state.x, state.y), to: (state.x, new-y), stroke: (paint: state.color, thickness: pen-thickness(state.size), join: "round",  cap: "round", miter-limit: 10)))
+            }
+            state.y = new-y
+          } else if cmd-type == "change-x" {
+            let new-x = state.x + eval-value(cmd.dx, state, vars)
+            if state.pen-down {
+              draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, state.y), stroke: (paint: state.color, thickness: pen-thickness(state.size), join: "round",  cap: "round", miter-limit: 10)))
+            }
+            state.x = new-x
+          } else if cmd-type == "change-y" {
+            let new-y = state.y + eval-value(cmd.dy, state, vars)
+            if state.pen-down {
+              draw-commands.push((type: "line", from: (state.x, state.y), to: (state.x, new-y), stroke: (paint: state.color, thickness: pen-thickness(state.size), join: "round",  cap: "round", miter-limit: 10)))
+            }
+            state.y = new-y
+
+          // ---- PEN ----
+          } else if cmd-type == "clear" {
+            // Canvas is redrawn from scratch; no explicit clear needed
+          } else if cmd-type == "stamp" {
+            draw-commands.push((type: "circle", center: (state.x, state.y), radius: state.size * 2, fill: state.color))
+          } else if cmd-type == "pen-down" {
+            state.pen-down = true
+          } else if cmd-type == "pen-up" {
+            state.pen-down = false
+          } else if cmd-type == "set-color" {
+            state.color = cmd.color
+          } else if cmd-type == "change-pen-param" {
+            let param = normalize-pen-param(cmd.param)
+            let delta = eval-value(cmd.delta, state, vars)
+            if param == "hue" {
+              state.hue = normalize-hue(state.hue + delta)
+              state.color = pen-color(state.hue, state.saturation, state.brightness, state.transparency)
+            } else if param == "saturation" {
+              state.saturation = clamp-percent(state.saturation + delta)
+              state.color = pen-color(state.hue, state.saturation, state.brightness, state.transparency)
+            } else if param == "brightness" {
+              state.brightness = clamp-percent(state.brightness + delta)
+              state.color = pen-color(state.hue, state.saturation, state.brightness, state.transparency)
+            } else if param == "transparency" {
+              state.transparency = clamp-percent(state.transparency + delta)
+              state.color = pen-color(state.hue, state.saturation, state.brightness, state.transparency)
+            }
+          } else if cmd-type == "set-pen-param" {
+            let param = normalize-pen-param(cmd.param)
+            let value = eval-value(cmd.value, state, vars)
+            if param == "hue" {
+              state.hue = normalize-hue(value)
+              state.color = pen-color(state.hue, state.saturation, state.brightness, state.transparency)
+            } else if param == "saturation" {
+              state.saturation = clamp-percent(value)
+              state.color = pen-color(state.hue, state.saturation, state.brightness, state.transparency)
+            } else if param == "brightness" {
+              state.brightness = clamp-percent(value)
+              state.color = pen-color(state.hue, state.saturation, state.brightness, state.transparency)
+            } else if param == "transparency" {
+              state.transparency = clamp-percent(value)
+              state.color = pen-color(state.hue, state.saturation, state.brightness, state.transparency)
+            }
+          } else if cmd-type == "set-size" {
+            state.size = eval-value(cmd.size, state, vars)
+          } else if cmd-type == "change-size" {
+            state.size += eval-value(cmd.delta, state, vars)
+
+          // ---- VARIABLES ----
+          } else if cmd-type == "set-var" {
+            vars.insert(cmd.name, eval-value(cmd.value, state, vars))
+          } else if cmd-type == "change-var" {
+            vars.insert(cmd.name, vars.at(cmd.name, default: 0) + eval-value(cmd.delta, state, vars))
+
+          // ---- OUTPUT ----
+          } else if cmd-type == "say" or cmd-type == "think" {
+            draw-commands.push((type: "text", position: (state.x, state.y + 5), text: cmd.message))
+
+          // ---- CLOSE PATH ----
+          } else if cmd-type == "close" {
+            draw-commands.push((type: "close"))
+          }
+        }
+        (state: state, vars: vars, draw-commands: draw-commands)
+      }
 
       // Interpret each command
-      for cmd in commands {
-        if type(cmd) != dictionary or "type" not in cmd { continue }
-        let cmd-type = cmd.type
-
-        // ---- MOTION ----
-        if cmd-type == "move" {
-          let steps = eval-value(cmd.steps, state, vars)
-          let rad = state.angle * calc.pi / 180
-          let new-x = state.x + steps * calc.cos(rad)
-          let new-y = state.y + steps * calc.sin(rad)
-          if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
-          }
-          state.x = new-x
-          state.y = new-y
-        } else if cmd-type == "turn-right" {
-          state.angle -= eval-value(cmd.degrees, state, vars)
-        } else if cmd-type == "turn-left" {
-          state.angle += eval-value(cmd.degrees, state, vars)
-        } else if cmd-type == "set-direction" {
-          state.angle = eval-value(cmd.angle, state, vars)
-        } else if cmd-type == "goto" {
-          let new-x = eval-value(cmd.x, state, vars)
-          let new-y = eval-value(cmd.y, state, vars)
-          if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
-          }
-          state.x = new-x
-          state.y = new-y
-        } else if cmd-type == "set-x" {
-          let new-x = eval-value(cmd.x, state, vars)
-          if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, state.y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
-          }
-          state.x = new-x
-        } else if cmd-type == "set-y" {
-          let new-y = eval-value(cmd.y, state, vars)
-          if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (state.x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
-          }
-          state.y = new-y
-        } else if cmd-type == "change-x" {
-          let new-x = state.x + eval-value(cmd.dx, state, vars)
-          if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (new-x, state.y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
-          }
-          state.x = new-x
-        } else if cmd-type == "change-y" {
-          let new-y = state.y + eval-value(cmd.dy, state, vars)
-          if state.pen-down {
-            draw-commands.push((type: "line", from: (state.x, state.y), to: (state.x, new-y), stroke: (paint: state.color, thickness: state.size * 1pt, join: "miter", cap: "butt", miter-limit: 10)))
-          }
-          state.y = new-y
-
-        // ---- PEN ----
-        } else if cmd-type == "clear" {
-          // Canvas is redrawn from scratch; no explicit clear needed
-        } else if cmd-type == "stamp" {
-          draw-commands.push((type: "circle", center: (state.x, state.y), radius: state.size * 2, fill: state.color))
-        } else if cmd-type == "pen-down" {
-          state.pen-down = true
-        } else if cmd-type == "pen-up" {
-          state.pen-down = false
-        } else if cmd-type == "set-color" {
-          state.color = cmd.color
-        } else if cmd-type == "set-size" {
-          state.size = eval-value(cmd.size, state, vars)
-        } else if cmd-type == "change-size" {
-          state.size += eval-value(cmd.delta, state, vars)
-
-        // ---- VARIABLES ----
-        } else if cmd-type == "set-var" {
-          vars.insert(cmd.name, eval-value(cmd.value, state, vars))
-        } else if cmd-type == "change-var" {
-          vars.insert(cmd.name, vars.at(cmd.name, default: 0) + eval-value(cmd.delta, state, vars))
-
-        // ---- OUTPUT ----
-        } else if cmd-type == "say" or cmd-type == "think" {
-          draw-commands.push((type: "text", position: (state.x, state.y + 5), text: cmd.message))
-
-        // ---- CLOSE PATH ----
-        } else if cmd-type == "close" {
-          draw-commands.push((type: "close"))
-        }
-      }
+      let state = initial-state
+      let vars = (:)
+      let draw-commands = ()
+      let result = execute_commands(commands, state, vars, draw-commands)
+      state = result.state
+      vars = result.vars
+      draw-commands = result.draw-commands
 
       // Merge consecutive collinear lines into single polyline paths
       let combined-paths = ()
@@ -342,7 +537,11 @@
       // Turtle cursor
       if show-cursor {
         on-layer(0, {
-          circle((state.x, state.y), radius: 5pt, fill: rgb("#3d3d3d"), stroke: 0.8pt + white)
+          content(
+            (state.x, state.y),
+            image("assets/pencil-cursor.svg", width: 15pt),
+            anchor: "south-west",
+          )
         })
       }
     }),

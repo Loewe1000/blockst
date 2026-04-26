@@ -42,6 +42,14 @@
   param: param,
   value: value,
 )
+#let change-pen-color(value: 10) = change-pen-param("hue", value: value)
+#let set-pen-color-param(value: 50) = set-pen-param("hue", value: value)
+#let change-pen-saturation(value: 10) = change-pen-param("saturation", value: value)
+#let set-pen-saturation(value: 100) = set-pen-param("saturation", value: value)
+#let change-pen-brightness(value: 10) = change-pen-param("brightness", value: value)
+#let set-pen-brightness(value: 100) = set-pen-param("brightness", value: value)
+#let change-pen-transparency(value: 10) = change-pen-param("transparency", value: value)
+#let set-pen-transparency(value: 0) = set-pen-param("transparency", value: value)
 
 // =====================================================
 // VARIABLES & OPERATORS
