@@ -12,6 +12,14 @@ It is made for worksheets, tutorials, teaching material, and visual programming 
 
 The current renderer is text-based: Typst passes Scratch text to a bundled WASM plugin, the plugin parses and renders SVG, and Typst embeds the SVG output.
 
+> ⚠️ **BREAKING CHANGE (since `0.2.0`)**
+>
+> ❌ The old pre-`0.2.0` syntax is **removed** and no longer available.
+>
+> ✅ From `0.2.0` onward, Blockst supports **only** the text-to-WASM pipeline.
+>
+> 🔧 Documents that still rely on the previous native Typst renderer syntax **must be migrated**.
+
 Starting with version 0.2.0, Blockst uses only the WASM-based text parser and renderer. The earlier native Typst rendering approach was dropped because it ran into Typst's limits on more complex Scratch layouts.
 
 ## Contents
