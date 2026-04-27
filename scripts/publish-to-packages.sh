@@ -99,8 +99,10 @@ else
 fi
 
 echo ""
+echo "Pushing branch '$PR_BRANCH' to origin ..."
+git push -u origin "$PR_BRANCH"
+
+echo ""
 echo "Next steps:"
-echo "  1. Review the diff:  cd $PACKAGES_REPO && git diff upstream/main"
-echo "  2. Push to your fork: git push -u origin $PR_BRANCH"
-echo "  3. Open https://github.com/Loewe1000/packages and click 'Compare & pull request'"
+echo "  1. Open https://github.com/Loewe1000/packages and click 'Compare & pull request'"
 echo "     → Base: typst/packages:main  ←  Compare: Loewe1000/packages:$PR_BRANCH"
