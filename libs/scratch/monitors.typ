@@ -62,7 +62,11 @@
   let length-label = if length-label == auto { "Length" } else { length-label }
   let options = get-options()
   let colors = _get-colors(options)
+  let theme = options.at("theme", default: "normal")
   let len = items.len()
+  let item-text-color = if theme == "high-contrast" or theme == "print" { black } else { white }
+  let spacer-height = if height == auto { 0pt } else { 1fr }
+  let content-row-height = if height == auto { auto } else { 1fr }
 
   let bg-blue = rgb("#E6F0FF")
   let line-color = rgb("#CAD1D9")
@@ -78,7 +82,7 @@
     #set text(font: ("Helvetica Neue", "Helvetica", "Arial"))
     #grid(
       columns: 1,
-      rows: (15pt, auto, 1fr, 15pt),
+      rows: (15pt, auto, content-row-height, 15pt),
       rect(
         width: 100%,
         height: 100%,
@@ -123,7 +127,7 @@
                     stroke: colors.lists.tertiary + 1pt,
                     radius: 2pt,
                     inset: (x: 3pt, y: 3.5pt),
-                    text(fill: white, size: 8pt, weight: 400, item),
+                    text(fill: item-text-color, size: 8pt, weight: 500, item),
                   ),
                 ),
               )
@@ -162,7 +166,7 @@
           }
         },
       ),
-      v(1fr),
+      v(spacer-height),
       align(bottom, rect(
         width: 100%,
         height: 100%,
