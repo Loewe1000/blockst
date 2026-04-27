@@ -1,7 +1,7 @@
 #import "parser.typ": parse-scratch-text
 #import "../executable.typ": move, turn-right, turn-left, set-direction, go-to, set-x, set-y, change-x, change-y, erase-all, stamp, pen-down, pen-up, set-pen-color, change-pen-size, set-pen-size, change-pen-param, set-pen-param, set-variable, change-variable, variable, plus, minus, multiply, divide, random, modulo, round, greater, less, equals, op-and, op-or, op-not, wait
 
-#let _parse(text, language) = parse-scratch-text(text, lang-code: language)
+#let _parse(text, language) = parse-scratch-text(text, language: language)
 
 #let _num(value, default: 0) = {
   if type(value) == int or type(value) == float {

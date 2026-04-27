@@ -5,25 +5,25 @@
 #import "../options.typ": get-options, get-theme, get-scale
 
 // Delegate to Rust WASM plugin for parsing
-#let _parse-via-plugin(text, lang-code, inline: false) = {
-  let payload = (code: text, language: lang-code, inline: inline)
+#let _parse-via-plugin(text, language, inline: false) = {
+  let payload = (code: text, language: language, inline: inline)
   let raw = str(scratchblocks-renderer.parse_json(bytes(json.encode(payload))))
   json(bytes(raw))
 }
 
 #let parse-scratch-text(
   text,
-  lang-code: "en",
+  language: "en",
   end-marker: "end",
   else-marker: "else",
   line-comment-prefix: "//",
   statement-defs-raw: (),
   expression-defs-raw: (),
-) = _parse-via-plugin(text, lang-code)
+) = _parse-via-plugin(text, language)
 
 #let render-scratch-text(
   text,
-  lang-code: "en",
+  language: "en",
   end-marker: "end",
   else-marker: "else",
   line-comment-prefix: "//",
@@ -31,5 +31,5 @@
   expression-defs-raw: (),
 ) = context {
   // Font-aware rendering — measures text with Typst's actual font
-  render-scratch-font-aware(text, language: lang-code)
+  render-scratch-font-aware(text, language: language)
 }

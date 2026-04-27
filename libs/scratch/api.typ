@@ -52,13 +52,13 @@
 /// Supports 26 languages: en, de, fr, es, it, pt, nl, pl, ru, ja, ...
 #let scratch(text, language: "en") = {
   let text = _normalize-source(text)
-  _generic-render(text, lang-code: language)
+  _generic-render(text, language: language)
 }
 
 /// Parse scratch text to AST (for programmatic use).
 #let scratch-parse(text, language: "en") = {
   let text = _normalize-source(text)
-  _generic-parse(text, lang-code: language)
+  _generic-parse(text, language: language)
 }
 
 /// Execute scratch text, producing scratch-run commands.

@@ -645,7 +645,7 @@
 
 #let _render-scratch-text-localized(text, language) = {
   // SB3 importer emits English parser text; render via WASM with target UI language.
-  _render-scratch-generic(text, lang-code: language)
+  _render-scratch-generic(text, language: language)
 }
 
 // Returns metadata for top-level scripts with global numbering.

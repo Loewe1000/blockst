@@ -13,37 +13,49 @@
 #let _pen-size-scale = 0.2834646
 
 // Global settings for scratch-run
-// Usage: #set-scratch-run(show-grid: 50, show-axes: true)
+// Usage: #set-scratch-run(mode: "grid", grid-step: 1, show-axes: false, view-x: (-1, 5), view-y: (-1, 5))
 #let set-scratch-run(
+  mode: none,
   width: none,
   height: none,
   start-x: none,
   start-y: none,
+  pen-down: none,
   start-angle: none,
   start-color: none,
   start-thickness: none,
   unit: none,
   background: none,
   show-axes: none,
+  grid-step: none,
   show-grid: none,
+  grid-stroke: none,
   show-border: none,
   show-cursor: none,
+  view-x: none,
+  view-y: none,
 ) = {
   blockst-run-options.update(old => {
     let new-opts = old
+    if mode != none { new-opts.insert("mode", mode) }
     if width != none { new-opts.insert("width", width) }
     if height != none { new-opts.insert("height", height) }
     if start-x != none { new-opts.insert("start-x", start-x) }
     if start-y != none { new-opts.insert("start-y", start-y) }
+    if pen-down != none { new-opts.insert("pen-down", pen-down) }
     if start-angle != none { new-opts.insert("start-angle", start-angle) }
     if start-color != none { new-opts.insert("start-color", start-color) }
     if start-thickness != none { new-opts.insert("start-thickness", start-thickness) }
     if unit != none { new-opts.insert("unit", unit) }
     if background != none { new-opts.insert("background", background) }
     if show-axes != none { new-opts.insert("show-axes", show-axes) }
+    if grid-step != none { new-opts.insert("grid-step", grid-step) }
     if show-grid != none { new-opts.insert("show-grid", show-grid) }
+    if grid-stroke != none { new-opts.insert("grid-stroke", grid-stroke) }
     if show-border != none { new-opts.insert("show-border", show-border) }
     if show-cursor != none { new-opts.insert("show-cursor", show-cursor) }
+    if view-x != none { new-opts.insert("view-x", view-x) }
+    if view-y != none { new-opts.insert("view-y", view-y) }
     new-opts
   })
 }
@@ -53,19 +65,25 @@
 // =====================================================
 
 #let scratch-run(
+  mode: auto,
   width: auto,
   height: auto,
   start-x: auto,
   start-y: auto,
+  pen-down: auto,
   start-angle: auto,
   start-color: auto,
   start-thickness: auto,
   unit: auto,
   background: auto,
   show-axes: auto,
+  grid-step: auto,
   show-grid: auto,
+  grid-stroke: auto,
   show-border: auto,
   show-cursor: auto,
+  view-x: auto,
+  view-y: auto,
   ..commands,
 ) = context {
   import "@preview/cetz:0.4.2": canvas, draw
@@ -165,11 +183,12 @@
       b1 = x
     }
 
-    let r = (r1 + m) * (1.0 - t) + t
-    let g = (g1 + m) * (1.0 - t) + t
-    let b = (b1 + m) * (1.0 - t) + t
+    let r = r1 + m
+    let g = g1 + m
+    let b = b1 + m
+    let a = 1.0 - t
 
-    rgb(int(calc.round(r * 255)), int(calc.round(g * 255)), int(calc.round(b * 255)))
+    rgb(int(calc.round(r * 255)), int(calc.round(g * 255)), int(calc.round(b * 255)), int(calc.round(a * 255)))
   }
 
   // Read global options
@@ -180,21 +199,108 @@
     if param != auto { param } else { opts.at(global-key, default: default) }
   }
 
+  let mode-opt = if mode != auto { mode } else { opts.at("mode", default: none) }
+  let mode = if mode-opt == none {
+    if view-x != auto or view-y != auto { "grid" } else { "stage" }
+  } else {
+    mode-opt
+  }
+
+  let normalize-bool(value, default: false) = {
+    if value == true or value == false {
+      value
+    } else if type(value) == str {
+      let s = lower(value.trim())
+      if s == "true" or s == "on" or s == "yes" or s == "1" {
+        true
+      } else if s == "false" or s == "off" or s == "no" or s == "0" {
+        false
+      } else {
+        default
+      }
+    } else {
+      default
+    }
+  }
+
   let width = get-option(width, "width", 480)
   let height = get-option(height, "height", 360)
   let start-x = get-option(start-x, "start-x", 0)
   let start-y = get-option(start-y, "start-y", 0)
+  let initial-pen-down = normalize-bool(get-option(pen-down, "pen-down", false), default: false)
   let start-angle = get-option(start-angle, "start-angle", 90)
   let start-color = normalize-color(get-option(start-color, "start-color", rgb("#1A1AFF")), default: rgb("#1A1AFF"))
   let start-thickness = get-option(start-thickness, "start-thickness", 0.5)
   let unit = get-option(unit, "unit", 1)
   let background = normalize-color(get-option(background, "background", none), default: none, allow-none: true)
   let show-axes = get-option(show-axes, "show-axes", false)
-  let show-grid = get-option(show-grid, "show-grid", false)
-  let show-border = get-option(show-border, "show-border", true)
+  let grid-step-opt = get-option(grid-step, "grid-step", auto)
+  let show-grid-legacy = get-option(show-grid, "show-grid", false)
+  let grid-step = if grid-step-opt != auto {
+    grid-step-opt
+  } else if show-grid-legacy != false {
+    if type(show-grid-legacy) == int { show-grid-legacy } else { 10 }
+  } else if mode == "grid" {
+    1
+  } else {
+    none
+  }
+  let default-grid-stroke = (paint: rgb("#AAAAAA").lighten(10%), dash: "solid", thickness: 0.5pt)
+  let grid-stroke = get-option(grid-stroke, "grid-stroke", default-grid-stroke)
+  let show-border = get-option(show-border, "show-border", mode == "stage")
   let show-cursor = get-option(show-cursor, "show-cursor", true)
   let unit-scale = calc.max(0.01, unit)
-  let pen-thickness(size) = calc.max(0.1pt * unit-scale, size * _pen-size-scale * unit-scale * 1pt)
+  let pen-thickness(size) = if mode == "grid" {
+    calc.max(0pt, size * _pen-size-scale * 1pt)
+  } else {
+    calc.max(0.1pt * unit-scale, size * _pen-size-scale * unit-scale * 1pt)
+  }
+
+  let normalize-grid-stroke(value) = {
+    if type(value) == color {
+      (paint: value, dash: "solid", thickness: 0.5pt)
+    } else if type(value) == dictionary {
+      (
+        paint: value.at("paint", default: default-grid-stroke.paint),
+        dash: value.at("dash", default: default-grid-stroke.dash),
+        thickness: value.at("thickness", default: default-grid-stroke.thickness),
+      )
+    } else {
+      default-grid-stroke
+    }
+  }
+
+  let normalize-cursor-style(value) = {
+    if value == false or value == none {
+      "none"
+    } else if value == true {
+      "pen"
+    } else if type(value) == str {
+      let s = lower(value.trim())
+      if s == "dot" {
+        "dot"
+      } else if s == "false" or s == "none" or s == "off" {
+        "none"
+      } else {
+        "pen"
+      }
+    } else {
+      "pen"
+    }
+  }
+
+  let resolved-grid-stroke = normalize-grid-stroke(grid-stroke)
+  let cursor-style = normalize-cursor-style(show-cursor)
+
+  // View parameters: use tuples (min, max) or derive from width/height.
+  let view-x-tuple = get-option(view-x, "view-x", (-width / 2, width / 2))
+  let view-y-tuple = get-option(view-y, "view-y", (-height / 2, height / 2))
+  let view-x-min = view-x-tuple.at(0)
+  let view-x-max = view-x-tuple.at(1)
+  let view-y-min = view-y-tuple.at(0)
+  let view-y-max = view-y-tuple.at(1)
+  let has-explicit-view = view-x != auto or view-y != auto or "view-x" in opts or "view-y" in opts
+  let auto-fit-grid-view = mode == "grid" and not has-explicit-view
 
   // Collect all commands from arguments
   let commands-array = commands.pos()
@@ -263,47 +369,44 @@
   }
 
   // Fixed stage size — oversized drawings are clipped, box never grows
-  let stage-w = width * unit * 1cm / 100
-  let stage-h = height * unit * 1cm / 100
+  // If view bounds are set, their extents define the rendered stage.
+  let use-view-bounds = mode == "grid" or view-x != auto or view-y != auto
+  let (canvas-width, canvas-height) = if use-view-bounds {
+    (view-x-max - view-x-min, view-y-max - view-y-min)
+  } else {
+    (width, height)
+  }
+
+  let stage-w = if use-view-bounds {
+    if auto-fit-grid-view { auto } else { canvas-width * unit * 1cm }
+  } else {
+    canvas-width * unit * 1cm / 100
+  }
+  let stage-h = if use-view-bounds {
+    if auto-fit-grid-view { auto } else { canvas-height * unit * 1cm }
+  } else {
+    canvas-height * unit * 1cm / 100
+  }
   box(
     width: stage-w,
     height: stage-h,
     clip: true,
-    stroke: 1pt + rgb("#e0e0e0"),
-    radius: 2pt,
+    stroke: if show-border { 1pt + rgb("#e0e0e0") } else { none },
+    radius: if show-border { 2pt } else { 0pt },
     inset: 0pt,
     fill: background,
-    canvas(length: unit * 1cm / 100, {
+    canvas(length: if use-view-bounds { unit * 1cm } else { unit * 1cm / 100 }, {
       import draw: *
 
-      // Anchor canvas to full stage bounds so cetz never shrinks viewport
-      rect((-width / 2, -height / 2), (width / 2, height / 2), fill: none, stroke: none)
+      // Anchor canvas to full view bounds so cetz never shrinks viewport.
+      // In auto-fit grid mode, skip this anchor so the viewport can shrink to content bounds.
+      if not auto-fit-grid-view {
+        rect((view-x-min, view-y-min), (view-x-max, view-y-max), fill: none, stroke: none)
+      }
 
       // Background (if set)
-      if background != none {
-        rect((-width / 2, -height / 2), (width / 2, height / 2), fill: background, stroke: none)
-      }
-
-      // Grid
-      if show-grid != false {
-        let grid-step = if type(show-grid) == int { show-grid } else { 10 }
-        let grid-x0 = calc.floor(-width / 2 / grid-step) * grid-step
-        let grid-y0 = calc.floor(-height / 2 / grid-step) * grid-step
-        let grid-x1 = calc.ceil(width / 2 / grid-step) * grid-step
-        let grid-y1 = calc.ceil(height / 2 / grid-step) * grid-step
-        grid(
-          (grid-x0, grid-y0),
-          (grid-x1, grid-y1),
-          step: grid-step,
-          stroke: (paint: rgb("#d0d0d0"), thickness: 0.3pt),
-          fill: none,
-        )
-      }
-
-      // Axes
-      if show-axes {
-        line((-width / 2, 0), (width / 2, 0), stroke: (paint: gray, dash: "dashed", thickness: 0.5pt))
-        line((0, -height / 2), (0, height / 2), stroke: (paint: gray, dash: "dashed", thickness: 0.5pt))
+      if background != none and not auto-fit-grid-view {
+        rect((view-x-min, view-y-min), (view-x-max, view-y-max), fill: background, stroke: none)
       }
 
       // Initial turtle state
@@ -311,7 +414,7 @@
         x: start-x,
         y: start-y,
         angle: start-angle,
-        pen-down: false,
+        pen-down: initial-pen-down,
         color: start-color,
         hue: 66.6666667,
         saturation: 100,
@@ -523,6 +626,117 @@
       }
       if current-path.len() > 0 { combined-paths.push((points: current-path, stroke: current-stroke)) }
 
+      // In grid mode, if no explicit view is provided, fit the grid to the drawn figure.
+      let has-shape-bounds = false
+      let shape-min-x = 0
+      let shape-max-x = 0
+      let shape-min-y = 0
+      let shape-max-y = 0
+
+      for path in combined-paths {
+        if "points" in path {
+          for pt in path.points {
+            let px = pt.at(0)
+            let py = pt.at(1)
+            if not has-shape-bounds {
+              has-shape-bounds = true
+              shape-min-x = px
+              shape-max-x = px
+              shape-min-y = py
+              shape-max-y = py
+            } else {
+              shape-min-x = calc.min(shape-min-x, px)
+              shape-max-x = calc.max(shape-max-x, px)
+              shape-min-y = calc.min(shape-min-y, py)
+              shape-max-y = calc.max(shape-max-y, py)
+            }
+          }
+        } else if path.type == "circle" {
+          let cx = path.center.at(0)
+          let cy = path.center.at(1)
+          let r = path.radius
+          let p1x = cx - r
+          let p2x = cx + r
+          let p1y = cy - r
+          let p2y = cy + r
+          if not has-shape-bounds {
+            has-shape-bounds = true
+            shape-min-x = p1x
+            shape-max-x = p2x
+            shape-min-y = p1y
+            shape-max-y = p2y
+          } else {
+            shape-min-x = calc.min(shape-min-x, p1x)
+            shape-max-x = calc.max(shape-max-x, p2x)
+            shape-min-y = calc.min(shape-min-y, p1y)
+            shape-max-y = calc.max(shape-max-y, p2y)
+          }
+        } else if path.type == "text" {
+          let px = path.position.at(0)
+          let py = path.position.at(1)
+          if not has-shape-bounds {
+            has-shape-bounds = true
+            shape-min-x = px
+            shape-max-x = px
+            shape-min-y = py
+            shape-max-y = py
+          } else {
+            shape-min-x = calc.min(shape-min-x, px)
+            shape-max-x = calc.max(shape-max-x, px)
+            shape-min-y = calc.min(shape-min-y, py)
+            shape-max-y = calc.max(shape-max-y, py)
+          }
+        }
+      }
+
+      let auto-grid-fit = auto-fit-grid-view and grid-step != none and has-shape-bounds
+      let round-eps = 0.000001
+      let grid-min-x = if grid-step == none {
+        view-x-min
+      } else if auto-grid-fit {
+        calc.floor((shape-min-x + round-eps) / grid-step) * grid-step - grid-step
+      } else {
+        calc.floor(view-x-min / grid-step) * grid-step
+      }
+      let grid-min-y = if grid-step == none {
+        view-y-min
+      } else if auto-grid-fit {
+        calc.floor((shape-min-y + round-eps) / grid-step) * grid-step - grid-step
+      } else {
+        calc.floor(view-y-min / grid-step) * grid-step
+      }
+      let grid-max-x = if grid-step == none {
+        view-x-max
+      } else if auto-grid-fit {
+        calc.ceil((shape-max-x - round-eps) / grid-step) * grid-step + grid-step
+      } else {
+        calc.ceil(view-x-max / grid-step) * grid-step
+      }
+      let grid-max-y = if grid-step == none {
+        view-y-max
+      } else if auto-grid-fit {
+        calc.ceil((shape-max-y - round-eps) / grid-step) * grid-step + grid-step
+      } else {
+        calc.ceil(view-y-max / grid-step) * grid-step
+      }
+
+      // Grid (before path rendering, so drawing stays on top)
+      if grid-step != none {
+        grid(
+          (grid-min-x, grid-min-y),
+          (grid-max-x, grid-max-y),
+          step: grid-step,
+          stroke: resolved-grid-stroke,
+          fill: none,
+        )
+      }
+
+      // Axes
+      if show-axes {
+        line((grid-min-x, 0), (grid-max-x, 0), stroke: (paint: gray, dash: "dashed", thickness: 0.5pt))
+        line((0, grid-min-y), (0, grid-max-y), stroke: (paint: gray, dash: "dashed", thickness: 0.5pt))
+      }
+
       // Render merged paths
       for path in combined-paths {
         if "points" in path {
@@ -535,13 +749,17 @@
       }
 
       // Turtle cursor
-      if show-cursor {
+      if cursor-style != "none" {
         on-layer(0, {
-          content(
-            (state.x, state.y),
-            image("assets/pencil-cursor.svg", width: 15pt),
-            anchor: "south-west",
-          )
+          if cursor-style == "dot" {
+            circle((state.x, state.y), fill: black, stroke: none, radius: 1mm)
+          } else {
+            content(
+              (state.x, state.y),
+              image("assets/pencil-cursor.svg", width: 15pt),
+              anchor: "south-west",
+            )
+          }
         })
       }
     }),
