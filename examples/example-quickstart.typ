@@ -1,6 +1,6 @@
-#import "@preview/blockst:0.2.0": scratch
+#import "@preview/blockst:0.2.1": scratch
 
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
+#set page(width: auto, height: auto, margin: 3mm, fill: none)
 
 #scratch("
 when green flag clicked

@@ -1,6 +1,6 @@
-#import "@preview/blockst:0.2.0": blockst, scratch
+#import "@preview/blockst:0.2.1": blockst, scratch
 
-#set page(width: auto, height: auto, margin: 4mm, fill: white)
+#set page(width: auto, height: auto, margin: 4mm, fill: none)
 #set text(16pt, font: "Helvetica Neue", weight: 500)
 
 #let blocks = ("add [thing] to [my list v]

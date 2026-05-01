@@ -18,8 +18,9 @@
 //   #sb3.render-scripts(project, language: "de")
 //
 // Execution:
-//   #scratch-run(..scratch-execute("pen down\nrepeat (4)\nmove (70) steps\nturn cw (90) degrees\nend"))
+//   #scratch-run.stage("pen down\nrepeat (4)\nmove (70) steps\nturn cw (90) degrees\nend")
 
-#import "libs/scratch/api.typ": blockst, set-blockst, scratch, scratch-parse, scratch-execute, raw-scratch
+#import "libs/scratch/api.typ": blockst, set-blockst, scratch, scratch-parse, scratch-labels, blockst-labels, raw-scratch
+#import "libs/scratch/run.typ" as scratch-run
 #import "libs/scratch/sb3.typ" as sb3
-#import "libs/scratch/interpreter.typ": blockst-run-options, scratch-run, set-scratch-run
+#import "libs/scratch/interpreter.typ": blockst-run-options, set-scratch-run

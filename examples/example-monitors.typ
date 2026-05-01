@@ -1,6 +1,6 @@
-#import "@preview/blockst:0.2.0": blockst, sb3
+#import "@preview/blockst:0.2.1": blockst, sb3
 
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
+#set page(width: auto, height: auto, margin: 3mm, fill: none)
 
 #let project = read("Mampf-Matze Lösung.sb3", encoding: none)
 

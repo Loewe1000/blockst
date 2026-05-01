@@ -37,12 +37,15 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - Scratchblocks-style syntax for scripts, reporters, booleans, inputs, dropdowns, and nested control blocks
 - Themes: normal, high-contrast, print
 - Localized text rendering through the WASM locale data
+- Category defaults via `@motion`, `@control`, ... for quick placeholder blocks
+- Optional line numbers and `#label` references for line-aware worksheets
+- Optional compact block geometry with `inset-scale` (text size unchanged, e.g. `60%`, `90%`, `125%`)
 - **experimental:** SB3 import helpers for scripts, lists, variables, images, and static screen previews
 
 ## Install and Import
 
 ```typst
-#import "@preview/blockst:0.2.0": blockst, scratch, raw-scratch, sb3
+#import "@preview/blockst:0.2.1": blockst, scratch, raw-scratch, sb3
 ```
 
 > Font requirement: Blockst is designed for Helvetica Neue (Scratch-like look).
@@ -106,16 +109,59 @@ Source: [examples/example-de.typ](examples/example-de.typ)
   gutter: 6mm,
   [*Step 1*\
   Trigger the script and walk forward.],
-  [#scratch("when green flag clicked\nmove (20) steps")],
+  [#scratch(line-numbers: true, "when green flag clicked\nmove (20) steps")],
   [*Step 2*\
   Repeat a square movement.],
-  [#scratch("repeat (4)\nmove (40) steps\nturn cw (90) degrees\nend")],
+  [#scratch(line-numbers: true, "when green flag clicked\nrepeat (4)\nmove (40) steps\nturn cw (90) degrees\nend")],
 )
 ```
 
 </details>
 
 Source: [examples/example-inline.typ](examples/example-inline.typ)
+
+### Dedicated Label Walkthrough (Euclidean Algorithm)
+
+![Label walkthrough example](examples/example-labels.svg)
+
+<details>
+<summary><strong>Show code</strong></summary>
+
+```typst
+#let gcd-script = "when green flag clicked #start
+set [a v] to (48)
+set [b v] to (18)
+repeat until <(b) = (0)> #loop
+set [r v] to ((a) mod (b)) #compute-rem
+set [a v] to (b)
+set [b v] to (r) #update-b
+end"
+
+#grid(
+  columns: (1.25fr, 1fr),
+  gutter: 8mm,
+
+  [
+    *Euclidean Algorithm (gcd label walkthrough)*
+
+    #blockst(line-numbers: true, inset-scale: 90%)[
+      #scratch(gcd-script)
+    ]
+  ],
+
+  [
+    *Explanation of labeled lines*
+
+    - *Line #blockst-labels("loop")*: Loop condition `b != 0` controls termination.
+    - *Line #blockst-labels("compute-rem")*: Core rule: `r = a mod b`.
+    - *Line #blockst-labels("update-b")*: State update that advances to the next pair.
+  ],
+)
+```
+
+</details>
+
+Source: [examples/example-labels.typ](examples/example-labels.typ)
 
 ### Markdown Code Blocks with raw-scratch
 
@@ -152,7 +198,7 @@ Source: [examples/example-raw-scratch.typ](examples/example-raw-scratch.typ)
 go to (random position v)
 turn cw (30) degrees"
 
-#blockst[
+#blockst(inset-scale: 50%)[
   #scratch(script)
 ]
 
@@ -173,6 +219,8 @@ turn cw (30) degrees"
 
 Source: [examples/example-theme.typ](examples/example-theme.typ)
 
+Use `@category` for quick defaults (for example `@motion`, `@looks`, `@control`) when you want colored standard blocks without matching full localized syntax.
+
 ### Executable Preview (scratch-run)
 
 ![Executable square example](examples/example-executable.svg)
@@ -182,7 +230,7 @@ Source: [examples/example-theme.typ](examples/example-theme.typ)
 
 ```typst
 #let square-program = "
-go to x: (-45) y: (-45)
+go to x: (-45) y: (45)
 pen down
 set pen [color v] to (0)
 set pen size to (45)
@@ -203,11 +251,11 @@ repeat (9)
     turn cw (144) degrees
   end
   turn cw (40) degrees
-  change pen [color v] by (18)
+  change pen [color v] by (10)
 end"
 
 #let spiral-program = "
-go to x: (-95) y: (-10)
+go to x: (0) y: (90)
 point in direction (90)
 pen down
 set pen size to (50)
@@ -216,6 +264,20 @@ repeat (60)
   turn cw (6) degrees
   change pen [color v] by (8)
   change pen size by (-0.5)
+end"
+
+#let conditional-program = "
+when green flag clicked
+set [i v] to (6)
+go to x: (0) y: (0)
+point in direction (90)
+pen down
+set pen size to (8)
+repeat until <(i) > (200)>
+  move (i) steps
+  turn cw (90) degrees
+  change [i v] by (7)
+  change pen [color v] by (4)
 end"
 
 #let custom-block-program = "
@@ -230,21 +292,31 @@ pen up
 
 when green flag clicked
 set pen size to (8)
-go to x: (-50) y: (-50)
+go to x: (-50) y: (0)
 call triangle (100) (200)
 go to x: (50) y: (50)
 call triangle (50) (60)
 "
 
+#let grid-square-program = "
+go to x: (-6) y: (-4)
+point in direction (0)
+pen down
+set pen size to (2)
+repeat (2)
+  move (12) steps
+  turn cw (90) degrees
+  move (8) steps
+  turn cw (90) degrees
+end
+"
+
 #set-scratch-run(
-  width: 300,
-  height: 240,
-  start-x: 0,
-  start-y: 0,
-  start-angle: 90,
-  show-grid: 10,
-  show-axes: false,
-  show-cursor: true,
+  stage: (size: (300, 240)),
+  start: (x: 0, y: 0, angle: 90),
+  grid: (visible: false, axes: false),
+  cursor: false,
+  scale: 2,
 )
 
 #stack(
@@ -255,7 +327,7 @@ call triangle (50) (60)
     columns: (auto, auto),
     gutter: 6mm,
     [#scratch(square-program)],
-    [#scratch-run(..scratch-execute(square-program), unit: 2)],
+    [#scratch-run.stage(square-program)],
   ),
 
   [*2) Star Rosette (Nested repeat)*],
@@ -263,7 +335,7 @@ call triangle (50) (60)
     columns: (auto, auto),
     gutter: 6mm,
     [#scratch(star-rosette-program)],
-    [#scratch-run(..scratch-execute(star-rosette-program), unit: 2)],
+    [#scratch-run.stage(star-rosette-program)],
   ),
 
   [*3) Colored Spiral (Hue + pen size)*],
@@ -271,15 +343,38 @@ call triangle (50) (60)
     columns: (auto, auto),
     gutter: 6mm,
     [#scratch(spiral-program)],
-    [#scratch-run(..scratch-execute(spiral-program), unit: 2)],
+    [#scratch-run.stage(spiral-program)],
   ),
 
-  [*4) Custom Block: Triangle Pattern*],
+  [*4) Conditional Loop*],
+  grid(
+    columns: (auto, auto),
+    gutter: 6mm,
+    [#scratch(conditional-program)],
+    [#scratch-run.stage(conditional-program)],
+  ),
+
+  [*5) Custom Block: Triangle Pattern*],
   grid(
     columns: (auto, auto),
     gutter: 6mm,
     [#scratch(custom-block-program)],
-    [#scratch-run(..scratch-execute(custom-block-program), unit: 2, show-cursor: false)],
+    [#scratch-run.stage(custom-block-program, cursor: false)],
+  ),
+
+  [*6) Grid Preview (Axes + fixed bounds)*],
+  grid(
+    columns: (auto, auto),
+    gutter: 6mm,
+    [#scratch(grid-square-program)],
+    [#scratch-run.grid(
+      grid-square-program,
+      step: 1,
+      scale: 0.5,
+      grid: true,
+      fit: true,
+      cursor: false,
+    )],
   ),
 )
 
@@ -305,7 +400,7 @@ Recommended workflow:
 <summary><strong>Show code</strong></summary>
 
 ```typst
-#let project = read("Mampf-Matze Lösung.sb3", encoding: none)
+#let project = read("../examples/Mampf-Matze Lösung.sb3", encoding: none)
 
 #blockst[
   #sb3.sb3-screen-preview(project, unit: 1.5)

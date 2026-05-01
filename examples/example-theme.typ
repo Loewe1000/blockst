@@ -1,10 +1,11 @@
-#import "@preview/blockst:0.2.0": blockst, scratch
+#import "@preview/blockst:0.2.1": blockst, scratch
 
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
+#set page(width: auto, height: auto, margin: 3mm, fill: none)
 
 #let script = "when green flag clicked\ngo to (random position v)\nturn cw (30) degrees"
 
-#blockst[
+
+#blockst(inset-scale: 50%)[
   #scratch(script)
 ]
 

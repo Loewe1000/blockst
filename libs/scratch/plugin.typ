@@ -1,4 +1,4 @@
-#import "options.typ": get-options, get-theme, get-scale, get-font
+#import "options.typ": get-options, get-theme, get-scale, get-font, get-line-numbers, get-line-number-start, get-line-number-gutter, get-inset-scale
 
 #let scratchblocks-renderer = plugin("plugins/scratchblocks_wasm.wasm")
 
@@ -12,11 +12,29 @@
   }
 }
 
+#let _to-inset-scale-number(scale) = {
+  if type(scale) == ratio {
+    scale / 100%
+  } else if type(scale) == int or type(scale) == float {
+    if scale > 8 {
+      scale / 100
+    } else {
+      scale
+    }
+  } else {
+    1
+  }
+}
+
 #let render-document(spec, width: auto, alt: "Scratch blocks") = context {
   let options = get-options()
   let payload = spec
   payload.insert("theme", get-theme(options))
   payload.insert("scale", _to-scale-number(get-scale(options)))
+  payload.insert("line_numbers", get-line-numbers(options))
+  payload.insert("line_number_start", get-line-number-start(options))
+  payload.insert("line_number_gutter", get-line-number-gutter(options))
+  payload.insert("inset_scale", _to-inset-scale-number(get-inset-scale(options)))
   image(
     scratchblocks-renderer.render_json(bytes(json.encode(payload))),
     format: "svg",
@@ -46,6 +64,10 @@
     inline: inline,
     theme: theme,
     scale: scale,
+    line_numbers: get-line-numbers(options),
+    line_number_start: get-line-number-start(options),
+    line_number_gutter: get-line-number-gutter(options),
+    inset_scale: _to-inset-scale-number(get-inset-scale(options)),
   )
 
   // Try to extract texts, measure, and use measured widths

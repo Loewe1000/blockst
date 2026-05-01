@@ -1,5 +1,5 @@
 // README header banner
-#import "@preview/blockst:0.2.0": blockst, scratch, set-blockst
+#import "@preview/blockst:0.2.1": blockst, scratch, set-blockst
 
 #set page(width: auto, height: auto, margin: 0pt, fill: none)
 #set text(font: "Helvetica Neue", fallback: true)

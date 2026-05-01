@@ -13,49 +13,85 @@
 #let _pen-size-scale = 0.2834646
 
 // Global settings for scratch-run
-// Usage: #set-scratch-run(mode: "grid", grid-step: 1, show-axes: false, view-x: (-1, 5), view-y: (-1, 5))
+// Usage: #set-scratch-run(scale: 2, start: (x: 0, y: 0, angle: 90), stage: (size: (300, 240)))
 #let set-scratch-run(
-  mode: none,
-  width: none,
-  height: none,
-  start-x: none,
-  start-y: none,
-  pen-down: none,
-  start-angle: none,
-  start-color: none,
-  start-thickness: none,
-  unit: none,
+  scale: none,
+  start: none,
+  pen: none,
   background: none,
-  show-axes: none,
-  grid-step: none,
-  show-grid: none,
-  grid-stroke: none,
-  show-border: none,
-  show-cursor: none,
-  view-x: none,
-  view-y: none,
+  cursor: none,
+  stage: none,
+  grid: none,
 ) = {
   blockst-run-options.update(old => {
     let new-opts = old
-    if mode != none { new-opts.insert("mode", mode) }
-    if width != none { new-opts.insert("width", width) }
-    if height != none { new-opts.insert("height", height) }
-    if start-x != none { new-opts.insert("start-x", start-x) }
-    if start-y != none { new-opts.insert("start-y", start-y) }
-    if pen-down != none { new-opts.insert("pen-down", pen-down) }
-    if start-angle != none { new-opts.insert("start-angle", start-angle) }
-    if start-color != none { new-opts.insert("start-color", start-color) }
-    if start-thickness != none { new-opts.insert("start-thickness", start-thickness) }
-    if unit != none { new-opts.insert("unit", unit) }
+    if scale != none { new-opts.insert("scale", scale) }
+    if start != none {
+      new-opts.insert("start", start)
+      new-opts.insert("start-x", start.at("x", default: old.at("start-x", default: 0)))
+      new-opts.insert("start-y", start.at("y", default: old.at("start-y", default: 0)))
+      new-opts.insert("start-angle", start.at("angle", default: old.at("start-angle", default: 90)))
+    }
+    if pen != none {
+      new-opts.insert("pen", pen)
+      new-opts.insert("pen-down", pen.at("down", default: old.at("pen-down", default: false)))
+      new-opts.insert("start-color", pen.at("color", default: old.at("start-color", default: rgb("#1A1AFF"))))
+      new-opts.insert("start-thickness", pen.at("size", default: old.at("start-thickness", default: 0.5)))
+    }
     if background != none { new-opts.insert("background", background) }
-    if show-axes != none { new-opts.insert("show-axes", show-axes) }
-    if grid-step != none { new-opts.insert("grid-step", grid-step) }
-    if show-grid != none { new-opts.insert("show-grid", show-grid) }
-    if grid-stroke != none { new-opts.insert("grid-stroke", grid-stroke) }
-    if show-border != none { new-opts.insert("show-border", show-border) }
-    if show-cursor != none { new-opts.insert("show-cursor", show-cursor) }
-    if view-x != none { new-opts.insert("view-x", view-x) }
-    if view-y != none { new-opts.insert("view-y", view-y) }
+    if cursor != none {
+      new-opts.insert("cursor", cursor)
+      new-opts.insert("show-cursor", cursor)
+    }
+    if stage != none {
+      new-opts.insert("stage", stage)
+      let stage-size = stage.at("size", default: none)
+      if stage-size != none {
+        new-opts.insert("stage-size", stage-size)
+        new-opts.insert("width", stage-size.at(0))
+        new-opts.insert("height", stage-size.at(1))
+      }
+      let border = stage.at("border", default: none)
+      if border != none {
+        new-opts.insert("border", border)
+        new-opts.insert("show-border", border)
+      }
+    }
+    if grid != none {
+      new-opts.insert("grid-config", grid)
+      let visible = grid.at("visible", default: none)
+      if visible != none {
+        new-opts.insert("grid", visible)
+        new-opts.insert("show-grid", visible)
+      }
+      let axes = grid.at("axes", default: none)
+      if axes != none {
+        new-opts.insert("axes", axes)
+        new-opts.insert("show-axes", axes)
+      }
+      let step = grid.at("step", default: none)
+      if step != none {
+        new-opts.insert("step", step)
+        new-opts.insert("grid-step", step)
+      }
+      let style = grid.at("style", default: none)
+      if style != none {
+        new-opts.insert("grid-style", style)
+        new-opts.insert("grid-stroke", style)
+      }
+      let x = grid.at("x", default: none)
+      if x != none {
+        new-opts.insert("x", x)
+        new-opts.insert("view-x", x)
+      }
+      let y = grid.at("y", default: none)
+      if y != none {
+        new-opts.insert("y", y)
+        new-opts.insert("view-y", y)
+      }
+      let fit = grid.at("fit", default: none)
+      if fit != none { new-opts.insert("fit", fit) }
+    }
     new-opts
   })
 }
@@ -64,7 +100,7 @@
 // scratch-run — Interpreter & Canvas renderer
 // =====================================================
 
-#let scratch-run(
+#let _scratch-run-commands(
   mode: auto,
   width: auto,
   height: auto,
@@ -84,6 +120,7 @@
   show-cursor: auto,
   view-x: auto,
   view-y: auto,
+  fit: auto,
   ..commands,
 ) = context {
   import "@preview/cetz:0.4.2": canvas, draw
@@ -223,19 +260,39 @@
     }
   }
 
-  let width = get-option(width, "width", 480)
-  let height = get-option(height, "height", 360)
+  let size-opt = opts.at("stage-size", default: none)
+  let width = if width != auto {
+    width
+  } else if size-opt != none {
+    size-opt.at(0)
+  } else {
+    get-option(width, "width", 480)
+  }
+  let height = if height != auto {
+    height
+  } else if size-opt != none {
+    size-opt.at(1)
+  } else {
+    get-option(height, "height", 360)
+  }
   let start-x = get-option(start-x, "start-x", 0)
   let start-y = get-option(start-y, "start-y", 0)
   let initial-pen-down = normalize-bool(get-option(pen-down, "pen-down", false), default: false)
   let start-angle = get-option(start-angle, "start-angle", 90)
   let start-color = normalize-color(get-option(start-color, "start-color", rgb("#1A1AFF")), default: rgb("#1A1AFF"))
   let start-thickness = get-option(start-thickness, "start-thickness", 0.5)
-  let unit = get-option(unit, "unit", 1)
+  let scale-opt = opts.at("scale", default: auto)
+  let unit = if unit != auto {
+    unit
+  } else if scale-opt != auto {
+    scale-opt
+  } else {
+    get-option(unit, "unit", 1)
+  }
   let background = normalize-color(get-option(background, "background", none), default: none, allow-none: true)
-  let show-axes = get-option(show-axes, "show-axes", false)
-  let grid-step-opt = get-option(grid-step, "grid-step", auto)
-  let show-grid-legacy = get-option(show-grid, "show-grid", false)
+  let show-axes = if show-axes != auto { show-axes } else { opts.at("axes", default: get-option(show-axes, "show-axes", false)) }
+  let grid-step-opt = if grid-step != auto { grid-step } else { opts.at("step", default: get-option(grid-step, "grid-step", auto)) }
+  let show-grid-legacy = if show-grid != auto { show-grid } else { opts.at("grid", default: get-option(show-grid, "show-grid", false)) }
   let grid-step = if grid-step-opt != auto {
     grid-step-opt
   } else if show-grid-legacy != false {
@@ -246,9 +303,9 @@
     none
   }
   let default-grid-stroke = (paint: rgb("#AAAAAA").lighten(10%), dash: "solid", thickness: 0.5pt)
-  let grid-stroke = get-option(grid-stroke, "grid-stroke", default-grid-stroke)
-  let show-border = get-option(show-border, "show-border", mode == "stage")
-  let show-cursor = get-option(show-cursor, "show-cursor", true)
+  let grid-stroke = if grid-stroke != auto { grid-stroke } else { opts.at("grid-style", default: get-option(grid-stroke, "grid-stroke", default-grid-stroke)) }
+  let show-border = if show-border != auto { show-border } else { opts.at("border", default: get-option(show-border, "show-border", mode == "stage")) }
+  let show-cursor = if show-cursor != auto { show-cursor } else { opts.at("cursor", default: get-option(show-cursor, "show-cursor", true)) }
   let unit-scale = calc.max(0.01, unit)
   let pen-thickness(size) = if mode == "grid" {
     calc.max(0pt, size * _pen-size-scale * 1pt)
@@ -293,14 +350,24 @@
   let cursor-style = normalize-cursor-style(show-cursor)
 
   // View parameters: use tuples (min, max) or derive from width/height.
-  let view-x-tuple = get-option(view-x, "view-x", (-width / 2, width / 2))
-  let view-y-tuple = get-option(view-y, "view-y", (-height / 2, height / 2))
+  let fit-opt = if fit != auto { fit } else { opts.at("fit", default: auto) }
+  let resolved-fit = if fit-opt == auto { auto } else { fit-opt }
+  let view-x-tuple = if view-x != auto { view-x } else { opts.at("x", default: get-option(view-x, "view-x", (-width / 2, width / 2))) }
+  let view-y-tuple = if view-y != auto { view-y } else { opts.at("y", default: get-option(view-y, "view-y", (-height / 2, height / 2))) }
   let view-x-min = view-x-tuple.at(0)
   let view-x-max = view-x-tuple.at(1)
   let view-y-min = view-y-tuple.at(0)
   let view-y-max = view-y-tuple.at(1)
-  let has-explicit-view = view-x != auto or view-y != auto or "view-x" in opts or "view-y" in opts
-  let auto-fit-grid-view = mode == "grid" and not has-explicit-view
+  let has-explicit-view = view-x != auto or view-y != auto or "x" in opts or "y" in opts or "view-x" in opts or "view-y" in opts
+  let auto-fit-grid-view = if mode == "grid" {
+    if resolved-fit == auto {
+      not has-explicit-view
+    } else {
+      resolved-fit
+    }
+  } else {
+    false
+  }
 
   // Collect all commands from arguments
   let commands-array = commands.pos()
@@ -473,7 +540,8 @@
           // ---- MOTION ----
           } else if cmd-type == "move" {
             let steps = eval-value(cmd.steps, state, vars)
-            let rad = state.angle * calc.pi / 180
+            // Scratch uses 90=East, 0=North, -90=West, 180=South.
+            let rad = (90 - state.angle) * calc.pi / 180
             let new-x = state.x + steps * calc.cos(rad)
             let new-y = state.y + steps * calc.sin(rad)
             if state.pen-down {
@@ -482,9 +550,9 @@
             state.x = new-x
             state.y = new-y
           } else if cmd-type == "turn-right" {
-            state.angle -= eval-value(cmd.degrees, state, vars)
-          } else if cmd-type == "turn-left" {
             state.angle += eval-value(cmd.degrees, state, vars)
+          } else if cmd-type == "turn-left" {
+            state.angle -= eval-value(cmd.degrees, state, vars)
           } else if cmd-type == "set-direction" {
             state.angle = eval-value(cmd.angle, state, vars)
           } else if cmd-type == "goto" {
@@ -765,3 +833,4 @@
     }),
   )
 }
+

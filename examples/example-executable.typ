@@ -1,11 +1,11 @@
-#import "@preview/blockst:0.2.0": scratch, scratch-execute, scratch-run, set-scratch-run, set-blockst
+#import "../lib.typ": scratch, scratch-run, set-scratch-run, set-blockst
 
-#set page(width: auto, height: auto, margin: 3mm, fill: white)
+#set page(width: auto, height: auto, margin: 3mm, fill: none)
 
 #set-blockst(scale: 60%)
 
 #let square-program = "
-go to x: (-45) y: (-45)
+go to x: (-45) y: (45)
 pen down
 set pen [color v] to (0)
 set pen size to (45)
@@ -30,7 +30,7 @@ repeat (9)
 end"
 
 #let spiral-program = "
-go to x: (-95) y: (-10)
+go to x: (0) y: (90)
 point in direction (90)
 pen down
 set pen size to (50)
@@ -67,22 +67,31 @@ pen up
 
 when green flag clicked
 set pen size to (8)
-go to x: (-50) y: (-50)
+go to x: (-50) y: (0)
 call triangle (100) (200)
 go to x: (50) y: (50)
 call triangle (50) (60)
 "
 
+#let grid-square-program = "
+go to x: (-6) y: (-4)
+point in direction (0)
+pen down
+set pen size to (2)
+repeat (2)
+  move (12) steps
+  turn cw (90) degrees
+  move (8) steps
+  turn cw (90) degrees
+end
+"
+
 #set-scratch-run(
-  width: 300,
-  height: 240,
-  start-x: 0,
-  start-y: 0,
-  start-angle: 90,
-  show-grid: false,
-  show-axes: false,
-  show-cursor: false,
-  unit: 2
+  stage: (size: (300, 240)),
+  start: (x: 0, y: 0, angle: 90),
+  grid: (visible: false, axes: false),
+  cursor: false,
+  scale: 2,
 )
 
 #stack(
@@ -93,7 +102,7 @@ call triangle (50) (60)
     columns: (auto, auto),
     gutter: 6mm,
     [#scratch(square-program)],
-    [#scratch-run(..scratch-execute(square-program))],
+    [#scratch-run.stage(square-program)],
   ),
 
   [*2) Star Rosette (Nested repeat)*],
@@ -101,7 +110,7 @@ call triangle (50) (60)
     columns: (auto, auto),
     gutter: 6mm,
     [#scratch(star-rosette-program)],
-    [#scratch-run(..scratch-execute(star-rosette-program))],
+    [#scratch-run.stage(star-rosette-program)],
   ),
 
   [*3) Colored Spiral (Hue + pen size)*],
@@ -109,7 +118,7 @@ call triangle (50) (60)
     columns: (auto, auto),
     gutter: 6mm,
     [#scratch(spiral-program)],
-    [#scratch-run(..scratch-execute(spiral-program))],
+    [#scratch-run.stage(spiral-program)],
   ),
 
   [*4) Conditional Loop*],
@@ -117,7 +126,7 @@ call triangle (50) (60)
     columns: (auto, auto),
     gutter: 6mm,
     [#scratch(conditional-program)],
-    [#scratch-run(..scratch-execute(conditional-program))],
+    [#scratch-run.stage(conditional-program)],
   ),
 
   [*5) Custom Block: Triangle Pattern*],
@@ -125,6 +134,21 @@ call triangle (50) (60)
     columns: (auto, auto),
     gutter: 6mm,
     [#scratch(custom-block-program)],
-    [#scratch-run(..scratch-execute(custom-block-program), show-cursor: false)],
+    [#scratch-run.stage(custom-block-program, cursor: false)],
+  ),
+
+  [*6) Grid Preview (Axes + fixed bounds)*],
+  grid(
+    columns: (auto, auto),
+    gutter: 6mm,
+    [#scratch(grid-square-program)],
+    [#scratch-run.grid(
+      grid-square-program,
+      step: 1,
+      scale: 0.5,
+      grid: true,
+      fit: true,
+      cursor: false,
+    )],
   ),
 )

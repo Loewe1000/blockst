@@ -1,27 +1,62 @@
-use crate::measure::{block_size, c_block_inner_width, c_block_size, max_nested_height, script_size_with_inside, segment_width, text_width};
+use crate::measure::{block_size, c_block_inner_width, c_block_size, current_inset_scale, input_box_height, max_nested_height, script_size_with_inside, segment_width, text_width};
 use crate::model::{BlockSpec, DocumentSpec, ScriptSpec, SegmentSpec};
 use crate::svg::{boolean_path, cap_path, escape_text, hat_path, mouth_cap_path, mouth_path, proc_hat_path, reporter_path, stack_path};
 use crate::theme::colors_for;
 
 const LABEL_MARGIN: f32 = 4.447_998;
 
+#[derive(Clone, Copy)]
+struct LineMarker {
+    line: u32,
+    y: f32,
+}
+
+fn s(value: f32) -> f32 {
+    value * current_inset_scale()
+}
+
+fn inset(base: f32, min: f32) -> f32 {
+    (base * current_inset_scale()).max(min)
+}
+
 pub fn render_document(document: &DocumentSpec) -> String {
     let scale = document.scale.unwrap_or(1.0).max(0.1);
     let theme = document.theme.as_deref().unwrap_or("normal");
     let font = &document.font;
+    let show_line_numbers = document.line_numbers;
+    let line_number_start = document.line_number_start;
+    let line_number_offset = line_number_start.saturating_sub(1);
+    let line_number_gutter = document.line_number_gutter.max(12.0);
 
     let mut script_svgs = String::new();
+    let mut line_svgs = String::new();
     let mut total_width = 0.0f32;
     let mut total_height = 0.0f32;
+    let content_x = if show_line_numbers { line_number_gutter } else { 0.0 };
 
     for (index, script) in document.scripts.iter().enumerate() {
         if index > 0 {
             total_height += 36.0;
         }
         let (svg, width, height) = render_script(script, theme, false);
-        script_svgs.push_str(&format!("<g transform=\"translate(0 {})\">{}</g>", total_height + 1.0, svg));
+        script_svgs.push_str(&format!("<g transform=\"translate({} {})\">{}</g>", content_x, total_height + 1.0, svg));
+
+        if show_line_numbers {
+            let mut markers = Vec::new();
+            collect_script_line_markers(&script.blocks, 1.0, &mut markers);
+            for marker in markers {
+                let shown = marker.line.saturating_add(line_number_offset);
+                line_svgs.push_str(&format!(
+                    "<text class=\"sb-line-number\" x=\"{}\" y=\"{}\" text-anchor=\"end\">{}</text>",
+                    line_number_gutter - 6.0,
+                    total_height + 1.0 + marker.y,
+                    shown
+                ));
+            }
+        }
+
         total_height += height + 1.0;
-        total_width = total_width.max(width + 4.0);
+        total_width = total_width.max(content_x + width + 4.0);
     }
 
     if document.scripts.is_empty() {
@@ -32,10 +67,11 @@ pub fn render_document(document: &DocumentSpec) -> String {
     let width = total_width * scale;
     let height = total_height * scale;
 
+    let content = format!("{}{}", line_svgs, script_svgs);
     format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\"><defs>{}</defs><g transform=\"scale({scale})\">{}</g></svg>",
         defs(theme, font),
-        script_svgs,
+        content,
     )
 }
 
@@ -60,7 +96,7 @@ fn defs(theme: &str, font: &str) -> String {
         let input_text_fill = if theme == "print" || theme == "high-contrast" { "#000" } else { "#575e75" };
 
     format!(
-        "<style>.sb-label{{font:500 12pt {font};fill:{text_fill};word-spacing:1pt}}.sb-input-text{{font:500 12pt {font};fill:{input_text_fill}}}</style>\
+        "<style>.sb-label{{font:500 12pt {font};fill:{text_fill};word-spacing:1pt}}.sb-input-text{{font:500 12pt {font};fill:{input_text_fill}}}.sb-line-number{{font:500 12pt {font};fill:#6b7280}}</style>\
         <g id=\"sb-greenFlag\">\
           <path d=\"M20.8 3.7c-.4-.2-.9-.1-1.2.2-2 1.6-4.8 1.6-6.8 0-2.3-1.9-5.6-2.3-8.3-1v-.4c0-.6-.5-1-1-1s-1 .4-1 1v18.8c0 .5.5 1 1 1h.1c.5 0 1-.5 1-1v-6.4c1-.7 2.1-1.2 3.4-1.3 1.2 0 2.4.4 3.4 1.2 2.9 2.3 7 2.3 9.8 0 .3-.2.4-.5.4-.9V4.7c0-.5-.3-.9-.8-1zm-.3 10.2C18 16 14.4 16 11.9 14c-1.1-.9-2.5-1.4-4-1.4-1.2.1-2.3.5-3.4 1.1V4c2.5-1.4 5.5-1.1 7.7.6 2.4 1.9 5.7 1.9 8.1 0h.2l.1.1-.1 9.2z\" fill=\"{flag_outer}\"/>\
           <path d=\"M20.6 4.8l-.1 9.1v.1c-2.5 2-6.1 2-8.6 0-1.1-.9-2.5-1.4-4-1.4-1.2.1-2.3.5-3.4 1.1V4c2.5-1.4 5.5-1.1 7.7.6 2.4 1.9 5.7 1.9 8.1 0h.2c0 .1.1.1.1.2z\" fill=\"{flag_inner}\"/>\
@@ -153,6 +189,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
         let temp = BlockSpec {
             shape: "stack".to_string(),
             category: "custom-arg".to_string(),
+            line_number: None,
             segments: remaining.clone(),
             body: vec![],
             else_body: vec![],
@@ -182,6 +219,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
         let temp = BlockSpec {
             shape: "stack".to_string(),
             category: "custom-arg".to_string(),
+            line_number: None,
             segments: remaining,
             body: vec![],
             else_body: vec![],
@@ -333,11 +371,18 @@ fn render_segments(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, tex
                     x += w;
                 } else {
                     let w = segment_width(segment);
+                    let input_h = input_box_height(input);
                     let cat_colors = colors_for(&block.category, theme);
                     let is_dropdown = input == "dropdown" || input == "dropdown-field";
                     let is_round = input == "number" || input == "color" || input == "string" || input == "dropdown";
                     let is_square_dropdown = input == "dropdown-field";
-                    let rx = if is_round { 16.0 } else if is_square_dropdown { 4.0 } else { 0.0 };
+                    let rx = if is_round {
+                        (input_h / 2.0).max(8.0)
+                    } else if is_square_dropdown {
+                        inset(4.0, 3.0)
+                    } else {
+                        0.0
+                    };
                     // custom-arg inputs use block fill instead of white (define-hat params)
                     let custom_fill = block.category == "custom-arg";
                     let fill = if input == "color" {
@@ -363,7 +408,7 @@ fn render_segments(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, tex
                     let opacity_fill = if theme == "print" || theme == "high-contrast" { "#ffffff" } else { "rgba(0,0,0,0.15)" };
                     let opacity_stroke = if theme == "print" || theme == "high-contrast" { "#000000" } else { "rgba(0,0,0,0.2)" };
                     if input == "boolean" {
-                        svg.push_str(&format!("<path d=\"{}\" fill=\"{}\" stroke=\"{}\" transform=\"translate({} {})\"/>", boolean_path(w, 32.0), opacity_fill, opacity_stroke, base_x + pad_left + x, child_y));
+                        svg.push_str(&format!("<path d=\"{}\" fill=\"{}\" stroke=\"{}\" transform=\"translate({} {})\"/>", boolean_path(w, input_h), opacity_fill, opacity_stroke, base_x + pad_left + x, child_y));
                     } else if is_dropdown {
                         // Dropdown: rounded rect + text left-aligned + real dropdown arrow
                         let text_fill = if theme == "print" || theme == "high-contrast" { "#000000" } else { cat_colors.text };
@@ -374,16 +419,19 @@ fn render_segments(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, tex
                         } else {
                             fill
                         };
-                        svg.push_str(&format!("<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"32\" rx=\"{}\" ry=\"{}\" fill=\"{}\" stroke=\"{}\"/>",
-                            base_x + pad_left + x, child_y, w, rx, rx, dropdown_fill, stroke));
-                        // Text position per scratchblocks scratch3: px=11 for dropdowns
-                        let text_pad = 11.0;
+                        svg.push_str(&format!("<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" rx=\"{}\" ry=\"{}\" fill=\"{}\" stroke=\"{}\"/>",
+                            base_x + pad_left + x, child_y, w, input_h, rx, rx, dropdown_fill, stroke));
+                        // Scale input insets, but keep minima to avoid text-arrow overlap.
+                        let text_pad = inset(11.0, 7.0);
                         let text_x = base_x + pad_left + x + text_pad;
+                        // Keep default baseline at h=32, but scale around center for other heights.
+                        let text_y = child_y + (input_h / 2.0) + 5.0;
                         svg.push_str(&format!("<text class=\"sb-input-text\" style=\"fill:{}\" x=\"{}\" y=\"{}\">{}</text>",
-                            text_fill, text_x, child_y + 21.0, escape_text(value)));
-                        // Arrow per scratchblocks scratch3: at w-24, so it sits ~7px after text end
-                        let arrow_x = base_x + pad_left + x + w - 24.0;
-                        let arrow_y = child_y + 11.5;
+                            text_fill, text_x, text_y, escape_text(value)));
+                        let arrow_w = 12.0;
+                        let arrow_right = inset(12.0, 8.0);
+                        let arrow_x = base_x + pad_left + x + w - arrow_right - arrow_w;
+                        let arrow_y = child_y + ((input_h - 9.0) / 2.0);
                         // In print theme, always use black arrow
                         let arrow_id = if theme == "print" {
                             "#sb-dropdownArrow-print"
@@ -396,19 +444,21 @@ fn render_segments(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, tex
                     } else if input == "color" {
                         // Color swatch (always use theme-normal stroke for color swatches)
                         let swatch_stroke = if theme == "print" { "#000000" } else { stroke };
-                        svg.push_str(&format!("<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"32\" rx=\"{}\" ry=\"{}\" fill=\"{}\" stroke=\"{}\"/>",
-                            base_x + pad_left + x, child_y, w, rx, rx, fill, swatch_stroke));
+                        svg.push_str(&format!("<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" rx=\"{}\" ry=\"{}\" fill=\"{}\" stroke=\"{}\"/>",
+                            base_x + pad_left + x, child_y, w, input_h, rx, rx, fill, swatch_stroke));
                     } else {
                         // Number/string input: use black stroke in print theme
                         let num_stroke = if theme == "print" { "#000000" } else { stroke };
-                        svg.push_str(&format!("<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"32\" rx=\"{}\" ry=\"{}\" fill=\"{}\" stroke=\"{}\"/>", base_x + pad_left + x, child_y, w, rx, rx, fill, num_stroke));
+                        svg.push_str(&format!("<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" rx=\"{}\" ry=\"{}\" fill=\"{}\" stroke=\"{}\"/>", base_x + pad_left + x, child_y, w, input_h, rx, rx, fill, num_stroke));
                         if !value.is_empty() {
-                            let text_cx = base_x + pad_left + x + (w - text_width(value)) / 2.0;
+                            let text_cx = base_x + pad_left + x + (w / 2.0);
+                            // Keep default baseline at h=32, but scale around center for other heights.
+                            let text_y = child_y + (input_h / 2.0) + 6.0;
                             if custom_fill {
                                 // Pink background → white text
-                                svg.push_str(&format!("<text class=\"sb-input-text\" style=\"fill:#ffffff\" x=\"{}\" y=\"{}\">{}</text>", text_cx, child_y + 22.0, escape_text(value)));
+                                svg.push_str(&format!("<text class=\"sb-input-text\" style=\"fill:#ffffff\" text-anchor=\"middle\" x=\"{}\" y=\"{}\">{}</text>", text_cx, text_y, escape_text(value)));
                             } else {
-                                svg.push_str(&format!("<text class=\"sb-input-text\" x=\"{}\" y=\"{}\">{}</text>", text_cx, child_y + 22.0, escape_text(value)));
+                                svg.push_str(&format!("<text class=\"sb-input-text\" text-anchor=\"middle\" x=\"{}\" y=\"{}\">{}</text>", text_cx, text_y, escape_text(value)));
                             }
                         }
                     }
@@ -428,11 +478,18 @@ fn render_segments(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, tex
 }
 
 fn child_offset(parent: &BlockSpec, segment: &SegmentSpec, line_height: f32, first_line: bool, line_y: f32, index: usize, _len: usize) -> f32 {
-    let (pt, pb) = if parent.shape == "hat" { (24.0, 8.0) } else { (4.0, 4.0) };
+    let (pt, pb) = if parent.shape == "hat" {
+        (s(24.0), s(8.0))
+    } else {
+        (s(4.0), s(4.0))
+    };
     let child_height = match segment {
         SegmentSpec::Text { .. } => 12.0,
         SegmentSpec::Icon { name } => icon_height(name),
-        SegmentSpec::Input { nested, .. } => nested.as_ref().map(|block| block_size(block).1).unwrap_or(32.0),
+        SegmentSpec::Input { input, nested, .. } => nested
+            .as_ref()
+            .map(|block| block_size(block).1)
+            .unwrap_or_else(|| input_box_height(input)),
         SegmentSpec::Block { block } => block_size(block).1,
     };
     let mut y = pt + (line_height - child_height - pt - pb) / 2.0;
@@ -447,43 +504,112 @@ fn child_offset(parent: &BlockSpec, segment: &SegmentSpec, line_height: f32, fir
     (line_y + y).floor()
 }
 
+fn collect_script_line_markers(blocks: &[BlockSpec], mut y: f32, out: &mut Vec<LineMarker>) {
+    for block in blocks {
+        collect_block_line_markers(block, y, out);
+        let (_, h) = block_size(block);
+        y += h;
+    }
+}
+
+fn collect_block_line_markers(block: &BlockSpec, y: f32, out: &mut Vec<LineMarker>) {
+    let (_, h) = block_size(block);
+    if let Some(line) = block.line_number {
+        let baseline = block_text_baseline(block, h);
+        out.push(LineMarker {
+            line,
+            y: y + baseline,
+        });
+    }
+
+    if !matches!(block.shape.as_str(), "c-block" | "c-block cap") {
+        return;
+    }
+
+    let (_, body_h) = script_size_with_inside(&block.body, true);
+    let has_else = !block.else_body.is_empty() || !block.else_segments.is_empty();
+    let header_nested_h = max_nested_height(block);
+    let header_h = if header_nested_h > 32.0 {
+        48.0 + (header_nested_h - 32.0)
+    } else {
+        48.0
+    };
+    let body_origin = y + header_h - 1.0;
+    collect_script_line_markers(&block.body, body_origin, out);
+
+    if has_else {
+        let adjusted_body = (body_h + 3.0).max(29.0) - 2.0;
+        let arm_y = header_h + adjusted_body - 3.0;
+        let else_origin = y + arm_y + 31.0;
+        collect_script_line_markers(&block.else_body, else_origin, out);
+    }
+}
+
+fn block_text_baseline(block: &BlockSpec, block_height: f32) -> f32 {
+    // Match the same vertical placement logic as render_segments for text labels.
+    // This makes line numbers sit on the same baseline as the first line text.
+    if block.shape == "define-hat" {
+        return 51.0;
+    }
+
+    let line_height = if matches!(block.shape.as_str(), "c-block" | "c-block cap") {
+        let header_nested_h = max_nested_height(block);
+        if header_nested_h > 32.0 {
+            48.0 + (header_nested_h - 32.0)
+        } else {
+            48.0
+        }
+    } else {
+        block_height
+    };
+
+    let (pt, pb) = if block.shape == "hat" {
+        (s(24.0), s(8.0))
+    } else {
+        (s(4.0), s(4.0))
+    };
+    let child_height = 12.0;
+    let y = (pt + (line_height - child_height - pt - pb) / 2.0 - 1.0).floor();
+    y + 13.0
+}
+
 fn horizontal_padding(block: &BlockSpec, segment: &SegmentSpec) -> f32 {
     if block.shape == "reporter" {
         if matches!(segment, SegmentSpec::Icon { .. }) {
-            16.0
+            s(16.0)
         } else if is_round(segment) {
-            4.0
+            s(4.0)
         } else if matches!(segment, SegmentSpec::Text { .. }) || is_dropdown(segment) || is_boolean(segment) {
-            12.0
+            s(12.0)
         } else if is_round(segment) {
-            4.0
+            s(4.0)
         } else {
-            8.0
+            s(8.0)
         }
     } else if block.shape == "boolean" {
         if matches!(segment, SegmentSpec::Icon { .. }) {
-            24.0
+            s(24.0)
         } else if matches!(segment, SegmentSpec::Text { .. }) || is_dropdown(segment) || is_round(segment) {
-            20.0
+            s(20.0)
         } else if matches!(segment, SegmentSpec::Block { block } if block.shape == "reporter") {
-            24.0
+            s(24.0)
         } else if is_round(segment) {
-            20.0
+            s(20.0)
         } else if is_boolean(segment) {
-            8.0
+            s(8.0)
         } else {
-            8.0
+            s(8.0)
         }
     } else {
-        8.0
+        s(8.0)
     }
 }
 
 fn margin_between(a: &SegmentSpec, b: &SegmentSpec) -> f32 {
     if matches!(a, SegmentSpec::Text { .. }) && matches!(b, SegmentSpec::Text { .. }) {
-        LABEL_MARGIN
+        s(LABEL_MARGIN)
     } else {
-        8.0
+        s(8.0)
     }
 }
 
@@ -530,7 +656,7 @@ fn icon_dy(name: &str) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{BlockSpec, SegmentSpec};
+    use crate::model::{BlockSpec, DocumentSpec, ScriptSpec, SegmentSpec};
 
     #[test]
     fn test_render_c_block_with_else() {
@@ -538,6 +664,7 @@ mod tests {
         let block = BlockSpec {
             shape: "c-block".to_string(),
             category: "control".to_string(),
+            line_number: None,
             segments: vec![
                 SegmentSpec::Text { value: "falls".to_string() },
                 SegmentSpec::Input { input: "boolean".to_string(), value: "".to_string(), color: "".to_string(), nested: None },
@@ -547,6 +674,7 @@ mod tests {
                 BlockSpec {
                     shape: "stack".to_string(),
                     category: "looks".to_string(),
+                    line_number: None,
                     segments: vec![SegmentSpec::Text { value: "sagen".to_string() }, SegmentSpec::Input { input: "string".to_string(), value: "Hallo".to_string(), color: "".to_string(), nested: None }],
                     body: vec![],
                     else_body: vec![],
@@ -557,6 +685,7 @@ mod tests {
                 BlockSpec {
                     shape: "stack".to_string(),
                     category: "looks".to_string(),
+                    line_number: None,
                     segments: vec![SegmentSpec::Text { value: "sagen".to_string() }, SegmentSpec::Input { input: "string".to_string(), value: "Tschüss".to_string(), color: "".to_string(), nested: None }],
                     body: vec![],
                     else_body: vec![],
@@ -573,5 +702,42 @@ mod tests {
         // Debug output
         println!("SVG width={} height={}", width, height);
         println!("{}", svg);
+    }
+
+    #[test]
+    fn test_render_document_with_line_numbers() {
+        let doc = DocumentSpec {
+            scale: Some(1.0),
+            theme: Some("normal".to_string()),
+            line_numbers: true,
+            line_number_start: 1,
+            line_number_gutter: 24.0,
+            inset_scale: 1.0,
+            font: "Helvetica Neue".to_string(),
+            scripts: vec![ScriptSpec {
+                blocks: vec![BlockSpec {
+                    shape: "stack".to_string(),
+                    category: "motion".to_string(),
+                    line_number: Some(1),
+                    segments: vec![
+                        SegmentSpec::Text { value: "move".to_string() },
+                        SegmentSpec::Input {
+                            input: "number".to_string(),
+                            value: "10".to_string(),
+                            color: "".to_string(),
+                            nested: None,
+                        },
+                        SegmentSpec::Text { value: "steps".to_string() },
+                    ],
+                    body: vec![],
+                    else_body: vec![],
+                    else_segments: vec![],
+                }],
+            }],
+        };
+
+        let svg = render_document(&doc);
+        assert!(svg.contains("sb-line-number"));
+        assert!(svg.contains(">1</text>"));
     }
 }

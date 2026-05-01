@@ -1,4 +1,4 @@
-#import "@preview/blockst:0.2.0": set-blockst, scratch
+#import "@preview/blockst:0.2.1": set-blockst, scratch
 
 #set page(width: auto, height: auto, margin: 0pt, fill: none)
 

@@ -745,6 +745,18 @@ shape = "boolean"
 category = "obsolete"
 inputs = []
 
+[defaults]
+motion = "MOTION_MOVESTEPS"
+looks = "LOOKS_SAY"
+sound = "SOUND_PLAY"
+events = "EVENT_WHENFLAGCLICKED"
+control = "CONTROL_REPEAT"
+sensing = "SENSING_ASKANDWAIT"
+operators = "OPERATORS_ADD"
+variables = "DATA_SETVARIABLETO"
+lists = "DATA_ADDTOLIST"
+pen = "pen.clear"
+
 [blocks."facesensing.goToPart"]
 shape = "stack"
 category = "facesensing"

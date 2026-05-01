@@ -14,6 +14,8 @@ const BLOCKS_TOML: &str = include_str!("../data/blocks.toml");
 struct BlocksToml {
     #[serde(rename = "blocks")]
     blocks: HashMap<String, BlockDef>,
+    #[serde(default)]
+    defaults: HashMap<String, String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,6 +51,7 @@ struct LanguageRuntime {
 struct ParserData {
     commands_by_id: HashMap<String, BlockDef>,
     languages: HashMap<String, LanguageRuntime>,
+    default_blocks: HashMap<String, String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -60,6 +63,14 @@ struct ParseRequest {
     inline: bool,
     theme: Option<String>,
     scale: Option<f32>,
+    #[serde(default)]
+    line_numbers: Option<bool>,
+    #[serde(default)]
+    line_number_start: Option<u32>,
+    #[serde(default)]
+    line_number_gutter: Option<f32>,
+    #[serde(default)]
+    inset_scale: Option<f32>,
     #[serde(default)]
     widths: Option<HashMap<String, f32>>,
     #[serde(default = "default_font")]
@@ -99,6 +110,8 @@ pub(crate) struct ParsedBlock {
     body: Vec<ParsedBlock>,
     else_body: Vec<ParsedBlock>,
     has_else: bool,
+    line_number: Option<u32>,
+    line_label: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -112,6 +125,10 @@ pub struct PublicNode {
     pub body: Vec<PublicNode>,
     #[serde(default, rename = "else-body")]
     pub else_body: Vec<PublicNode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -147,6 +164,10 @@ pub fn render_request_json(input: &str) -> Result<String, String> {
     let document = DocumentSpec {
         scale: request.scale,
         theme: request.theme,
+        line_numbers: request.line_numbers.unwrap_or(false),
+        line_number_start: request.line_number_start.unwrap_or(1),
+        line_number_gutter: request.line_number_gutter.unwrap_or(24.0),
+        inset_scale: request.inset_scale.unwrap_or(1.0),
         font: if request.font.is_empty() { default_font() } else { request.font },
         scripts: scripts
             .into_iter()
@@ -155,16 +176,21 @@ pub fn render_request_json(input: &str) -> Result<String, String> {
             })
             .collect(),
     };
-    // Activate measured widths if provided
-    if let Some(widths) = request.widths {
+    crate::measure::set_inset_scale(document.inset_scale);
+    let result = if let Some(widths) = request.widths {
         if !widths.is_empty() {
             crate::measure::set_widths(widths);
-            let result = Ok(render_document(&document));
+            let rendered = Ok(render_document(&document));
             crate::measure::clear_widths();
-            return result;
+            rendered
+        } else {
+            Ok(render_document(&document))
         }
-    }
-    Ok(render_document(&document))
+    } else {
+        Ok(render_document(&document))
+    };
+    crate::measure::clear_inset_scale();
+    result
 }
 
 /// Parse scratch code and return a JSON array of all unique text strings
@@ -208,6 +234,7 @@ fn data() -> &'static ParserData {
     DATA.get_or_init(|| {
         let blocks_file: BlocksToml = toml::from_str(BLOCKS_TOML).expect("blocks.toml");
         let commands_by_id = blocks_file.blocks;
+        let default_blocks = blocks_file.defaults;
 
         let mut languages: HashMap<String, LanguageRuntime> = HashMap::new();
 
@@ -293,7 +320,7 @@ fn data() -> &'static ParserData {
             );
         }
 
-        ParserData { commands_by_id, languages }
+        ParserData { commands_by_id, languages, default_blocks }
     })
 }
 
@@ -316,7 +343,43 @@ pub(crate) fn parse_internal(code: &str, language: &str, inline: bool) -> Result
             .replace("&gt;", ">"),
         if language == "en" { vec![english] } else { vec![requested, english] },
     );
-    parser.parse_file()
+    let mut scripts = parser.parse_file()?;
+    let mut line = 1u32;
+    for script in &mut scripts {
+        assign_line_numbers(script, &mut line);
+    }
+    validate_unique_labels(&scripts)?;
+    Ok(scripts)
+}
+
+fn assign_line_numbers(blocks: &mut [ParsedBlock], line: &mut u32) {
+    for block in blocks {
+        block.line_number = Some(*line);
+        *line += 1;
+        assign_line_numbers(&mut block.body, line);
+        assign_line_numbers(&mut block.else_body, line);
+    }
+}
+
+fn validate_unique_labels(scripts: &[Vec<ParsedBlock>]) -> Result<(), String> {
+    let mut seen = std::collections::BTreeSet::new();
+    for script in scripts {
+        collect_labels(script, &mut seen)?;
+    }
+    Ok(())
+}
+
+fn collect_labels(blocks: &[ParsedBlock], seen: &mut std::collections::BTreeSet<String>) -> Result<(), String> {
+    for block in blocks {
+        if let Some(label) = &block.line_label {
+            if !seen.insert(label.clone()) {
+                return Err(format!("scratchblocks-wasm: duplicate line label '#{label}'."));
+            }
+        }
+        collect_labels(&block.body, seen)?;
+        collect_labels(&block.else_body, seen)?;
+    }
+    Ok(())
 }
 
 fn effect_dropdown_value(children: &[Child]) -> Option<&str> {
@@ -400,6 +463,8 @@ fn to_public_node(block: ParsedBlock) -> PublicNode {
             .collect(),
         body: block.body.into_iter().map(to_public_node).collect(),
         else_body: block.else_body.into_iter().map(to_public_node).collect(),
+        line: block.line_number,
+        label: block.line_label,
     }
 }
 
@@ -457,15 +522,9 @@ fn to_render_block(block: ParsedBlock) -> BlockSpec {
     let mut segments = Vec::new();
     let mut dropdown_idx = 0;
     let is_proc_def = block.id == "procedures_definition";
-    let is_proc_call = block.id == "procedures_call";
-    let mut skipped_proc_call_prefix = false;
     for child in block.children {
         match child {
             Child::Label(value) => {
-                if is_proc_call && !skipped_proc_call_prefix {
-                    skipped_proc_call_prefix = true;
-                    continue;
-                }
                 segments.push(SegmentSpec::Text { value })
             }
             Child::Icon(name) => segments.push(SegmentSpec::Icon { name }),
@@ -501,6 +560,8 @@ fn to_render_block(block: ParsedBlock) -> BlockSpec {
                         body: Vec::new(),
                         else_body: Vec::new(),
                         has_else: false,
+                        line_number: None,
+                        line_label: None,
                     };
                     segments.push(SegmentSpec::Block { block: Box::new(to_render_block(custom_block)) });
                     continue;
@@ -537,6 +598,7 @@ fn to_render_block(block: ParsedBlock) -> BlockSpec {
     BlockSpec {
         shape: normalize_shape(&block.shape).to_string(),
         category: normalize_category(&block.category).to_string(),
+        line_number: block.line_number,
         segments,
         body: block.body.into_iter().map(to_render_block).collect(),
         else_body: block.else_body.into_iter().map(to_render_block).collect(),
@@ -566,6 +628,41 @@ fn normalize_category(category: &str) -> &str {
     }
 }
 
+fn normalize_category_token(category: &str) -> &str {
+    match category {
+        "event" => "events",
+        "list" => "lists",
+        "operator" => "operators",
+        "variable" => "variables",
+        other => other,
+    }
+}
+
+fn extract_line_label(children: &mut Vec<Child>) -> Result<Option<String>, String> {
+    let Some(last) = children.last() else {
+        return Ok(None);
+    };
+    let Child::Label(value) = last else {
+        return Ok(None);
+    };
+    if !value.starts_with('#') {
+        return Ok(None);
+    }
+
+    let raw = value.trim_start_matches('#').to_string();
+    if raw.is_empty() {
+        return Err("scratchblocks-wasm: empty line label '#'. Use '#name'.".to_string());
+    }
+    if !raw.chars().all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-') {
+        return Err(format!(
+            "scratchblocks-wasm: invalid line label '#{raw}'. Allowed: a-z, A-Z, 0-9, _, -"
+        ));
+    }
+
+    children.pop();
+    Ok(Some(raw))
+}
+
 struct Parser<'a> {
     chars: Vec<char>,
     index: usize,
@@ -573,6 +670,90 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+    fn match_block_candidate(&self, children: &[Child], forced_category: Option<&str>) -> Option<(String, usize)> {
+        let hash = minify_hash(&children_hash(children));
+        let typed_hash = minify_hash(&children_typed_hash(children));
+        let has_dropdown_input = children
+            .iter()
+            .any(|c| matches!(c, Child::Input(i) if i.shape == "dropdown"));
+
+        const CATEGORY_PRIORITY: &[&str] = &[
+            "grey", "obsolete", "music", "pen", "list", "variables", "operators", "sensing", "control", "events", "sound",
+            "looks", "motion",
+        ];
+
+        fn category_rank(cat: &str) -> usize {
+            CATEGORY_PRIORITY
+                .iter()
+                .position(|&c| c == cat)
+                .map(|i| i + 1)
+                .unwrap_or(0)
+        }
+
+        for (lang_idx, language) in self.languages.iter().enumerate() {
+            let lookup_key = if language.blocks_by_hash.contains_key(&typed_hash) {
+                &typed_hash
+            } else {
+                &hash
+            };
+
+            let Some(ids) = language.blocks_by_hash.get(lookup_key) else {
+                continue;
+            };
+
+            let candidate_ids: Vec<String> = ids
+                .iter()
+                .filter(|id| {
+                    let Some(block_def) = data().commands_by_id.get(*id) else {
+                        return false;
+                    };
+                    if let Some(category) = forced_category {
+                        normalize_category(&block_def.category) == category
+                    } else {
+                        true
+                    }
+                })
+                .cloned()
+                .collect();
+
+            if candidate_ids.is_empty() {
+                continue;
+            }
+
+            if let Some(preferred_id) = prefer_effect_block_candidate(&candidate_ids, children) {
+                return Some((preferred_id.to_string(), lang_idx));
+            }
+
+            let mut best: Option<&str> = None;
+            for id in &candidate_ids {
+                if let Some(block_def) = data().commands_by_id.get(id) {
+                    if has_dropdown_input && block_def.category == "list" {
+                        best = Some(id);
+                        break;
+                    }
+                    if let Some(current_best) = best {
+                        let current_rank = data()
+                            .commands_by_id
+                            .get(current_best)
+                            .map(|b| category_rank(&b.category))
+                            .unwrap_or(0);
+                        if category_rank(&block_def.category) > current_rank {
+                            best = Some(id);
+                        }
+                    } else {
+                        best = Some(id);
+                    }
+                }
+            }
+
+            if let Some(best_id) = best {
+                return Some((best_id.to_string(), lang_idx));
+            }
+        }
+
+        None
+    }
+
     fn new(code: String, languages: Vec<&'a LanguageRuntime>) -> Self {
         Self { chars: code.chars().collect(), index: 0, languages }
     }
@@ -651,16 +832,30 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_line(&mut self) -> Result<Option<LineBlock>, String> {
-        let children = self.parse_parts(None)?;
+        let mut children = self.parse_parts(None)?;
         if children.is_empty() {
             return Ok(None);
+        }
+        let line_label = extract_line_label(&mut children)?;
+        if children.is_empty() {
+            return Ok(None);
+        }
+        if let Some(default_block) = self.try_category_default(&children)? {
+            return Ok(Some(LineBlock {
+                shape: default_block.shape.clone(),
+                block: ParsedBlock {
+                    line_label,
+                    ..default_block
+                },
+            }));
         }
         // If the line is a single boolean/reporter input with a nested block, unwrap it directly.
         // This handles standalone lines like '<mouse down?>' or '(x position)'.
         if children.len() == 1 {
             if let Child::Input(ref input) = children[0] {
                 if let Some(ref nested) = input.nested {
-                    let block = *nested.clone();
+                    let mut block = *nested.clone();
+                    block.line_label = line_label;
                     let shape = block.shape.clone();
                     return Ok(Some(LineBlock { shape, block }));
                 }
@@ -687,6 +882,8 @@ impl<'a> Parser<'a> {
                             body: Vec::new(),
                             else_body: Vec::new(),
                             has_else: false,
+                            line_number: None,
+                            line_label,
                         },
                     }));
                 }
@@ -703,15 +900,96 @@ impl<'a> Parser<'a> {
                             body: Vec::new(),
                             else_body: Vec::new(),
                             has_else: false,
+                            line_number: None,
+                            line_label,
                         },
                     }));
                 }
             }
         }
         
-        let block = self.paint_block("stack", children)?;
+        let mut block = self.paint_block("stack", children)?;
+        block.line_label = line_label;
         let shape = block.shape.clone();
         Ok(Some(LineBlock { shape, block }))
+    }
+
+    fn try_category_default(&self, children: &[Child]) -> Result<Option<ParsedBlock>, String> {
+        let Some(Child::Icon(name)) = children.first() else {
+            return Ok(None);
+        };
+
+        let normalized = normalize_category_token(name.as_str());
+        let Some(default_id) = data().default_blocks.get(normalized) else {
+            return Ok(None);
+        };
+
+        // @category + text first tries a real category-constrained parse.
+        // If that fails, keep the previous category-forced unrecognized fallback.
+        if children.len() > 1 {
+            let content_children = children[1..].to_vec();
+            if let Some((matched_id, lang_idx)) = self.match_block_candidate(&content_children, Some(normalized)) {
+                let block_def = &data().commands_by_id[&matched_id];
+                let language = self.languages[lang_idx];
+                let spec = language
+                    .native_specs
+                    .get(&matched_id)
+                    .map(|s| s.as_str())
+                    .unwrap_or("");
+                return Ok(Some(ParsedBlock {
+                    id: matched_id,
+                    selector: String::new(),
+                    shape: block_def.shape.clone(),
+                    category: block_def.category.clone(),
+                    language: language.code.clone(),
+                    children: canonical_children(spec, false, content_children),
+                    body: Vec::new(),
+                    else_body: Vec::new(),
+                    has_else: false,
+                    line_number: None,
+                    line_label: None,
+                }));
+            }
+
+            return Ok(Some(ParsedBlock {
+                id: "unrecognized".to_string(),
+                selector: String::new(),
+                shape: "stack".to_string(),
+                category: normalized.to_string(),
+                language: self.languages[0].code.clone(),
+                children: content_children,
+                body: Vec::new(),
+                else_body: Vec::new(),
+                has_else: false,
+                line_number: None,
+                line_label: None,
+            }));
+        }
+
+        let block_def = data()
+            .commands_by_id
+            .get(default_id)
+            .ok_or_else(|| format!("scratchblocks-wasm: unknown default block id '{default_id}' for category '{normalized}'"))?;
+        let language = self.languages[0];
+        let spec = language
+            .native_specs
+            .get(default_id)
+            .map(|s| s.as_str())
+            .ok_or_else(|| format!("scratchblocks-wasm: missing locale spec for default block '{default_id}' in language '{}'", language.code))?;
+
+        Ok(Some(ParsedBlock {
+            id: default_id.clone(),
+            selector: String::new(),
+            shape: block_def.shape.clone(),
+            category: block_def.category.clone(),
+            language: language.code.clone(),
+            children: canonical_children(spec, false, Vec::new()),
+            body: Vec::new(),
+            else_body: Vec::new(),
+            has_else: false,
+            line_number: None,
+            line_label: None,
+        }))
     }
 
     fn parse_parts(&mut self, end: Option<char>) -> Result<Vec<Child>, String> {
@@ -860,6 +1138,8 @@ impl<'a> Parser<'a> {
                         body: Vec::new(),
                         else_body: Vec::new(),
                         has_else: false,
+                        line_number: None,
+                        line_label: None,
                     };
                     return Ok(Child::Input(InputNode {
                         shape: "reporter".to_string(),
@@ -889,72 +1169,26 @@ impl<'a> Parser<'a> {
     }
 
     fn paint_block(&self, fallback_shape: &str, children: Vec<Child>) -> Result<ParsedBlock, String> {
-        let hash = minify_hash(&children_hash(&children));
-        let mut matched_id: Option<String> = None;
-        let mut matched_language: Option<&LanguageRuntime> = None;
-        const CATEGORY_PRIORITY: &[&str] = &[
-            "grey", "obsolete", "music", "pen", "list", "variables",
-            "operators", "sensing", "control", "events", "sound", "looks", "motion",
-        ];
-        fn category_rank(cat: &str) -> usize {
-            CATEGORY_PRIORITY.iter().position(|&c| c == cat).map(|i| i + 1).unwrap_or(0)
-        }
-        let typed_hash = minify_hash(&children_typed_hash(&children));
-        let has_dropdown_input = children.iter().any(|c| matches!(c, Child::Input(i) if i.shape == "dropdown"));
-        for language in &self.languages {
-            let lookup_key = if language.blocks_by_hash.contains_key(&typed_hash) {
-                &typed_hash
-            } else {
-                &hash
-            };
-            if let Some(ids) = language.blocks_by_hash.get(lookup_key) {
-                if let Some(preferred_id) = prefer_effect_block_candidate(ids, &children) {
-                    matched_id = Some(preferred_id.to_string());
-                    matched_language = Some(*language);
-                    break;
-                }
-                let mut best: Option<&str> = None;
-                for id in ids {
-                    if let Some(block_def) = data().commands_by_id.get(id) {
-                        if has_dropdown_input && block_def.category == "list" {
-                            best = Some(id);
-                            break;
-                        }
-                        if let Some(current_best) = best {
-                            let current_rank = data().commands_by_id
-                                .get(current_best).map(|b| category_rank(&b.category)).unwrap_or(0);
-                            if category_rank(&block_def.category) > current_rank {
-                                best = Some(id);
-                            }
-                        } else {
-                            best = Some(id);
-                        }
-                    }
-                }
-                if let Some(best_id) = best {
-                    matched_id = Some(best_id.to_string());
-                    matched_language = Some(*language);
-                    break;
-                }
-            }
-        }
-        if let Some(ref matched_id) = matched_id {
-            let block_def = &data().commands_by_id[matched_id];
-            let language = matched_language.unwrap();
+        if let Some((matched_id, lang_idx)) = self.match_block_candidate(&children, None) {
+            let block_def = &data().commands_by_id[&matched_id];
+            let language = self.languages[lang_idx];
+            let spec = language.native_specs.get(&matched_id).map(|s| s.as_str()).unwrap_or("");
             return Ok(ParsedBlock {
-                id: matched_id.clone(),
+                id: matched_id,
                 selector: String::new(),
                 shape: block_def.shape.clone(),
                 category: block_def.category.clone(),
                 language: language.code.clone(),
                 children: canonical_children(
-                    language.native_specs.get(matched_id).map(|s| s.as_str()).unwrap_or(""),
+                    spec,
                     false,  // has_loop_arrow (not used by canonical_children)
                     children,
                 ),
                 body: Vec::new(),
                 else_body: Vec::new(),
                 has_else: false,
+                line_number: None,
+                line_label: None,
             });
         }
         Ok(ParsedBlock {
@@ -967,6 +1201,8 @@ impl<'a> Parser<'a> {
             body: Vec::new(),
             else_body: Vec::new(),
             has_else: false,
+            line_number: None,
+            line_label: None,
         })
     }
 
@@ -1368,5 +1604,65 @@ ende"#;
         let block = &result[0][0];
         assert_eq!(block.id, "LOOKS_CHANGEEFFECTBY");
         assert_eq!(block.category, "looks");
+    }
+
+    #[test]
+    fn test_category_default_motion() {
+        let result = parse_internal("@motion", "en", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.id, "MOTION_MOVESTEPS");
+        assert_eq!(block.category, "motion");
+    }
+
+    #[test]
+    fn test_category_prefix_with_free_text_forces_category() {
+        let result = parse_internal("@motion you are great", "en", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.id, "unrecognized");
+        assert_eq!(block.category, "motion");
+        assert_eq!(block.shape, "stack");
+        assert!(matches!(&block.children[0], Child::Label(v) if v == "you"));
+    }
+
+    #[test]
+    fn test_category_prefix_with_free_text_and_label_suffix() {
+        let result = parse_internal("@motion you are great #m1", "en", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.category, "motion");
+        assert_eq!(block.line_label.as_deref(), Some("m1"));
+    }
+
+    #[test]
+    fn test_category_prefix_matches_list_block_when_text_fits() {
+        let result = parse_internal("@list add (12) to [my list v]", "en", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.id, "DATA_ADDTOLIST");
+        assert_eq!(block.category, "list");
+    }
+
+    #[test]
+    fn test_category_prefix_matches_variable_block_when_text_fits() {
+        let result = parse_internal("@variable change [score v] by (1)", "en", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.id, "DATA_CHANGEVARIABLEBY");
+        assert_eq!(block.category, "variables");
+    }
+
+    #[test]
+    fn test_line_label_suffix_and_line_numbers() {
+        let result = parse_internal("repeat (2) #loop\nmove (10) steps #step\nend", "en", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.id, "CONTROL_REPEAT");
+        assert_eq!(block.line_label.as_deref(), Some("loop"));
+        assert_eq!(block.line_number, Some(1));
+        assert_eq!(block.body[0].line_label.as_deref(), Some("step"));
+        assert_eq!(block.body[0].line_number, Some(2));
+    }
+
+    #[test]
+    fn test_duplicate_line_label_fails() {
+        let err = parse_internal("move (10) steps #dup\nturn cw (15) degrees #dup", "en", false)
+            .expect_err("duplicate label should fail");
+        assert!(err.contains("duplicate line label"));
     }
 }

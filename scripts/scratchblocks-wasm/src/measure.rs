@@ -9,6 +9,7 @@ const LABEL_MARGIN: f32 = 4.447_998;
 thread_local! {
     static WIDTHS_ACTIVE: RefCell<bool> = const { RefCell::new(false) };
     static WIDTHS_MAP: RefCell<HashMap<String, f32>> = RefCell::new(HashMap::new());
+    static INSET_SCALE: RefCell<f32> = const { RefCell::new(1.0) };
 }
 
 pub fn set_widths(widths: HashMap<String, f32>) {
@@ -19,6 +20,44 @@ pub fn set_widths(widths: HashMap<String, f32>) {
 pub fn clear_widths() {
     WIDTHS_ACTIVE.with(|a| *a.borrow_mut() = false);
     WIDTHS_MAP.with(|m| m.borrow_mut().clear());
+}
+
+pub fn set_inset_scale(scale: f32) {
+    // Backward compatible:
+    // - decimal factor: 0.7 -> 70%
+    // - numeric percent: 70 -> 70%
+    let normalized = if scale > 8.0 { scale / 100.0 } else { scale };
+    let clamped = normalized.clamp(0.01, 6.0);
+    INSET_SCALE.with(|s| *s.borrow_mut() = clamped);
+}
+
+pub fn clear_inset_scale() {
+    INSET_SCALE.with(|s| *s.borrow_mut() = 1.0);
+}
+
+pub fn current_inset_scale() -> f32 {
+    INSET_SCALE.with(|s| *s.borrow())
+}
+
+fn s(value: f32) -> f32 {
+    value * current_inset_scale()
+}
+
+fn inset(base: f32, min: f32) -> f32 {
+    (base * current_inset_scale()).max(min)
+}
+
+fn v(base_child_h: f32, base_padding: f32) -> f32 {
+    base_child_h + (base_padding * current_inset_scale())
+}
+
+pub fn input_box_height(input: &str) -> f32 {
+    match input {
+        "boolean" => inset(32.0, 24.0),
+        "color" => inset(32.0, 24.0),
+        "dropdown" | "dropdown-field" => inset(32.0, 24.0),
+        _ => inset(32.0, 24.0),
+    }
 }
 
 fn is_label(segment: &SegmentSpec) -> bool {
@@ -45,42 +84,42 @@ fn is_round(segment: &SegmentSpec) -> bool {
 fn horizontal_padding(block: &BlockSpec, segment: &SegmentSpec) -> f32 {
     if block.shape == "reporter" {
         if is_icon(segment) {
-            16.0
+            s(16.0)
         } else if is_round(segment) {
-            4.0
+            s(4.0)
         } else if is_label(segment) || is_dropdown(segment) || is_boolean(segment) {
-            12.0
+            s(12.0)
         } else if is_round(segment) {
-            4.0
+            s(4.0)
         } else {
-            8.0
+            s(8.0)
         }
     } else if block.shape == "boolean" {
         if is_icon(segment) {
-            24.0
+            s(24.0)
         } else if is_label(segment) || is_dropdown(segment) || is_round(segment) {
-            20.0
+            s(20.0)
         } else if matches!(segment, SegmentSpec::Block { block } if block.shape == "reporter") {
-            20.0
+            s(20.0)
         } else if matches!(segment, SegmentSpec::Block { block } if block.shape == "reporter") {
-            24.0
+            s(24.0)
         } else if is_round(segment) {
-            20.0
+            s(20.0)
         } else if is_boolean(segment) {
-            8.0
+            s(8.0)
         } else {
-            8.0
+            s(8.0)
         }
     } else {
-        8.0
+        s(8.0)
     }
 }
 
 fn margin_between(a: &SegmentSpec, b: &SegmentSpec) -> f32 {
     if is_label(a) && is_label(b) {
-        LABEL_MARGIN
+        s(LABEL_MARGIN)
     } else {
-        8.0
+        s(8.0)
     }
 }
 
@@ -129,10 +168,21 @@ pub fn segment_width(segment: &SegmentSpec) -> f32 {
                 return block_size(block).0;
             }
             match input.as_str() {
-                "boolean" => 48.0,
-                "color" => 40.0,
-                "dropdown" | "dropdown-field" => text_width(value) + 42.0,
-                _ => (text_width(value) + 22.0).max(40.0),
+                "boolean" => inset(48.0, 34.0),
+                "color" => inset(40.0, 28.0),
+                "dropdown" | "dropdown-field" => {
+                    // Keep a guaranteed gap between dropdown text and arrow.
+                    let text_pad = inset(11.0, 7.0);
+                    let arrow_w = 12.0;
+                    let arrow_right = inset(12.0, 8.0);
+                    let min_gap = inset(7.0, 4.0);
+                    text_width(value) + text_pad + arrow_w + arrow_right + min_gap
+                }
+                _ => {
+                    let side_pad = inset(22.0, 14.0);
+                    let min_w = inset(40.0, 30.0);
+                    (text_width(value) + side_pad).max(min_w)
+                }
             }
         }
         SegmentSpec::Block { block } => block_size(block).0,
@@ -186,7 +236,7 @@ pub fn max_nested_height(block: &BlockSpec) -> f32 {
         let h = match seg {
             SegmentSpec::Block { block } => block_size(block).1,
             SegmentSpec::Input { nested: Some(b), .. } => block_size(b).1,
-            SegmentSpec::Input { nested: None, .. } => 32.0, // dropdowns/strings/numbers have 32px height
+            SegmentSpec::Input { input, nested: None, .. } => input_box_height(input),
             _ => 0.0,
         };
         if h > max_h {
@@ -201,21 +251,25 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
         "reporter" => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 24.0 { nested_h + 8.0 } else { 40.0 };
-            (inner.max(48.0), height)
+            let height = if nested_h > 24.0 { nested_h + s(8.0) } else { v(32.0, 8.0) };
+            (inner.max(s(48.0)), height)
         }
         "boolean" => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 24.0 { nested_h + 8.0 } else { 40.0 };
-            (inner.max(48.0), height)
+            let height = if nested_h > 24.0 { nested_h + s(8.0) } else { v(32.0, 8.0) };
+            (inner.max(s(48.0)), height)
         }
         "c-block" | "c-block cap" => c_block_size(block),
         "hat" => {
             let (inner, _, _, _) = line_metrics(block);
-            let width = inner.max(100.0);
+            let width = inner.max(s(100.0));
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 32.0 { 64.0 + (nested_h - 32.0) } else { 64.0 };
+            let height = if nested_h > 32.0 {
+                v(32.0, 32.0) + (nested_h - 32.0)
+            } else {
+                v(32.0, 32.0)
+            };
             (width, height)
         }
         "define-hat" => {
@@ -247,33 +301,33 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
                 0.0
             };
             // Outer width = pad(8) + define + gap + inner_content + pad(8)
-            let define_gap: f32 = 8.0;
-            let width = (8.0 + define_w + define_gap + inner_content_w + 8.0).max(100.0);
+            let define_gap: f32 = s(8.0);
+            let width = (s(8.0) + define_w + define_gap + inner_content_w + s(8.0)).max(s(100.0));
             let nested_h = max_nested_height(block);
-            let base_h: f32 = 84.0;
+            let base_h: f32 = v(32.0, 52.0);
             let height = if nested_h > 32.0 { base_h + (nested_h - 32.0) } else { base_h };
             (width, height)
         }
         "cap" => {
             let (inner, _, _, _) = line_metrics(block);
-            let width = inner.max(64.0);
+            let width = inner.max(s(64.0));
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 32.0 { 40.0 + (nested_h - 32.0) } else { 40.0 };
+            let height = if nested_h > 32.0 { nested_h + s(8.0) } else { v(32.0, 8.0) };
             (width, height)
         }
         _ => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 32.0 { 48.0 + (nested_h - 32.0) } else { 48.0 };
+            let height = if nested_h > 32.0 { nested_h + s(16.0) } else { v(32.0, 16.0) };
             
             // Pen blocks have an extra space for the pen icon on the left
             let pen_extra = if block.category == "pen" && !block.segments.is_empty() {
-                32.0 // 24.0 (icon size) + 8.0
+                s(32.0) // 24.0 (icon size) + 8.0
             } else {
                 0.0
             };
             
-            let width = (inner + pen_extra).max(64.0);
+            let width = (inner + pen_extra).max(s(64.0));
             (width, height)
         }
     }
@@ -303,7 +357,7 @@ pub fn c_block_size(block: &BlockSpec) -> (f32, f32) {
     let inner_width = c_block_inner_width(block);
     let (body_w, body_h) = script_size_with_inside(&block.body, true);
     let script_width = body_w.max(1.0);
-    let width = inner_width.max(16.0 + script_width);
+    let width = inner_width.max(s(16.0) + script_width);
 
     let has_else = !block.else_body.is_empty() || !block.else_segments.is_empty();
 
@@ -311,7 +365,7 @@ pub fn c_block_size(block: &BlockSpec) -> (f32, f32) {
     let header_nested_h = max_nested_height(block);
     let header_h = if header_nested_h > 32.0 { 48.0 + (header_nested_h - 32.0) } else { 48.0 };
 
-    let script_line_height = (body_h + 3.0).max(29.0) - 2.0;
+    let script_line_height = (body_h + s(3.0)).max(29.0) - s(2.0);
     let tail_line_height = 40.0 - 11.0;
 
     if !has_else {
@@ -319,8 +373,8 @@ pub fn c_block_size(block: &BlockSpec) -> (f32, f32) {
         (width, height)
     } else {
         let (else_w, else_h) = script_size_with_inside(&block.else_body, true);
-        let width = width.max(16.0 + else_w.max(1.0));
-        let else_script_line_height = (else_h + 3.0).max(29.0) - 2.0;
+        let width = width.max(s(16.0) + else_w.max(1.0));
+        let else_script_line_height = (else_h + s(3.0)).max(29.0) - s(2.0);
         let height = header_h + script_line_height + 29.0 + else_script_line_height + tail_line_height;
         (width, height)
     }
