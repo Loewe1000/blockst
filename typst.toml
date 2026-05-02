@@ -12,6 +12,7 @@ exclude = [
 	".DS_Store",
 	"*.pdf",
 	"/examples",
+	"/manual",
 ]
 
 description = "Render Scratch-style blocks for educational documents."
