@@ -71,6 +71,15 @@
   }
 }
 
+#let _input-dropdown-value(node, default: none) = {
+  for part in node.at("parts", default: ()) {
+    if part.at("kind", default: "") == "input" and part.at("shape", default: "") == "dropdown" {
+      return part.at("value", default: default)
+    }
+  }
+  default
+}
+
 #let _input-nested(node, index) = {
   let inputs = _inputs(node)
   if index < inputs.len() {
@@ -292,6 +301,16 @@
   }
 }
 
+#let _literal-or-expr-non-dropdown(node, env: (:), default: none) = {
+  let inputs = _inputs(node)
+  for (i, input) in inputs.enumerate() {
+    if input.at("shape", default: "") != "dropdown" {
+      return _literal-or-expr(node, i, env: env, default: default)
+    }
+  }
+  default
+}
+
 #let _flatten(commands) = {
   let out = ()
   for item in commands {
@@ -406,10 +425,10 @@
     return (set-pen-param(_normalize-pen-param(_input-value(node, 0, default: "color"), default: "hue"), value: _literal-or-expr(node, 1, env: env, default: 50)),)
   }
   if id == "DATA_SETVARIABLETO" {
-    return (set-variable(_input-value(node, 0, default: "var"), _literal-or-expr(node, 1, env: env, default: 0)),)
+    return (set-variable(_input-dropdown-value(node, default: "var"), _literal-or-expr-non-dropdown(node, env: env, default: 0)),)
   }
   if id == "DATA_CHANGEVARIABLEBY" {
-    return (change-variable(_input-value(node, 0, default: "var"), _literal-or-expr(node, 1, env: env, default: 1)),)
+    return (change-variable(_input-dropdown-value(node, default: "var"), _literal-or-expr-non-dropdown(node, env: env, default: 1)),)
   }
   if id == "CONTROL_REPEAT" {
     return ((
