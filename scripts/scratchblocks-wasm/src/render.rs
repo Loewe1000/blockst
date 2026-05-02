@@ -154,14 +154,17 @@ fn render_block(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
 fn render_pen_block(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     let colors = colors_for(&block.category, theme);
     let (total_width, height) = block_size(block);
-    let icon_scale = 0.6; // 24x24 inside the block
-    let icon_size = 24.0;
+    // The pen symbol path is ~36px tall in defs. Scale it so it stays within
+    // the inner block body and does not overlap the top notch at small heights.
+    let pen_icon_base_h = 36.4;
+    let icon_size = (height - inset(16.0, 12.0)).clamp(10.0, 18.0);
+    let icon_scale = icon_size / pen_icon_base_h;
     // Extra space: icon (scaled) + separator gap
-    let pen_extra = 32.0;
+    let pen_extra = inset(32.0, 20.0);
     let mut svg = String::new();
     svg.push_str(&format!("<path d=\"{}\" fill=\"{}\" stroke=\"{}\"/>", stack_path(total_width, height), colors.fill, colors.stroke));
     // Draw pen icon scaled and centered vertically
-    let icon_y = ((height - icon_size) / 2.0).floor();
+    let icon_y = ((height - icon_size) / 2.0).max(inset(4.0, 3.0)).floor();
     let pen_icon = if theme == "print" { "#sb-penIcon-print" } else { "#sb-penIcon" };
     svg.push_str(&format!("<g transform=\"translate(4 {}) scale({})\"><use href=\"{pen_icon}\"/></g>", icon_y, icon_scale));
     svg.push_str(&render_segments(block, &block.segments, theme, colors.text, pen_extra, height, 0.0));
@@ -276,7 +279,9 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
 
     // Dynamic header height: expand when header contains tall nested blocks
     let header_nested_h = max_nested_height(block);
-    let header_h = if header_nested_h > 32.0 { 48.0 + (header_nested_h - 32.0) } else { 48.0 };
+    let header_base = inset(48.0, 36.0);
+    let header_h = if header_nested_h > 32.0 { header_base + (header_nested_h - 32.0) } else { header_base };
+    let body_indent = (header_h / 48.0).clamp(0.6, 1.2) * 16.0;
 
     if cap {
         svg.push_str(&format!("<path d=\"{}\" fill=\"{}\" stroke=\"{}\" />", mouth_cap_path(path_width, body_h.max(1.0), header_h), colors.fill, colors.stroke));
@@ -290,11 +295,13 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
 
     let body_y = header_h - 1.0;
     let (body_svg, _, _) = render_script(&ScriptSpec { blocks: block.body.clone() }, theme, true);
-    svg.push_str(&format!("<g transform=\"translate(16 {body_y})\" >{body_svg}</g>"));
+    svg.push_str(&format!("<g transform=\"translate({} {body_y})\" >{body_svg}</g>", body_indent));
+
+    let tail_h = inset(40.0, 30.0) - inset(11.0, 8.0);
+    let adjusted_body = (body_h + s(3.0)).max(tail_h) - s(2.0);
+    let arm_y = header_h + adjusted_body - 3.0;
 
     if has_else {
-        let adjusted_body = (body_h + 3.0).max(29.0) - 2.0;
-        let arm_y = header_h + adjusted_body - 3.0;
         // Place else label centered in the 29px tail area (arm_y+3 to arm_y+32).
         // child_offset for text with line_height=32 gives child_y = line_y + 9.
         // SVG text y=13 is baseline, visual center ≈ baseline - 5.
@@ -303,18 +310,24 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
         // Visual center of 12pt text ≈ child_y + 7.5, child_y = line_y + 9
         // So visual center = line_y + 16.5. Target = arm_y + 17.5.
         // => line_y = arm_y + 1.0
-        let else_text_line_y = arm_y + 1.0;
+        let else_text_line_y = arm_y + inset(1.0, 0.5);
         svg.push_str(&render_segments(block, &block.else_segments, theme, colors.text, 0.0, 32.0, else_text_line_y));
 
         // Place else body blocks at the top of the else section interior.
         // Analogy to the first body: body_y = header_h - 1 (i.e. notch_y - 1).
         // The dividing notch for the else interior is at tail_y = arm_y + 32,
         // so else body starts at tail_y - 1 = arm_y + 31.
-        let y = arm_y + 31.0;
+        let y = arm_y + tail_h + s(2.0);
         let (else_svg, _, _) = render_script(&ScriptSpec { blocks: block.else_body.clone() }, theme, true);
-        svg.push_str(&format!("<g transform=\"translate(16 {})\" >{else_svg}</g>", y));
+        svg.push_str(&format!("<g transform=\"translate({} {})\" >{else_svg}</g>", body_indent, y));
     } else if block.category == "control" && !has_else {
-        svg.push_str(&format!("<use href=\"#sb-loopArrow\" transform=\"translate({} {})\" />", path_width - 32.0, height - 28.0));
+        let loop_scale = icon_scale("loopArrow");
+        let loop_w = icon_width("loopArrow");
+        let loop_h = icon_height("loopArrow");
+        let tail_top = arm_y + s(3.0);
+        let loop_y = tail_top + ((tail_h - loop_h) / 2.0).max(0.0);
+        let loop_x = path_width - loop_w - inset(8.0, 6.0);
+        svg.push_str(&format!("<use href=\"#sb-loopArrow\" transform=\"translate({} {}) scale({})\" />", loop_x, loop_y, loop_scale));
     }
     (svg, width, height)
 }
@@ -349,14 +362,15 @@ fn render_segments(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, tex
             }
             SegmentSpec::Icon { name } => {
                 let child_y = child_offset(block, segment, line_height, index == 0, line_y, index, segments.len());
+                let scale = icon_scale(name);
                 if name == "flag" || name == "greenFlag" || name == "green-flag" {
-                    svg.push_str(&format!("<use href=\"#sb-greenFlag\" transform=\"translate({} {})\"/>", base_x + pad_left + x, child_y));
+                    svg.push_str(&format!("<use href=\"#sb-greenFlag\" transform=\"translate({} {}) scale({})\"/>", base_x + pad_left + x, child_y, scale));
                 } else if name == "turnRight" || name == "turn-right" || name == "arrow-right" {
-                    svg.push_str(&format!("<use href=\"#sb-turnRight\" transform=\"translate({} {})\"/>", base_x + pad_left + x, child_y));
+                    svg.push_str(&format!("<use href=\"#sb-turnRight\" transform=\"translate({} {}) scale({})\"/>", base_x + pad_left + x, child_y, scale));
                 } else if name == "turnLeft" || name == "turn-left" || name == "arrow-left" {
-                    svg.push_str(&format!("<use href=\"#sb-turnLeft\" transform=\"translate({} {})\"/>", base_x + pad_left + x, child_y));
+                    svg.push_str(&format!("<use href=\"#sb-turnLeft\" transform=\"translate({} {}) scale({})\"/>", base_x + pad_left + x, child_y, scale));
                 } else if name == "loopArrow" || name == "loop-arrow" {
-                    svg.push_str(&format!("<use href=\"#sb-loopArrow\" transform=\"translate({} {})\"/>", base_x + pad_left + x, child_y));
+                    svg.push_str(&format!("<use href=\"#sb-loopArrow\" transform=\"translate({} {}) scale({})\"/>", base_x + pad_left + x, child_y, scale));
                 } else {
                     let icon_text = if name == "arrow-right" { "↻" } else if name == "arrow-left" { "↺" } else if name == "pen" { "✎" } else { "•" };
                     svg.push_str(&format!("<text class=\"sb-label\" x=\"0\" y=\"13\" fill=\"{}\" transform=\"translate({} {})\">{}</text>", text_fill, base_x + pad_left + x, child_y, icon_text));
@@ -478,11 +492,8 @@ fn render_segments(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, tex
 }
 
 fn child_offset(parent: &BlockSpec, segment: &SegmentSpec, line_height: f32, first_line: bool, line_y: f32, index: usize, _len: usize) -> f32 {
-    let (pt, pb) = if parent.shape == "hat" {
-        (s(24.0), s(8.0))
-    } else {
-        (s(4.0), s(4.0))
-    };
+    let is_hat = parent.shape == "hat";
+    let (pt, pb) = if is_hat { (s(4.0), s(4.0)) } else { (s(4.0), s(4.0)) };
     let child_height = match segment {
         SegmentSpec::Text { .. } => 12.0,
         SegmentSpec::Icon { name } => icon_height(name),
@@ -492,7 +503,16 @@ fn child_offset(parent: &BlockSpec, segment: &SegmentSpec, line_height: f32, fir
             .unwrap_or_else(|| input_box_height(input)),
         SegmentSpec::Block { block } => block_size(block).1,
     };
-    let mut y = pt + (line_height - child_height - pt - pb) / 2.0;
+    // Hat blocks have a curved top cap (fixed 16px in the SVG path).
+    // Center labels in the lower rectangular section, not across full hat height.
+    let hat_body_top = if is_hat { 16.0 } else { 0.0 };
+    let usable_h = if is_hat {
+        (line_height - hat_body_top).max(child_height + pt + pb)
+    } else {
+        line_height
+    };
+    let hat_optical_up = if is_hat { inset(2.0, 1.0) } else { 0.0 };
+    let mut y = hat_body_top + pt + (usable_h - child_height - pt - pb) / 2.0 - hat_optical_up;
     if matches!(segment, SegmentSpec::Text { .. }) {
         y -= 1.0;
     } else if let SegmentSpec::Icon { name } = segment {
@@ -563,53 +583,57 @@ fn block_text_baseline(block: &BlockSpec, block_height: f32) -> f32 {
         block_height
     };
 
-    let (pt, pb) = if block.shape == "hat" {
-        (s(24.0), s(8.0))
-    } else {
-        (s(4.0), s(4.0))
-    };
+    let is_hat = block.shape == "hat";
+    let (pt, pb) = (s(4.0), s(4.0));
     let child_height = 12.0;
-    let y = (pt + (line_height - child_height - pt - pb) / 2.0 - 1.0).floor();
+    let hat_body_top = if is_hat { 16.0 } else { 0.0 };
+    let usable_h = if is_hat {
+        (line_height - hat_body_top).max(child_height + pt + pb)
+    } else {
+        line_height
+    };
+    let hat_optical_up = if is_hat { inset(2.0, 1.0) } else { 0.0 };
+    let y = (hat_body_top + pt + (usable_h - child_height - pt - pb) / 2.0 - hat_optical_up - 1.0).floor();
     y + 13.0
 }
 
 fn horizontal_padding(block: &BlockSpec, segment: &SegmentSpec) -> f32 {
     if block.shape == "reporter" {
         if matches!(segment, SegmentSpec::Icon { .. }) {
-            s(16.0)
+            inset(16.0, 12.0)
         } else if is_round(segment) {
-            s(4.0)
+            inset(4.0, 3.0)
         } else if matches!(segment, SegmentSpec::Text { .. }) || is_dropdown(segment) || is_boolean(segment) {
-            s(12.0)
+            inset(12.0, 8.0)
         } else if is_round(segment) {
-            s(4.0)
+            inset(4.0, 3.0)
         } else {
-            s(8.0)
+            inset(8.0, 6.0)
         }
     } else if block.shape == "boolean" {
         if matches!(segment, SegmentSpec::Icon { .. }) {
-            s(24.0)
+            inset(24.0, 16.0)
         } else if matches!(segment, SegmentSpec::Text { .. }) || is_dropdown(segment) || is_round(segment) {
-            s(20.0)
+            inset(20.0, 12.0)
         } else if matches!(segment, SegmentSpec::Block { block } if block.shape == "reporter") {
-            s(24.0)
+            inset(24.0, 16.0)
         } else if is_round(segment) {
-            s(20.0)
+            inset(20.0, 12.0)
         } else if is_boolean(segment) {
-            s(8.0)
+            inset(8.0, 6.0)
         } else {
-            s(8.0)
+            inset(8.0, 6.0)
         }
     } else {
-        s(8.0)
+        inset(8.0, 6.0)
     }
 }
 
 fn margin_between(a: &SegmentSpec, b: &SegmentSpec) -> f32 {
     if matches!(a, SegmentSpec::Text { .. }) && matches!(b, SegmentSpec::Text { .. }) {
-        s(LABEL_MARGIN)
+        LABEL_MARGIN
     } else {
-        s(8.0)
+        inset(8.0, 6.0)
     }
 }
 
@@ -627,6 +651,10 @@ fn is_round(segment: &SegmentSpec) -> bool {
 }
 
 fn icon_width(name: &str) -> f32 {
+    icon_base_width(name) * icon_scale(name)
+}
+
+fn icon_base_width(name: &str) -> f32 {
     match name {
         "greenFlag" | "green-flag" | "flag" => 20.0,
         "turnLeft" | "turn-left" | "arrow-left" => 24.0,
@@ -637,6 +665,10 @@ fn icon_width(name: &str) -> f32 {
 }
 
 fn icon_height(name: &str) -> f32 {
+    icon_base_height(name) * icon_scale(name)
+}
+
+fn icon_base_height(name: &str) -> f32 {
     match name {
         "greenFlag" | "green-flag" | "flag" => 21.0,
         "turnLeft" | "turn-left" | "arrow-left" => 24.0,
@@ -646,9 +678,21 @@ fn icon_height(name: &str) -> f32 {
     }
 }
 
+fn icon_scale(name: &str) -> f32 {
+    let base_h = icon_base_height(name);
+    let min_h = match name {
+        "greenFlag" | "green-flag" | "flag" => 16.0,
+        "turnLeft" | "turn-left" | "arrow-left" => 18.0,
+        "turnRight" | "turn-right" | "arrow-right" => 18.0,
+        "loopArrow" | "loop-arrow" => 18.0,
+        _ => 15.0,
+    };
+    (inset(base_h, min_h) / base_h).clamp(0.5, 1.0)
+}
+
 fn icon_dy(name: &str) -> f32 {
     match name {
-        "greenFlag" | "green-flag" | "flag" => -2.0,
+        "greenFlag" | "green-flag" | "flag" => -2.0 * icon_scale(name),
         _ => 0.0,
     }
 }

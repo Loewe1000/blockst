@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 const LABEL_MARGIN: f32 = 4.447_998;
+const LABEL_WORD_SPACING: f32 = 1.333_333;
 
 // Thread-local widths map: when set, text_width() uses these values instead of
 // hardcoded Helvetica Neue metrics. Activated by set_widths() / clear_widths().
@@ -84,46 +85,46 @@ fn is_round(segment: &SegmentSpec) -> bool {
 fn horizontal_padding(block: &BlockSpec, segment: &SegmentSpec) -> f32 {
     if block.shape == "reporter" {
         if is_icon(segment) {
-            s(16.0)
+            inset(16.0, 12.0)
         } else if is_round(segment) {
-            s(4.0)
+            inset(4.0, 3.0)
         } else if is_label(segment) || is_dropdown(segment) || is_boolean(segment) {
-            s(12.0)
+            inset(12.0, 8.0)
         } else if is_round(segment) {
-            s(4.0)
+            inset(4.0, 3.0)
         } else {
-            s(8.0)
+            inset(8.0, 6.0)
         }
     } else if block.shape == "boolean" {
         if is_icon(segment) {
-            s(24.0)
+            inset(24.0, 16.0)
         } else if is_label(segment) || is_dropdown(segment) || is_round(segment) {
-            s(20.0)
+            inset(20.0, 12.0)
         } else if matches!(segment, SegmentSpec::Block { block } if block.shape == "reporter") {
-            s(20.0)
+            inset(20.0, 12.0)
         } else if matches!(segment, SegmentSpec::Block { block } if block.shape == "reporter") {
-            s(24.0)
+            inset(24.0, 16.0)
         } else if is_round(segment) {
-            s(20.0)
+            inset(20.0, 12.0)
         } else if is_boolean(segment) {
-            s(8.0)
+            inset(8.0, 6.0)
         } else {
-            s(8.0)
+            inset(8.0, 6.0)
         }
     } else {
-        s(8.0)
+        inset(8.0, 6.0)
     }
 }
 
 fn margin_between(a: &SegmentSpec, b: &SegmentSpec) -> f32 {
     if is_label(a) && is_label(b) {
-        s(LABEL_MARGIN)
+        LABEL_MARGIN
     } else {
-        s(8.0)
+        inset(8.0, 6.0)
     }
 }
 
-fn icon_width(name: &str) -> f32 {
+fn icon_base_width(name: &str) -> f32 {
     match name {
         "greenFlag" | "green-flag" | "flag" => 20.0,
         "turnLeft" | "turn-left" | "arrow-left" => 24.0,
@@ -131,6 +132,32 @@ fn icon_width(name: &str) -> f32 {
         "loopArrow" | "loop-arrow" => 24.0,
         _ => 20.0,
     }
+}
+
+fn icon_base_height(name: &str) -> f32 {
+    match name {
+        "greenFlag" | "green-flag" | "flag" => 21.0,
+        "turnLeft" | "turn-left" | "arrow-left" => 24.0,
+        "turnRight" | "turn-right" | "arrow-right" => 24.0,
+        "loopArrow" | "loop-arrow" => 24.0,
+        _ => 20.0,
+    }
+}
+
+fn icon_scale(name: &str) -> f32 {
+    let base_h = icon_base_height(name);
+    let min_h = match name {
+        "greenFlag" | "green-flag" | "flag" => 16.0,
+        "turnLeft" | "turn-left" | "arrow-left" => 18.0,
+        "turnRight" | "turn-right" | "arrow-right" => 18.0,
+        "loopArrow" | "loop-arrow" => 18.0,
+        _ => 15.0,
+    };
+    (inset(base_h, min_h) / base_h).clamp(0.5, 1.0)
+}
+
+fn icon_width(name: &str) -> f32 {
+    icon_base_width(name) * icon_scale(name)
 }
 
 pub fn text_width(text: &str) -> f32 {
@@ -143,6 +170,7 @@ pub fn text_width(text: &str) -> f32 {
 
     // Fall back to hardcoded Helvetica Neue metrics
     let mut width = 0.0;
+    let mut spaces = 0u32;
     for ch in text.chars() {
         width += match ch {
             'i' | 'l' | 'I' | '|' | '!' | '.' | ',' | ':' | ';' => 4.5,
@@ -150,12 +178,17 @@ pub fn text_width(text: &str) -> f32 {
             'r' => 5.6,
             'm' | 'w' => 14.5,
             'M' | 'W' => 14.8,
-            ' ' => 4.447_998,
+            ' ' => {
+                spaces += 1;
+                4.447_998
+            }
             _ if ch.is_ascii_digit() => 8.9,
             _ if ch.is_ascii_uppercase() => 10.5,
             _ => 8.8,
         };
     }
+    // Keep measurement consistent with SVG label CSS (word-spacing: 1pt)
+    width += (spaces as f32) * LABEL_WORD_SPACING;
     width
 }
 
@@ -225,7 +258,9 @@ pub(crate) fn line_metrics(block: &BlockSpec) -> (f32, f32, f32, f32) {
 
 pub fn c_block_inner_width(block: &BlockSpec) -> f32 {
     let (header_inner, _, _, _) = line_metrics(block);
-    header_inner.max(160.0)
+    // Keep c-shapes readable, but avoid a large fixed minimum that leaves
+    // too much empty header area for short labels like "répéter (12) fois".
+    header_inner.max(inset(96.0, 72.0))
 }
 
 /// Returns the maximum height of any nested block/input segment within a block's segments.
@@ -251,14 +286,24 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
         "reporter" => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 24.0 { nested_h + s(8.0) } else { v(32.0, 8.0) };
-            (inner.max(s(48.0)), height)
+            let height = if nested_h > 24.0 {
+                nested_h + inset(8.0, 6.0)
+            } else {
+                inset(32.0, 24.0)
+            };
+            let min_w = inset(40.0, 30.0).max(height + inset(8.0, 6.0));
+            (inner.max(min_w), height)
         }
         "boolean" => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 24.0 { nested_h + s(8.0) } else { v(32.0, 8.0) };
-            (inner.max(s(48.0)), height)
+            let height = if nested_h > 24.0 {
+                nested_h + inset(8.0, 6.0)
+            } else {
+                inset(32.0, 24.0)
+            };
+            let min_w = inset(40.0, 30.0).max(height + inset(8.0, 6.0));
+            (inner.max(min_w), height)
         }
         "c-block" | "c-block cap" => c_block_size(block),
         "hat" => {
@@ -322,7 +367,7 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
             
             // Pen blocks have an extra space for the pen icon on the left
             let pen_extra = if block.category == "pen" && !block.segments.is_empty() {
-                s(32.0) // 24.0 (icon size) + 8.0
+                inset(32.0, 20.0) // 24.0 (icon size) + 8.0, but keep a readable minimum at small inset
             } else {
                 0.0
             };
@@ -357,25 +402,27 @@ pub fn c_block_size(block: &BlockSpec) -> (f32, f32) {
     let inner_width = c_block_inner_width(block);
     let (body_w, body_h) = script_size_with_inside(&block.body, true);
     let script_width = body_w.max(1.0);
-    let width = inner_width.max(s(16.0) + script_width);
+    let body_indent = inset(16.0, 10.0);
+    let width = inner_width.max(body_indent + script_width);
 
     let has_else = !block.else_body.is_empty() || !block.else_segments.is_empty();
 
     // Dynamic header height: expand when header contains tall nested blocks
     let header_nested_h = max_nested_height(block);
-    let header_h = if header_nested_h > 32.0 { 48.0 + (header_nested_h - 32.0) } else { 48.0 };
+    let header_base = inset(48.0, 36.0);
+    let header_h = if header_nested_h > 32.0 { header_base + (header_nested_h - 32.0) } else { header_base };
 
     let script_line_height = (body_h + s(3.0)).max(29.0) - s(2.0);
-    let tail_line_height = 40.0 - 11.0;
+    let tail_line_height = inset(40.0, 30.0) - inset(11.0, 8.0);
 
     if !has_else {
         let height = header_h + script_line_height + tail_line_height;
         (width, height)
     } else {
         let (else_w, else_h) = script_size_with_inside(&block.else_body, true);
-        let width = width.max(s(16.0) + else_w.max(1.0));
+        let width = width.max(body_indent + else_w.max(1.0));
         let else_script_line_height = (else_h + s(3.0)).max(29.0) - s(2.0);
-        let height = header_h + script_line_height + 29.0 + else_script_line_height + tail_line_height;
+        let height = header_h + script_line_height + tail_line_height + else_script_line_height + tail_line_height;
         (width, height)
     }
 }

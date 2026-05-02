@@ -37,7 +37,7 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - Scratchblocks-style syntax for scripts, reporters, booleans, inputs, dropdowns, and nested control blocks
 - Themes: normal, high-contrast, print
 - Localized text rendering through the WASM locale data
-- Category defaults via `@motion`, `@control`, ... for quick placeholder blocks
+- Category suffixes via `::motion`, `::control`, ... (scratchblocks-style)
 - Optional line numbers and `#label` references for line-aware worksheets
 - Optional compact block geometry with `inset-scale` (text size unchanged, e.g. `60%`, `90%`, `125%`)
 - **experimental:** SB3 import helpers for scripts, lists, variables, images, and static screen previews
@@ -219,7 +219,12 @@ turn cw (30) degrees"
 
 Source: [examples/example-theme.typ](examples/example-theme.typ)
 
-Use `@category` for quick defaults (for example `@motion`, `@looks`, `@control`) when you want colored standard blocks without matching full localized syntax.
+Use `::category` (for example `::motion`, `::looks`, `::control`) to force a block category in scratchblocks style.
+Examples:
+
+- `move (10) steps ::motion`
+- `ajouter (5) à [i v] ::variables`
+- `::control` (category default block)
 
 ### Executable Preview (scratch-run)
 

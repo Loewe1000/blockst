@@ -331,10 +331,10 @@ fn test_custom_arg_reporter() {
 }
 
 #[test]
-fn test_category_prefix_french_list_block() {
-    // @list ajouter (12) à [add v] should be recognized as DATA_ADDTOLIST
+fn test_category_suffix_french_list_block() {
+    // ajouter (12) à [add v] ::list should be recognized as DATA_ADDTOLIST
     use scratchblocks_wasm::parse_request_json;
-    let input = r#"{"code":"@list ajouter (12) à [add v]","language":"fr","inline":false}"#;
+    let input = r#"{"code":"ajouter (12) à [add v] ::list","language":"fr","inline":false}"#;
     let output = parse_request_json(input).expect("parse failed");
     let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
     assert_eq!(parsed[0].get("id").unwrap(), "DATA_ADDTOLIST",
@@ -342,12 +342,49 @@ fn test_category_prefix_french_list_block() {
 }
 
 #[test]
-fn test_category_prefix_french_variable_block() {
-    // @variable mettre [myVar v] à (10) should be recognized as DATA_SETVARIABLETO
+fn test_category_suffix_french_variable_block() {
+    // mettre [myVar v] à (10) ::variable should be recognized as DATA_SETVARIABLETO
     use scratchblocks_wasm::parse_request_json;
-    let input = r#"{"code":"@variable mettre [myVar v] à (10)","language":"fr","inline":false}"#;
+    let input = r#"{"code":"mettre [myVar v] à (10) ::variable","language":"fr","inline":false}"#;
     let output = parse_request_json(input).expect("parse failed");
     let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
     assert_eq!(parsed[0].get("id").unwrap(), "DATA_SETVARIABLETO",
         "Should be DATA_SETVARIABLETO, got: {}", parsed[0].get("id").unwrap());
+}
+
+#[test]
+fn test_category_suffix_french_variable_change_dropdown_shape() {
+    // [i v] must be parsed as square dropdown input (shape "dropdown"), not round number-dropdown.
+    use scratchblocks_wasm::parse_request_json;
+    let input = r#"{"code":"ajouter (5) à [i v] ::variable","language":"fr","inline":false}"#;
+    let output = parse_request_json(input).expect("parse failed");
+    let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
+
+    let block = &parsed[0];
+    assert_eq!(block.get("id").unwrap(), "DATA_CHANGEVARIABLEBY",
+        "Should be DATA_CHANGEVARIABLEBY, got: {}", block.get("id").unwrap());
+
+    let parts = block.get("parts").and_then(|p| p.as_array()).expect("parts should be an array");
+    // Structure for "ajouter %1 à %2": label, input, label, input
+    let var_input = &parts[3];
+    assert_eq!(var_input.get("kind").unwrap(), "input");
+    assert_eq!(var_input.get("shape").unwrap(), "dropdown",
+        "[i v] should parse as square dropdown input, got: {}", var_input.get("shape").unwrap());
+}
+
+#[test]
+fn test_french_when_flag_block_variants() {
+    use scratchblocks_wasm::parse_request_json;
+
+    let canonical = r#"{"code":"quand @greenFlag est cliqué","language":"fr","inline":false}"#;
+    let output = parse_request_json(canonical).expect("fr when-flag canonical parse failed");
+    let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
+    assert_eq!(parsed[0].get("id").unwrap(), "EVENT_WHENFLAGCLICKED",
+        "Canonical fr when-flag should match EVENT_WHENFLAGCLICKED, got: {}", parsed[0].get("id").unwrap());
+
+    let alias = r#"{"code":"quand le drapeau vert pressé","language":"fr","inline":false}"#;
+    let output = parse_request_json(alias).expect("fr when-flag alias parse failed");
+    let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
+    assert_eq!(parsed[0].get("id").unwrap(), "EVENT_WHENFLAGCLICKED",
+        "Alias fr when-flag should match EVENT_WHENFLAGCLICKED, got: {}", parsed[0].get("id").unwrap());
 }

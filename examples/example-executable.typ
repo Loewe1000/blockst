@@ -1,4 +1,4 @@
-#import "../lib.typ": scratch, scratch-run, set-scratch-run, set-blockst
+#import "@preview/blockst:0.2.1": scratch, scratch-run, set-scratch-run, set-blockst
 
 #set page(width: auto, height: auto, margin: 3mm, fill: none)
 
@@ -152,3 +152,20 @@ end
     )],
   ),
 )
+
+#scratch("
+ quand @greenFlag est cliqué
+          mettre [i v] à (0)
+          relever le stylo
+          effacer tout
+          aller à x:(0) y: (0)
+          stylo en position d'écriture
+          s'orienter à (90)
+          répéter (12) fois
+          ajouter (5) à [i v] ::variables
+          avancer de (i) pas
+          tourner droite de (90) degrés
+          avancer de (i) pas
+          tourner droite de (90) degrés
+          end",
+language: "fr")

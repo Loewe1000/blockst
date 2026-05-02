@@ -614,6 +614,31 @@ fn extract_line_label(children: &mut Vec<Child>) -> Result<Option<String>, Strin
     Ok(Some(raw))
 }
 
+fn extract_category_suffix(children: &mut Vec<Child>) -> Result<Option<String>, String> {
+    let Some(last) = children.last() else {
+        return Ok(None);
+    };
+    let Child::Label(value) = last else {
+        return Ok(None);
+    };
+    if !value.starts_with("::") {
+        return Ok(None);
+    }
+
+    let raw = value.trim_start_matches("::").trim().to_string();
+    if raw.is_empty() {
+        return Err("scratchblocks-wasm: empty category suffix '::'. Use '::control' etc.".to_string());
+    }
+    if !raw.chars().all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-') {
+        return Err(format!(
+            "scratchblocks-wasm: invalid category suffix '::{raw}'. Allowed: a-z, A-Z, 0-9, _, -"
+        ));
+    }
+
+    children.pop();
+    Ok(Some(normalize_category_token(raw.as_str()).to_string()))
+}
+
 struct Parser<'a> {
     chars: Vec<char>,
     index: usize,
@@ -788,17 +813,21 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
         let line_label = extract_line_label(&mut children)?;
+        let forced_category = extract_category_suffix(&mut children)?;
         if children.is_empty() {
+            if let Some(category) = forced_category {
+                let mut block = self.paint_category_default(&category)?;
+                block.line_label = line_label;
+                let shape = block.shape.clone();
+                return Ok(Some(LineBlock { shape, block }));
+            }
             return Ok(None);
         }
-        if let Some(default_block) = self.try_category_default(&children)? {
-            return Ok(Some(LineBlock {
-                shape: default_block.shape.clone(),
-                block: ParsedBlock {
-                    line_label,
-                    ..default_block
-                },
-            }));
+        if let Some(category) = forced_category {
+            let mut block = self.paint_forced_category(children, &category)?;
+            block.line_label = line_label;
+            let shape = block.shape.clone();
+            return Ok(Some(LineBlock { shape, block }));
         }
         // If the line is a single boolean/reporter input with a nested block, unwrap it directly.
         // This handles standalone lines like '<mouse down?>' or '(x position)'.
@@ -865,57 +894,10 @@ impl<'a> Parser<'a> {
         Ok(Some(LineBlock { shape, block }))
     }
 
-    fn try_category_default(&self, children: &[Child]) -> Result<Option<ParsedBlock>, String> {
-        let Some(Child::Icon(name)) = children.first() else {
-            return Ok(None);
-        };
-
-        let normalized = normalize_category_token(name.as_str());
+    fn paint_category_default(&self, normalized: &str) -> Result<ParsedBlock, String> {
         let Some(default_id) = data().default_blocks.get(normalized) else {
-            return Ok(None);
+            return Err(format!("scratchblocks-wasm: unknown category '{normalized}' in ::category suffix"));
         };
-
-        // @category + text first tries a real category-constrained parse.
-        // If that fails, keep the previous category-forced unrecognized fallback.
-        if children.len() > 1 {
-            let content_children = children[1..].to_vec();
-            if let Some((matched_id, lang_idx)) = self.match_block_candidate(&content_children, Some(normalized)) {
-                let block_def = &data().commands_by_id[&matched_id];
-                let language = self.languages[lang_idx];
-                let spec = language
-                    .native_specs
-                    .get(&matched_id)
-                    .map(|s| s.as_str())
-                    .unwrap_or("");
-                return Ok(Some(ParsedBlock {
-                    id: matched_id,
-                    selector: String::new(),
-                    shape: block_def.shape.clone(),
-                    category: block_def.category.clone(),
-                    language: language.code.clone(),
-                    children: canonical_children(spec, false, content_children),
-                    body: Vec::new(),
-                    else_body: Vec::new(),
-                    has_else: false,
-                    line_number: None,
-                    line_label: None,
-                }));
-            }
-
-            return Ok(Some(ParsedBlock {
-                id: "unrecognized".to_string(),
-                selector: String::new(),
-                shape: "stack".to_string(),
-                category: normalized.to_string(),
-                language: self.languages[0].code.clone(),
-                children: content_children,
-                body: Vec::new(),
-                else_body: Vec::new(),
-                has_else: false,
-                line_number: None,
-                line_label: None,
-            }));
-        }
 
         let block_def = data()
             .commands_by_id
@@ -928,7 +910,7 @@ impl<'a> Parser<'a> {
             .map(|s| s.as_str())
             .ok_or_else(|| format!("scratchblocks-wasm: missing locale spec for default block '{default_id}' in language '{}'", language.code))?;
 
-        Ok(Some(ParsedBlock {
+        Ok(ParsedBlock {
             id: default_id.clone(),
             selector: String::new(),
             shape: block_def.shape.clone(),
@@ -940,7 +922,50 @@ impl<'a> Parser<'a> {
             has_else: false,
             line_number: None,
             line_label: None,
-        }))
+        })
+    }
+
+    fn paint_forced_category(&self, content_children: Vec<Child>, normalized: &str) -> Result<ParsedBlock, String> {
+        if content_children.is_empty() {
+            return self.paint_category_default(normalized);
+        }
+
+        if let Some((matched_id, lang_idx)) = self.match_block_candidate(&content_children, Some(normalized)) {
+            let block_def = &data().commands_by_id[&matched_id];
+            let language = self.languages[lang_idx];
+            let spec = language
+                .native_specs
+                .get(&matched_id)
+                .map(|s| s.as_str())
+                .unwrap_or("");
+            return Ok(ParsedBlock {
+                id: matched_id,
+                selector: String::new(),
+                shape: block_def.shape.clone(),
+                category: block_def.category.clone(),
+                language: language.code.clone(),
+                children: canonical_children(spec, false, content_children),
+                body: Vec::new(),
+                else_body: Vec::new(),
+                has_else: false,
+                line_number: None,
+                line_label: None,
+            });
+        }
+
+        Ok(ParsedBlock {
+            id: "unrecognized".to_string(),
+            selector: String::new(),
+            shape: "stack".to_string(),
+            category: normalized.to_string(),
+            language: self.languages[0].code.clone(),
+            children: content_children,
+            body: Vec::new(),
+            else_body: Vec::new(),
+            has_else: false,
+            line_number: None,
+            line_label: None,
+        })
     }
 
     fn parse_parts(&mut self, end: Option<char>) -> Result<Vec<Child>, String> {
@@ -1558,16 +1583,16 @@ ende"#;
     }
 
     #[test]
-    fn test_category_default_motion() {
-        let result = parse_internal("@motion", "en", false).expect("parse failed");
+    fn test_category_default_motion_suffix() {
+        let result = parse_internal("::motion", "en", false).expect("parse failed");
         let block = &result[0][0];
         assert_eq!(block.id, "MOTION_MOVESTEPS");
         assert_eq!(block.category, "motion");
     }
 
     #[test]
-    fn test_category_prefix_with_free_text_forces_category() {
-        let result = parse_internal("@motion you are great", "en", false).expect("parse failed");
+    fn test_category_suffix_with_free_text_forces_category() {
+        let result = parse_internal("you are great ::motion", "en", false).expect("parse failed");
         let block = &result[0][0];
         assert_eq!(block.id, "unrecognized");
         assert_eq!(block.category, "motion");
@@ -1576,27 +1601,35 @@ ende"#;
     }
 
     #[test]
-    fn test_category_prefix_with_free_text_and_label_suffix() {
-        let result = parse_internal("@motion you are great #m1", "en", false).expect("parse failed");
+    fn test_category_suffix_with_free_text_and_label_suffix() {
+        let result = parse_internal("you are great ::motion #m1", "en", false).expect("parse failed");
         let block = &result[0][0];
         assert_eq!(block.category, "motion");
         assert_eq!(block.line_label.as_deref(), Some("m1"));
     }
 
     #[test]
-    fn test_category_prefix_matches_list_block_when_text_fits() {
-        let result = parse_internal("@list add (12) to [my list v]", "en", false).expect("parse failed");
+    fn test_category_suffix_matches_list_block_when_text_fits() {
+        let result = parse_internal("add (12) to [my list v] ::list", "en", false).expect("parse failed");
         let block = &result[0][0];
         assert_eq!(block.id, "DATA_ADDTOLIST");
         assert_eq!(block.category, "list");
     }
 
     #[test]
-    fn test_category_prefix_matches_variable_block_when_text_fits() {
-        let result = parse_internal("@variable change [score v] by (1)", "en", false).expect("parse failed");
+    fn test_category_suffix_matches_variable_block_when_text_fits() {
+        let result = parse_internal("change [score v] by (1) ::variable", "en", false).expect("parse failed");
         let block = &result[0][0];
         assert_eq!(block.id, "DATA_CHANGEVARIABLEBY");
         assert_eq!(block.category, "variables");
+    }
+
+    #[test]
+    fn test_at_category_no_longer_forces_category() {
+        let result = parse_internal("@motion", "en", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.id, "unrecognized");
+        assert_eq!(block.category, "obsolete");
     }
 
     #[test]

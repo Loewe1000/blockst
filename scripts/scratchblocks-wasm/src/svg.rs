@@ -34,8 +34,13 @@ pub fn get_hat_top(w: f32) -> String {
     format!("M 0 16 c 25,-22 71,-22 96,0 L {} 16 a 4 4 0 0 1 4 4", w - 4.0)
 }
 
-pub fn get_arm(w: f32, arm_top: f32) -> String {
-    format!("L 16 {} a 4 4 0 0 0 4 4 L 28 {} {}", arm_top - 4.0, arm_top, top_notch(w, arm_top))
+pub fn get_arm(w: f32, arm_top: f32, inset_x: f32) -> String {
+    // Keep notch geometry unscaled like regular stack blocks.
+    // Only shift the arm horizontally by the mouth inset.
+    let x0 = inset_x;
+    let r = 4.0;
+    let x1 = inset_x + 12.0;
+    format!("L {} {} a {} {} 0 0 0 {} {} L {} {} {}", x0, arm_top - r, r, r, r, r, x1, arm_top, top_notch(w, arm_top))
 }
 
 pub fn stack_path(w: f32, h: f32) -> String {
@@ -62,21 +67,26 @@ pub fn mouth_path(w: f32, body_h: f32, else_h: Option<f32>, header_h: f32) -> St
     //   adjusted = max(29, raw_script_height + 3) - 2
     //   arm_y    = header_height + adjusted - 3
     //   tail_y   = arm_y + tail_height + 3  (tail_height = 40 - 11 = 29)
+    let k = (header_h / 48.0).clamp(0.6, 1.2);
+    let inset_x = 16.0 * k;
+    let tail_h = 29.0 * k;
+    let plus = 3.0 * k;
+    let minus = 2.0 * k;
     let mut y = header_h;
-    let mut path = format!("{} {}", get_top(w), get_right_and_bottom(w, y, true, 16.0));
-    let adjusted_body = (body_h + 3.0).max(29.0) - 2.0;
+    let mut path = format!("{} {}", get_top(w), get_right_and_bottom(w, y, true, inset_x));
+    let adjusted_body = (body_h + plus).max(tail_h) - minus;
     y += adjusted_body - 3.0;   // arm position
-    path.push_str(&format!(" {}", get_arm(w, y)));
+    path.push_str(&format!(" {}", get_arm(w, y, inset_x)));
     if let Some(else_height) = else_h {
-        y += 29.0 + 3.0;        // tail section: tail_height + 3
-        path.push_str(&format!(" {}", get_right_and_bottom(w, y, true, 16.0)));
-        let adjusted_else = (else_height + 3.0).max(29.0) - 2.0;
+        y += tail_h + plus;        // tail section: tail_height + 3
+        path.push_str(&format!(" {}", get_right_and_bottom(w, y, true, inset_x)));
+        let adjusted_else = (else_height + plus).max(tail_h) - minus;
         y += adjusted_else - 3.0;
-        path.push_str(&format!(" {}", get_arm(w, y)));
-        y += 29.0 + 3.0;
+        path.push_str(&format!(" {}", get_arm(w, y, inset_x)));
+        y += tail_h + plus;
         path.push_str(&format!(" {}", get_right_and_bottom(w, y, true, 0.0)));
     } else {
-        y += 29.0 + 3.0;        // tail bottom = arm + tail_height + 3
+        y += tail_h + plus;        // tail bottom = arm + tail_height + 3
         path.push_str(&format!(" {}", get_right_and_bottom(w, y, true, 0.0)));
     }
     path.push_str(" Z");
@@ -86,12 +96,17 @@ pub fn mouth_path(w: f32, body_h: f32, else_h: Option<f32>, header_h: f32) -> St
 /// Mouth path for c-block-cap blocks (like forever).
 /// Same as mouth_path but bottom is a cap (rounded, no notch).
 pub fn mouth_cap_path(w: f32, body_h: f32, header_h: f32) -> String {
+    let k = (header_h / 48.0).clamp(0.6, 1.2);
+    let inset_x = 16.0 * k;
+    let tail_h = 29.0 * k;
+    let plus = 3.0 * k;
+    let minus = 2.0 * k;
     let mut y = header_h;
-    let mut path = format!("{} {}", get_top(w), get_right_and_bottom(w, y, true, 16.0));
-    let adjusted_body = (body_h + 3.0).max(29.0) - 2.0;
+    let mut path = format!("{} {}", get_top(w), get_right_and_bottom(w, y, true, inset_x));
+    let adjusted_body = (body_h + plus).max(tail_h) - minus;
     y += adjusted_body - 3.0;   // arm position
-    path.push_str(&format!(" {}", get_arm(w, y)));
-    y += 29.0 + 3.0;            // tail bottom
+    path.push_str(&format!(" {}", get_arm(w, y, inset_x)));
+    y += tail_h + plus;            // tail bottom
     // No notch — cap-style rounded bottom
     path.push_str(&format!(" {}", get_right_and_bottom(w, y, false, 0.0)));
     path.push_str(" Z");
