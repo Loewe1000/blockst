@@ -297,7 +297,7 @@
     grid-step-opt
   } else if show-grid-legacy != false {
     if type(show-grid-legacy) == int { show-grid-legacy } else { 10 }
-  } else if mode == "grid" {
+  } else if mode == "grid" and show-grid == auto {
     1
   } else {
     none

@@ -468,59 +468,9 @@ fn to_public_node(block: ParsedBlock) -> PublicNode {
     }
 }
 
-/// Returns true if dropdown inputs on this block should be rendered as
-/// square field-dropdowns (same fill as block) rather than round input-value
-/// dropdowns (darker fill). Based on scratch-blocks JSON definitions:
-/// field_dropdown and field_variable types.
-/// Returns true if the dropdown at the given input index in this block should
-/// be rendered as square (field_dropdown, same fill as block) rather than
-/// round (input_value shadow, darker fill).
-fn is_square_dropdown_index(block_id: &str, input_idx: usize) -> bool {
-    match block_id {
-        // Pen color-parameter dropdown (color/saturation/brightness/transparency)
-        // is an input-value dropdown and should stay round.
-        "pen.changeColorParam" | "pen.setColorParam" => false,
-        // SENSING_OF: first input (%m.attribute = PROPERTY field_dropdown) is
-        // square, second (%m.spriteOrStage = OBJECT input_value shadow) is round.
-        "SENSING_OF" => input_idx == 0,
-        _ => matches!(block_id,
-            "EVENT_WHENKEYPRESSED" |
-            "EVENT_WHENGREATERTHAN" |
-            "EVENT_WHENBACKDROPSWITCHESTO" |
-            "EVENT_WHENBROADCASTRECEIVED" |
-            "OPERATORS_MATHOP" |
-            "SOUND_SETEFFECTO" | "SOUND_CHANGEEFFECTBY" |
-            "LOOKS_SETEFFECTTO" | "LOOKS_CHANGEEFFECTBY" |
-            "LOOKS_GOTOFRONTBACK" |
-            "LOOKS_GOFORWARDBACKWARDLAYERS" |
-            "LOOKS_COSTUMENUMBERNAME" |
-            "LOOKS_BACKDROPNUMBERNAME" |
-            "SENSING_CURRENT" |
-            "SENSING_SETDRAGMODE" |
-            "videoSensing.videoOn" |
-            "DATA_ITEMOFLIST" |
-            "DATA_ITEMNUMOFLIST" |
-            "DATA_LENGTHOFLIST" |
-            "DATA_LISTCONTAINSITEM" |
-            "DATA_ADDTOLIST" |
-            "DATA_DELETEOFLIST" |
-            "DATA_DELETEALLOFLIST" |
-            "DATA_INSERTATLIST" |
-            "DATA_REPLACEITEMOFLIST" |
-            "DATA_SHOWLIST" |
-            "DATA_HIDELIST" |
-            "DATA_SHOWVARIABLE" |
-            "DATA_HIDEVARIABLE" |
-            "DATA_SETVARIABLETO" |
-            "DATA_CHANGEVARIABLEBY"
-        )
-    }
-}
-
 fn to_render_block(block: ParsedBlock) -> BlockSpec {
     let has_else_body = block.has_else;
     let mut segments = Vec::new();
-    let mut dropdown_idx = 0;
     let is_proc_def = block.id == "procedures_definition";
     for child in block.children {
         match child {
@@ -566,14 +516,15 @@ fn to_render_block(block: ParsedBlock) -> BlockSpec {
                     segments.push(SegmentSpec::Block { block: Box::new(to_render_block(custom_block)) });
                     continue;
                 }
-                let square = is_dropdown_input && is_square_dropdown_index(&block.id, dropdown_idx);
-                if is_dropdown_input { dropdown_idx += 1; }
+                // [XXX v] (shape "dropdown") → square field-dropdown
+                // (XXX v) (shape "number-dropdown") → round input-value dropdown
+                // This mirrors the scratchblocks text convention and works correctly for
+                // @category-matched and unrecognized blocks alike.
                 segments.push(SegmentSpec::Input {
                     input: match input.shape.as_str() {
                         "number" => "number",
-                        "number-dropdown" | "dropdown" => {
-                            if square { "dropdown-field" } else { "dropdown" }
-                        },
+                        "dropdown" => "dropdown-field",
+                        "number-dropdown" => "dropdown",
                         "color" => "color",
                         "boolean" => "boolean",
                         _ => "string",

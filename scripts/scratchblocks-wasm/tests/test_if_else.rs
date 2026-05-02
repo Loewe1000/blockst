@@ -157,17 +157,30 @@ fn test_square_dropdowns() {
 
 #[test]
 fn test_round_dropdowns() {
-    // input_value shadow dropdowns should be round (rx=16) with darker fill
-    // "play sound [pop v]" has shadow SOUND_MENU
+    // With the [XXX v] = square, (XXX v) = round convention,
+    // round dropdowns must be written with round brackets: (pop v)
+    let input = r#"{
+        "code": "play sound (pop v)",
+        "language": "en",
+        "inline": false
+    }"#;
+    let svg = render_request_json(input).expect("render failed");
+    // Sound fill is #CF63CF, alt is #C94FC9
+    assert!(svg.contains("rx=\"16\""), "Sound dropdown (round brackets) should be round (rx=16):\n\nSVG:\n{svg}");
+    assert!(svg.contains("fill=\"#C94FC9\""), "Sound dropdown should use alt fill #C94FC9:\n\nSVG:\n{svg}");
+}
+
+#[test]
+fn test_square_bracket_sound_dropdown() {
+    // [pop v] with square brackets should render SQUARE (field-dropdown style)
     let input = r#"{
         "code": "play sound [pop v]",
         "language": "en",
         "inline": false
     }"#;
     let svg = render_request_json(input).expect("render failed");
-    // Sound fill is #CF63CF, alt is #C94FC9
-    assert!(svg.contains("rx=\"16\""), "Sound dropdown should be round (rx=16):\n\nSVG:\n{svg}");
-    assert!(svg.contains("fill=\"#C94FC9\""), "Sound dropdown should use alt fill #C94FC9:\n\nSVG:\n{svg}");
+    // Square dropdown: no rx=16, uses block fill #CF63CF (not alt #C94FC9)
+    assert!(!svg.contains("rx=\"16\""), "Sound dropdown with [v] should be square (no rx=16):\n\nSVG:\n{svg}");
 }
 
 #[test]
@@ -315,4 +328,26 @@ fn test_custom_arg_reporter() {
     let input = r#"{"code":"set [myVar v] to (var [myVar])","language":"en","inline":false}"#;
     let svg = render_request_json(input).expect("custom-arg render failed");
     assert!(svg.contains("myVar"), "SVG should contain 'myVar':\n{svg}");
+}
+
+#[test]
+fn test_category_prefix_french_list_block() {
+    // @list ajouter (12) à [add v] should be recognized as DATA_ADDTOLIST
+    use scratchblocks_wasm::parse_request_json;
+    let input = r#"{"code":"@list ajouter (12) à [add v]","language":"fr","inline":false}"#;
+    let output = parse_request_json(input).expect("parse failed");
+    let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
+    assert_eq!(parsed[0].get("id").unwrap(), "DATA_ADDTOLIST",
+        "Should be DATA_ADDTOLIST, got: {}", parsed[0].get("id").unwrap());
+}
+
+#[test]
+fn test_category_prefix_french_variable_block() {
+    // @variable mettre [myVar v] à (10) should be recognized as DATA_SETVARIABLETO
+    use scratchblocks_wasm::parse_request_json;
+    let input = r#"{"code":"@variable mettre [myVar v] à (10)","language":"fr","inline":false}"#;
+    let output = parse_request_json(input).expect("parse failed");
+    let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
+    assert_eq!(parsed[0].get("id").unwrap(), "DATA_SETVARIABLETO",
+        "Should be DATA_SETVARIABLETO, got: {}", parsed[0].get("id").unwrap());
 }
