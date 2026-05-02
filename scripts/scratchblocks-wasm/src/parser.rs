@@ -68,6 +68,8 @@ struct ParseRequest {
     #[serde(default)]
     line_number_start: Option<u32>,
     #[serde(default)]
+    line_number_first_block: Option<u32>,
+    #[serde(default)]
     line_number_gutter: Option<f32>,
     #[serde(default)]
     inset_scale: Option<f32>,
@@ -166,6 +168,7 @@ pub fn render_request_json(input: &str) -> Result<String, String> {
         theme: request.theme,
         line_numbers: request.line_numbers.unwrap_or(false),
         line_number_start: request.line_number_start.unwrap_or(1),
+        line_number_first_block: request.line_number_first_block.unwrap_or(1),
         line_number_gutter: request.line_number_gutter.unwrap_or(24.0),
         inset_scale: request.inset_scale.unwrap_or(1.0),
         font: if request.font.is_empty() { default_font() } else { request.font },
@@ -1640,6 +1643,22 @@ ende"#;
         let block = &result[0][0];
         assert_eq!(block.id, "DATA_ADDTOLIST");
         assert_eq!(block.category, "list");
+    }
+
+    #[test]
+    fn test_french_turn_right_alias_keeps_turn_icon() {
+        let result = parse_internal("tourner droite de (90) degrés", "fr", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.id, "MOTION_TURNRIGHT");
+        assert!(matches!(block.children.get(1), Some(Child::Icon(name)) if name == "turnRight"));
+    }
+
+    #[test]
+    fn test_french_control_stop_has_dropdown_input() {
+        let result = parse_internal("arrêter [tout v]", "fr", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.id, "CONTROL_STOP");
+        assert!(matches!(block.children.get(1), Some(Child::Input(input)) if input.shape == "dropdown"));
     }
 
     #[test]

@@ -1,4 +1,4 @@
-#import "@preview/blockst:0.2.1": scratch, scratch-run, set-scratch-run, set-blockst
+#import "@preview/blockst:0.2.1": scratch, scratch-run, set-blockst, set-scratch-run
 
 #set page(width: auto, height: auto, margin: 3mm, fill: none)
 
@@ -101,40 +101,35 @@ end
   grid(
     columns: (auto, auto),
     gutter: 6mm,
-    [#scratch(square-program)],
-    [#scratch-run.stage(square-program)],
+    [#scratch(square-program)], [#scratch-run.stage(square-program)],
   ),
 
   [*2) Star Rosette (Nested repeat)*],
   grid(
     columns: (auto, auto),
     gutter: 6mm,
-    [#scratch(star-rosette-program)],
-    [#scratch-run.stage(star-rosette-program)],
+    [#scratch(star-rosette-program)], [#scratch-run.stage(star-rosette-program)],
   ),
 
   [*3) Colored Spiral (Hue + pen size)*],
   grid(
     columns: (auto, auto),
     gutter: 6mm,
-    [#scratch(spiral-program)],
-    [#scratch-run.stage(spiral-program)],
+    [#scratch(spiral-program)], [#scratch-run.stage(spiral-program)],
   ),
 
   [*4) Conditional Loop*],
   grid(
     columns: (auto, auto),
     gutter: 6mm,
-    [#scratch(conditional-program)],
-    [#scratch-run.stage(conditional-program)],
+    [#scratch(conditional-program)], [#scratch-run.stage(conditional-program)],
   ),
 
   [*5) Custom Block: Triangle Pattern*],
   grid(
     columns: (auto, auto),
     gutter: 6mm,
-    [#scratch(custom-block-program)],
-    [#scratch-run.stage(custom-block-program, cursor: false)],
+    [#scratch(custom-block-program)], [#scratch-run.stage(custom-block-program, cursor: false)],
   ),
 
   [*6) Grid Preview (Axes + fixed bounds)*],

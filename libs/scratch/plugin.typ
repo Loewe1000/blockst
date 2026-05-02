@@ -1,4 +1,4 @@
-#import "options.typ": get-options, get-theme, get-scale, get-font, get-line-numbers, get-line-number-start, get-line-number-gutter, get-inset-scale
+#import "options.typ": get-options, get-theme, get-scale, get-font, get-line-numbers, get-line-number-start, get-line-number-first-block, get-line-number-gutter, get-inset-scale
 
 #let scratchblocks-renderer = plugin("plugins/scratchblocks_wasm.wasm")
 
@@ -33,6 +33,7 @@
   payload.insert("scale", _to-scale-number(get-scale(options)))
   payload.insert("line_numbers", get-line-numbers(options))
   payload.insert("line_number_start", get-line-number-start(options))
+  payload.insert("line_number_first_block", get-line-number-first-block(options))
   payload.insert("line_number_gutter", get-line-number-gutter(options))
   payload.insert("inset_scale", _to-inset-scale-number(get-inset-scale(options)))
   image(
@@ -66,6 +67,7 @@
     scale: scale,
     line_numbers: get-line-numbers(options),
     line_number_start: get-line-number-start(options),
+    line_number_first_block: get-line-number-first-block(options),
     line_number_gutter: get-line-number-gutter(options),
     inset_scale: _to-inset-scale-number(get-inset-scale(options)),
   )

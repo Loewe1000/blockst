@@ -8,6 +8,8 @@ pub struct DocumentSpec {
     pub line_numbers: bool,
     #[serde(default = "default_line_number_start")]
     pub line_number_start: u32,
+    #[serde(default = "default_line_number_first_block")]
+    pub line_number_first_block: u32,
     #[serde(default = "default_line_number_gutter")]
     pub line_number_gutter: f32,
     #[serde(default = "default_inset_scale")]
@@ -22,6 +24,10 @@ fn default_font() -> String {
 }
 
 fn default_line_number_start() -> u32 {
+    1
+}
+
+fn default_line_number_first_block() -> u32 {
     1
 }
 

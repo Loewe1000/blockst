@@ -14,13 +14,15 @@
 #let _with-local-options(
   theme: auto,
   scale: auto,
+  line-numbering: auto,
   line-numbers: auto,
   line-number-start: auto,
+  line-number-first-block: auto,
   line-number-gutter: auto,
   inset-scale: auto,
   body,
 ) = context {
-  if theme == auto and scale == auto and line-numbers == auto and line-number-start == auto and line-number-gutter == auto and inset-scale == auto {
+  if theme == auto and scale == auto and line-numbering == auto and line-numbers == auto and line-number-start == auto and line-number-first-block == auto and line-number-gutter == auto and inset-scale == auto {
     return body
   }
 
@@ -28,8 +30,10 @@
   let resolved-opts = previous-opts
   resolved-opts.theme = if theme == auto { previous-opts.at("theme", default: "normal") } else { theme }
   resolved-opts.scale = if scale == auto { previous-opts.at("scale", default: 100%) } else { scale }
+  resolved-opts.insert("line-numbering", if line-numbering == auto { previous-opts.at("line-numbering", default: none) } else { line-numbering })
   resolved-opts.insert("line-numbers", if line-numbers == auto { previous-opts.at("line-numbers", default: false) } else { line-numbers })
   resolved-opts.insert("line-number-start", if line-number-start == auto { previous-opts.at("line-number-start", default: 1) } else { line-number-start })
+  resolved-opts.insert("line-number-first-block", if line-number-first-block == auto { previous-opts.at("line-number-first-block", default: 1) } else { line-number-first-block })
   resolved-opts.insert("line-number-gutter", if line-number-gutter == auto { previous-opts.at("line-number-gutter", default: 24) } else { line-number-gutter })
   resolved-opts.insert("inset-scale", if inset-scale == auto { previous-opts.at("inset-scale", default: 1.0) } else { inset-scale })
   [
@@ -44,8 +48,10 @@
 #let blockst(
   theme: auto,
   scale: auto,
+  line-numbering: auto,
   line-numbers: auto,
   line-number-start: auto,
+  line-number-first-block: auto,
   line-number-gutter: auto,
   inset-scale: auto,
   spacing: 1.5em,
@@ -54,8 +60,10 @@
   _with-local-options(
     theme: theme,
     scale: scale,
+    line-numbering: line-numbering,
     line-numbers: line-numbers,
     line-number-start: line-number-start,
+    line-number-first-block: line-number-first-block,
     line-number-gutter: line-number-gutter,
     inset-scale: inset-scale,
     stack(spacing: spacing, body),
@@ -68,8 +76,10 @@
   scale: none,
   stroke-width: none,
   font: none,
+  line-numbering: none,
   line-numbers: none,
   line-number-start: none,
+  line-number-first-block: none,
   line-number-gutter: none,
   inset-scale: none,
 ) = {
@@ -79,8 +89,10 @@
     if scale != none { new-opts.insert("scale", scale) }
     if stroke-width != none { new-opts.insert("stroke-width", stroke-width) }
     if font != none { new-opts.insert("font", font) }
+    if line-numbering != none { new-opts.insert("line-numbering", line-numbering) }
     if line-numbers != none { new-opts.insert("line-numbers", line-numbers) }
     if line-number-start != none { new-opts.insert("line-number-start", line-number-start) }
+    if line-number-first-block != none { new-opts.insert("line-number-first-block", line-number-first-block) }
     if line-number-gutter != none { new-opts.insert("line-number-gutter", line-number-gutter) }
     if inset-scale != none { new-opts.insert("inset-scale", inset-scale) }
     new-opts
@@ -144,8 +156,10 @@
   language: "en",
   theme: auto,
   scale: auto,
+  line-numbering: auto,
   line-numbers: auto,
   line-number-start: auto,
+  line-number-first-block: auto,
   line-number-gutter: auto,
   inset-scale: auto,
 ) = context {
@@ -154,8 +168,10 @@
   _with-local-options(
     theme: theme,
     scale: scale,
+    line-numbering: line-numbering,
     line-numbers: line-numbers,
     line-number-start: line-number-start,
+    line-number-first-block: line-number-first-block,
     line-number-gutter: line-number-gutter,
     inset-scale: inset-scale,
     [

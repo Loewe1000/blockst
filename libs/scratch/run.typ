@@ -1,6 +1,13 @@
 #import "interpreter.typ": _scratch-run-commands
 #import "text/execute.typ": execute-scratch-text
 
+#let _normalize-source(program) = {
+  if type(program) == content and program.func() == raw {
+    program = program.text
+  }
+  if type(program) == str { program } else { str(program) }
+}
+
 #let stage(
   program,
   language: "en",
@@ -12,6 +19,7 @@
   cursor: auto,
   border: auto,
 ) = {
+  let program = _normalize-source(program)
   let resolved-size = if size == auto { auto } else { size }
   let start-x = if start == auto { auto } else { start.at("x", default: auto) }
   let start-y = if start == auto { auto } else { start.at("y", default: auto) }
@@ -53,6 +61,7 @@
   cursor: auto,
   fit: auto,
 ) = {
+  let program = _normalize-source(program)
   let start-x = if start == auto { auto } else { start.at("x", default: auto) }
   let start-y = if start == auto { auto } else { start.at("y", default: auto) }
   let start-angle = if start == auto { auto } else { start.at("angle", default: auto) }

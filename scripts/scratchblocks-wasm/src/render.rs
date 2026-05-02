@@ -25,7 +25,9 @@ pub fn render_document(document: &DocumentSpec) -> String {
     let font = &document.font;
     let show_line_numbers = document.line_numbers;
     let line_number_start = document.line_number_start;
+    let line_number_first_block = document.line_number_first_block.max(1);
     let line_number_offset = line_number_start.saturating_sub(1);
+    let line_number_base = line_number_first_block.saturating_sub(1);
     let line_number_gutter = document.line_number_gutter.max(12.0);
 
     let mut script_svgs = String::new();
@@ -45,7 +47,13 @@ pub fn render_document(document: &DocumentSpec) -> String {
             let mut markers = Vec::new();
             collect_script_line_markers(&script.blocks, 1.0, &mut markers);
             for marker in markers {
-                let shown = marker.line.saturating_add(line_number_offset);
+                if marker.line < line_number_first_block {
+                    continue;
+                }
+                let shown = marker
+                    .line
+                    .saturating_sub(line_number_base)
+                    .saturating_add(line_number_offset);
                 line_svgs.push_str(&format!(
                     "<text class=\"sb-line-number\" x=\"{}\" y=\"{}\" text-anchor=\"end\">{}</text>",
                     line_number_gutter - 6.0,
@@ -755,6 +763,7 @@ mod tests {
             theme: Some("normal".to_string()),
             line_numbers: true,
             line_number_start: 1,
+            line_number_first_block: 1,
             line_number_gutter: 24.0,
             inset_scale: 1.0,
             font: "Helvetica Neue".to_string(),
@@ -783,5 +792,54 @@ mod tests {
         let svg = render_document(&doc);
         assert!(svg.contains("sb-line-number"));
         assert!(svg.contains(">1</text>"));
+    }
+
+    #[test]
+    fn test_render_document_line_numbers_start_from_second_block() {
+        let doc = DocumentSpec {
+            scale: Some(1.0),
+            theme: Some("normal".to_string()),
+            line_numbers: true,
+            line_number_start: 1,
+            line_number_first_block: 2,
+            line_number_gutter: 24.0,
+            inset_scale: 1.0,
+            font: "Helvetica Neue".to_string(),
+            scripts: vec![ScriptSpec {
+                blocks: vec![
+                    BlockSpec {
+                        shape: "hat".to_string(),
+                        category: "events".to_string(),
+                        line_number: Some(1),
+                        segments: vec![SegmentSpec::Text { value: "when".to_string() }],
+                        body: vec![],
+                        else_body: vec![],
+                        else_segments: vec![],
+                    },
+                    BlockSpec {
+                        shape: "stack".to_string(),
+                        category: "motion".to_string(),
+                        line_number: Some(2),
+                        segments: vec![
+                            SegmentSpec::Text { value: "move".to_string() },
+                            SegmentSpec::Input {
+                                input: "number".to_string(),
+                                value: "10".to_string(),
+                                color: "".to_string(),
+                                nested: None,
+                            },
+                        ],
+                        body: vec![],
+                        else_body: vec![],
+                        else_segments: vec![],
+                    },
+                ],
+            }],
+        };
+
+        let svg = render_document(&doc);
+        assert!(svg.contains("sb-line-number"));
+        assert!(svg.contains(">1</text>"));
+        assert!(!svg.contains(">2</text>"));
     }
 }
