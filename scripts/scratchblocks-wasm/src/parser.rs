@@ -703,7 +703,9 @@ impl<'a> Parser<'a> {
             let mut best: Option<&str> = None;
             for id in &candidate_ids {
                 if let Some(block_def) = data().commands_by_id.get(id) {
-                    if has_dropdown_input && block_def.category == "list" {
+                    // In ambiguous locales (e.g. FR "ajouter ... à ..."), default to variables;
+                    // list can still be forced explicitly via ::list.
+                    if has_dropdown_input && block_def.category == "variables" {
                         best = Some(id);
                         break;
                     }
@@ -1622,6 +1624,22 @@ ende"#;
         let block = &result[0][0];
         assert_eq!(block.id, "DATA_CHANGEVARIABLEBY");
         assert_eq!(block.category, "variables");
+    }
+
+    #[test]
+    fn test_french_ajouter_defaults_to_variable() {
+        let result = parse_internal("ajouter (test) à [list v]", "fr", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.id, "DATA_CHANGEVARIABLEBY");
+        assert_eq!(block.category, "variables");
+    }
+
+    #[test]
+    fn test_french_ajouter_forced_list_with_category_suffix() {
+        let result = parse_internal("ajouter (test) à [list v] ::list", "fr", false).expect("parse failed");
+        let block = &result[0][0];
+        assert_eq!(block.id, "DATA_ADDTOLIST");
+        assert_eq!(block.category, "list");
     }
 
     #[test]
