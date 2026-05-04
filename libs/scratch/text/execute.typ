@@ -101,10 +101,11 @@
 #let _procedure-name(node) = {
   let words = ()
   let skipped-prefix = false
+  let node-id = node.at("id", default: "")
   for part in node.at("parts", default: ()) {
     if part.at("kind", default: "") == "label" {
       let value = part.at("value", default: "")
-      if not skipped-prefix and (value == "define" or value == "call") {
+      if not skipped-prefix and (node-id == "procedures_definition" or node-id == "procedures_call" or value == "define" or value == "call") {
         skipped-prefix = true
       } else {
         skipped-prefix = true

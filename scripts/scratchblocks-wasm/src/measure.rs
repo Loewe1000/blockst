@@ -318,36 +318,33 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
             (width, height)
         }
         "define-hat" => {
-            // Layout: pad_left(8) + "define"(w) + margin(4.447) + remaining... + pad_right(8)
-            let define_w = text_width("define");
-            // Compute remaining content width (without "define" label)
-            let mut remaining_w: f32 = 0.0;
-            let mut prev: Option<&SegmentSpec> = None;
-            for seg in &block.segments {
-                if matches!(seg, SegmentSpec::Text { value } if value == "define") {
-                    continue;
-                }
-                if let Some(p) = prev {
-                    remaining_w += margin_between(p, seg);
-                }
-                remaining_w += segment_width(seg);
-                prev = Some(seg);
-            }
-            // Add padding for remaining segments
-            let inner_content_w = if remaining_w > 0.0 {
-                let mut temp_segs: Vec<SegmentSpec> = block.segments.clone();
-                temp_segs.retain(|seg| !matches!(seg, SegmentSpec::Text { value } if value == "define"));
-                if let (Some(first), Some(last)) = (temp_segs.first(), temp_segs.last()) {
-                    remaining_w + horizontal_padding(block, first) + horizontal_padding(block, last)
-                } else {
-                    remaining_w
-                }
+            // Layout: pad_left(8) + define-label(w) + gap(8) + remaining... + pad_right(8)
+            // Use the first text segment as localized define label (e.g. "Definiere").
+            let (define_w, start_idx) = match block.segments.first() {
+                Some(SegmentSpec::Text { value }) => (text_width(value), 1usize),
+                _ => (text_width("define"), 0usize),
+            };
+
+            // Measure the inner shape exactly like render_define_hat uses it
+            // to avoid width drift and excessive right-side slack.
+            let remaining_segments: Vec<SegmentSpec> = block.segments[start_idx..].to_vec();
+            let inner_w = if remaining_segments.is_empty() {
+                100.0
             } else {
-                0.0
+                let temp = BlockSpec {
+                    shape: "stack".to_string(),
+                    category: "custom-arg".to_string(),
+                    line_number: None,
+                    segments: remaining_segments,
+                    body: vec![],
+                    else_body: vec![],
+                    else_segments: vec![],
+                };
+                block_size(&temp).0.max(100.0)
             };
             // Outer width = pad(8) + define + gap + inner_content + pad(8)
             let define_gap: f32 = s(8.0);
-            let width = (s(8.0) + define_w + define_gap + inner_content_w + s(8.0)).max(s(100.0));
+            let width = (s(8.0) + define_w + define_gap + inner_w + s(8.0)).max(s(100.0));
             let nested_h = max_nested_height(block);
             let base_h: f32 = v(32.0, 52.0);
             let height = if nested_h > 32.0 { base_h + (nested_h - 32.0) } else { base_h };
