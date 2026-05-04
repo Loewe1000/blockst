@@ -188,10 +188,16 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     // Inner outline: 48px tall (line_height=40 + corner_radii=8)
     let content_h = 48.0;
     
-    // Compute inner outline width from remaining segments (without "define")
-    let define_text_width = text_width("define");
+    // Compute inner outline width from remaining segments (without leading define keyword)
     let mut remaining: Vec<SegmentSpec> = block.segments.clone();
-    remaining.retain(|seg| !matches!(seg, SegmentSpec::Text { value } if value == "define"));
+    let define_label = if let Some(SegmentSpec::Text { value }) = remaining.first() {
+        let label = value.clone();
+        remaining.remove(0);
+        label
+    } else {
+        "define".to_string()
+    };
+    let define_text_width = text_width(&define_label);
     
     let inner_content_w = if remaining.is_empty() {
         0.0
@@ -211,14 +217,14 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     };
     let inner_w = inner_content_w.max(100.0);
     
-    // "define" text in left section, vertically centered
+    // Define keyword text in left section, vertically centered
     let define_y = 20.0 + (48.0 - 12.0) / 2.0;
     // Position of inner outline: after pad(8) + "define" + margin
     let define_gap = 8.0;
     let inner_x = 8.0 + define_text_width + define_gap;
     
-    svg.push_str(&format!("<text class=\"sb-label\" x=\"0\" y=\"13\" fill=\"{}\" transform=\"translate(10 {})\">define</text>",
-        colors.text, define_y));
+    svg.push_str(&format!("<text class=\"sb-label\" x=\"0\" y=\"13\" fill=\"{}\" transform=\"translate(10 {})\">{}</text>",
+        colors.text, define_y, define_label));
     
     // Inner outline starts after "define" label + gap
     svg.push_str(&format!("<g transform=\"translate({} 20)\">", inner_x));

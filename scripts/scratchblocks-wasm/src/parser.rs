@@ -475,9 +475,22 @@ fn to_render_block(block: ParsedBlock) -> BlockSpec {
     let has_else_body = block.has_else;
     let mut segments = Vec::new();
     let is_proc_def = block.id == "procedures_definition";
+    let is_proc_call = block.id == "procedures_call";
+    let call_keyword = data()
+        .languages
+        .get(block.language.as_str())
+        .map(|l| l.call_spec.as_str())
+        .unwrap_or("call");
+    let mut skipped_proc_call_prefix = false;
+
     for child in block.children {
         match child {
             Child::Label(value) => {
+                if is_proc_call && !skipped_proc_call_prefix && value.eq_ignore_ascii_case(call_keyword) {
+                    skipped_proc_call_prefix = true;
+                    continue;
+                }
+                skipped_proc_call_prefix = true;
                 segments.push(SegmentSpec::Text { value })
             }
             Child::Icon(name) => segments.push(SegmentSpec::Icon { name }),

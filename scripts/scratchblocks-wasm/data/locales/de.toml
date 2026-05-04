@@ -214,7 +214,7 @@ SOUND_VOLUME = "Lautstärke"
 "scratchblocks:end" = "Ende"
 control_else = "sonst"
 
-procedures_definition = "define %1"
+procedures_definition = "Definiere %1"
 procedures_call = "call %1"
 argument_reporter_string_number = "var %1"
 argument_reporter_boolean = "%1"
