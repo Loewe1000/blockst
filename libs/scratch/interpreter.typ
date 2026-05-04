@@ -22,10 +22,12 @@
   cursor: none,
   stage: none,
   grid: none,
+  language: none,
 ) = {
   blockst-run-options.update(old => {
     let new-opts = old
     if scale != none { new-opts.insert("scale", scale) }
+    if language != none { new-opts.insert("language", language) }
     if start != none {
       new-opts.insert("start", start)
       new-opts.insert("start-x", start.at("x", default: old.at("start-x", default: 0)))

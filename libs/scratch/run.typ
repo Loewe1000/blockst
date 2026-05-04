@@ -1,4 +1,4 @@
-#import "interpreter.typ": _scratch-run-commands
+#import "interpreter.typ": _scratch-run-commands, blockst-run-options
 #import "text/execute.typ": execute-scratch-text
 
 #let _normalize-source(program) = {
@@ -10,7 +10,7 @@
 
 #let stage(
   program,
-  language: "en",
+  language: auto,
   size: auto,
   scale: auto,
   start: auto,
@@ -18,8 +18,10 @@
   background: auto,
   cursor: auto,
   border: auto,
-) = {
+) = context {
   let program = _normalize-source(program)
+  let options = blockst-run-options.final()
+  let lang = if language != auto { language } else { options.at("language", default: "en") }
   let resolved-size = if size == auto { auto } else { size }
   let start-x = if start == auto { auto } else { start.at("x", default: auto) }
   let start-y = if start == auto { auto } else { start.at("y", default: auto) }
@@ -41,13 +43,13 @@
     background: background,
     show-cursor: cursor,
     show-border: border,
-    ..execute-scratch-text(program, language: language),
+    ..execute-scratch-text(program, language: lang),
   )
 }
 
 #let grid(
   program,
-  language: "en",
+  language: auto,
   x: auto,
   y: auto,
   step: auto,
@@ -60,8 +62,10 @@
   grid-style: auto,
   cursor: auto,
   fit: auto,
-) = {
+) = context {
   let program = _normalize-source(program)
+  let options = blockst-run-options.final()
+  let lang = if language != auto { language } else { options.at("language", default: "en") }
   let start-x = if start == auto { auto } else { start.at("x", default: auto) }
   let start-y = if start == auto { auto } else { start.at("y", default: auto) }
   let start-angle = if start == auto { auto } else { start.at("angle", default: auto) }
@@ -86,6 +90,6 @@
     view-x: x,
     view-y: y,
     fit: fit,
-    ..execute-scratch-text(program, language: language),
+    ..execute-scratch-text(program, language: lang),
   )
 }

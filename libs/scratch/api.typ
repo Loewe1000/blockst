@@ -20,9 +20,10 @@
   line-number-first-block: auto,
   line-number-gutter: auto,
   inset-scale: auto,
+  language: auto,
   body,
 ) = context {
-  if theme == auto and scale == auto and line-numbering == auto and line-numbers == auto and line-number-start == auto and line-number-first-block == auto and line-number-gutter == auto and inset-scale == auto {
+  if theme == auto and scale == auto and line-numbering == auto and line-numbers == auto and line-number-start == auto and line-number-first-block == auto and line-number-gutter == auto and inset-scale == auto and language == auto {
     return body
   }
 
@@ -36,6 +37,7 @@
   resolved-opts.insert("line-number-first-block", if line-number-first-block == auto { previous-opts.at("line-number-first-block", default: 1) } else { line-number-first-block })
   resolved-opts.insert("line-number-gutter", if line-number-gutter == auto { previous-opts.at("line-number-gutter", default: 24) } else { line-number-gutter })
   resolved-opts.insert("inset-scale", if inset-scale == auto { previous-opts.at("inset-scale", default: 1.0) } else { inset-scale })
+  resolved-opts.insert("language", if language == auto { previous-opts.at("language", default: "en") } else { language })
   [
     #hide(scratch-block-options.update(_ => resolved-opts))
     #body
@@ -54,6 +56,7 @@
   line-number-first-block: auto,
   line-number-gutter: auto,
   inset-scale: auto,
+  language: auto,
   spacing: 1.5em,
   body,
 ) = context {
@@ -66,6 +69,7 @@
     line-number-first-block: line-number-first-block,
     line-number-gutter: line-number-gutter,
     inset-scale: inset-scale,
+    language: language,
     stack(spacing: spacing, body),
   )
 }
@@ -82,6 +86,7 @@
   line-number-first-block: none,
   line-number-gutter: none,
   inset-scale: none,
+  language: none,
 ) = {
   scratch-block-options.update(old => {
     let new-opts = old
@@ -95,6 +100,7 @@
     if line-number-first-block != none { new-opts.insert("line-number-first-block", line-number-first-block) }
     if line-number-gutter != none { new-opts.insert("line-number-gutter", line-number-gutter) }
     if inset-scale != none { new-opts.insert("inset-scale", inset-scale) }
+    if language != none { new-opts.insert("language", language) }
     new-opts
   })
 }
@@ -153,7 +159,7 @@
 /// Supports 26 languages: en, de, fr, es, it, pt, nl, pl, ru, ja, ...
 #let scratch(
   text,
-  language: "en",
+  language: auto,
   theme: auto,
   scale: auto,
   line-numbering: auto,
@@ -163,8 +169,10 @@
   line-number-gutter: auto,
   inset-scale: auto,
 ) = context {
+  let opts = get-options()
+  let lang = if language != auto { language } else { opts.at("language", default: "en") }
   let source = _normalize-source(text)
-  let labels = _collect-labels-from-nodes(_generic-parse(source, language: language))
+  let labels = _collect-labels-from-nodes(_generic-parse(source, language: lang))
   _with-local-options(
     theme: theme,
     scale: scale,
@@ -174,9 +182,10 @@
     line-number-first-block: line-number-first-block,
     line-number-gutter: line-number-gutter,
     inset-scale: inset-scale,
+    language: lang,
     [
       #hide(_merge-labels(labels))
-      #_generic-render(source, language: language)
+      #_generic-render(source, language: lang)
     ],
   )
 }
