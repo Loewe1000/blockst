@@ -76,7 +76,7 @@ fi
 
 mkdir -p "$TARGET_DIR"
 
-rsync -a --delete \
+rsync -a --delete --delete-excluded \
   --exclude=".git" \
   --exclude=".gitignore" \
   --exclude=".gitattributes" \
