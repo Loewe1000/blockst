@@ -80,6 +80,7 @@ rsync -a --delete \
   --exclude=".git" \
   --exclude=".gitignore" \
   --exclude=".gitattributes" \
+  --exclude=".github/" \
   --exclude="*.pdf" \
   --exclude=".DS_Store" \
   --exclude="scripts/" \
