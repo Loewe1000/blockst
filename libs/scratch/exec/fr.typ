@@ -18,6 +18,8 @@
 #let ajouter-y(y: 10) = exec-core.change-y(dy: y)
 
 // Reporters
+#let position-x() = exec-core.x-position()
+#let position-y() = exec-core.y-position()
 #let direction() = exec-core.direction()
 
 // =====================================================
@@ -40,10 +42,14 @@
 
 #let mettre-variable(nom, valeur) = exec-core.set-variable(nom, valeur)
 #let ajouter-variable(nom, delta) = exec-core.change-variable(nom, delta)
+#let variable(nom) = exec-core.variable(nom)
 
+#let addition(a, b) = exec-core.plus(a, b)
+#let soustraction(a, b) = exec-core.minus(a, b)
 #let multiplication(a, b) = exec-core.multiply(a, b)
 #let division(a, b) = exec-core.divide(a, b)
 #let aléatoire(de: 1, à: 10) = exec-core.random(from: de, to: à)
+#let modulo(a, b) = exec-core.modulo(a, b)
 #let arrondi(nombre) = exec-core.round(nombre)
 
 #let supérieur(a, b) = exec-core.greater(a, b)
@@ -70,6 +76,8 @@
 // =====================================================
 // AIDES
 // =====================================================
+
+#let fermer() = exec-core.close()
 
 #let carré(taille: 50) = exec-core.square(size: taille)
 #let triangle(taille: 50) = exec-core.triangle(size: taille)

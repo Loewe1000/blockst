@@ -165,13 +165,13 @@
 
   let normalize-pen-param(param) = {
     let p = lower(str(param).trim())
-    if p == "hue" or p == "color" or p == "farbe" {
+    if p == "hue" or p == "color" or p == "farbe" or p == "couleur" or p == "teinte" {
       "hue"
     } else if p == "saturation" or p == "sättigung" or p == "saettigung" {
       "saturation"
-    } else if p == "brightness" or p == "helligkeit" or p == "shade" or p == "farbstärke" or p == "farbstaerke" {
+    } else if p == "brightness" or p == "helligkeit" or p == "shade" or p == "farbstärke" or p == "farbstaerke" or p == "luminosité" or p == "luminosite" {
       "brightness"
-    } else if p == "transparency" or p == "durchsichtigkeit" or p == "transparenz" {
+    } else if p == "transparency" or p == "durchsichtigkeit" or p == "transparenz" or p == "transparence" {
       "transparency"
     } else {
       p
