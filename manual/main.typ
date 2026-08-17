@@ -48,7 +48,7 @@ turn cw (15) degrees
 - *Version:* 0.3.0
 - *License:* MIT
 - *Repository:* #link("https://github.com/Loewe1000/blockst")[github.com/Loewe1000/blockst]
-- *Compiler requirement:* Typst 0.13.1+
+- *Compiler requirement:* Typst 0.15.0+
 - *Font requirement:* Designed for Helvetica Neue (Scratch look). On Linux/Windows install a compatible font (e.g. Nimbus Sans) or override via #link("#set-blockst")[set-blockst].
 
 = Core Rendering API <core-api>

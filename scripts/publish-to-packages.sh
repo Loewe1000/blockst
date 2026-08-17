@@ -84,6 +84,7 @@ rsync -a --delete --delete-excluded \
   --exclude="*.pdf" \
   --exclude=".DS_Store" \
   --exclude="scripts/" \
+  --exclude="manual/main.html" \
   "$BLOCKST_DIR/" \
   "$TARGET_DIR/"
 
