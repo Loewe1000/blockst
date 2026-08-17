@@ -7,7 +7,7 @@ repository = "https://github.com/Loewe1000/blockst"
 keywords = ["scratch", "education", "programming", "blocks"]
 categories = ["visualization", "components", "languages"]
 disciplines = ["education", "computer-science"]
-compiler = "0.13.1"
+compiler = "0.15.0"
 exclude = [
 	".DS_Store",
 	"*.pdf",
