@@ -83,7 +83,34 @@ pub fn render_document(document: &DocumentSpec) -> String {
     )
 }
 
+/// Build a CSS font stack from the configured family.
+///
+/// The family is quoted so that names containing spaces survive CSS parsing,
+/// and Scratch-like fallbacks are appended. Without them an SVG renderer that
+/// cannot resolve the family falls back to its own default font — inside a
+/// Typst `raw` block that default is monospace, which breaks the layout
+/// because the widths were measured with the configured family.
+fn css_font_stack(font: &str) -> String {
+    let font = font.trim();
+    if font.is_empty() {
+        return "\"Helvetica Neue\", Helvetica, Arial, sans-serif".to_string();
+    }
+    if font.contains(',') || font.starts_with('"') || font.starts_with('\'') {
+        return font.to_string();
+    }
+
+    let mut stack = format!("\"{}\"", font.replace('"', ""));
+    for fallback in ["Helvetica Neue", "Helvetica", "Arial"] {
+        if !font.eq_ignore_ascii_case(fallback) {
+            stack.push_str(&format!(", \"{fallback}\""));
+        }
+    }
+    stack.push_str(", sans-serif");
+    stack
+}
+
 fn defs(theme: &str, font: &str) -> String {
+    let font = &css_font_stack(font);
     let text_fill = if theme == "high-contrast" || theme == "print" { "#000" } else { "#fff" };
 
     let (flag_outer, flag_inner) = match theme {

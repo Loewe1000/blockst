@@ -36,6 +36,7 @@
   payload.insert("line_number_first_block", get-line-number-first-block(options))
   payload.insert("line_number_gutter", get-line-number-gutter(options))
   payload.insert("inset_scale", _to-inset-scale-number(get-inset-scale(options)))
+  set text(font: get-font(options))
   image(
     scratchblocks-renderer.render_json(bytes(json.encode(payload))),
     format: "svg",
@@ -92,6 +93,11 @@
     render-payload.insert("widths", widths)
     render-payload.insert("font", font-family)
 
+    // The SVG names the block font itself, but an unresolvable family falls
+    // back to the ambient Typst font — monospace inside a raw block, which is
+    // how #show: raw-scratch() ended up with clipped labels. Pin the ambient
+    // font to the family the widths were measured with.
+    set text(font: font-family)
     image(
       scratchblocks-renderer.render_code_json(bytes(json.encode(render-payload))),
       format: "svg",
