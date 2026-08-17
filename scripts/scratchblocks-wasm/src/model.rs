@@ -16,6 +16,10 @@ pub struct DocumentSpec {
     pub inset_scale: f32,
     #[serde(default = "default_font")]
     pub font: String,
+    /// Lay the blocks out right-to-left. Set from the locale's own `dir`
+    /// key, or forced by the caller via the JSON payload.
+    #[serde(default)]
+    pub rtl: bool,
     pub scripts: Vec<ScriptSpec>,
 }
 

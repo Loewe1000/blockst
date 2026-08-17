@@ -1,5 +1,7 @@
 # fa locale
 
+
+dir = "rtl"
 [specs]
 CONTROL_CREATECLONEOF = "مشابه %1 را بساز"
 CONTROL_DELETETHISCLONE = "این مشابه را حذف کن"

@@ -1,5 +1,6 @@
 // Auto-generated locale module. Do not edit.
 #![allow(dead_code, unused_imports)]
+const LOCALE_AR: &str = include_str!("../../data/locales/ar.toml");
 const LOCALE_CA: &str = include_str!("../../data/locales/ca.toml");
 const LOCALE_CS: &str = include_str!("../../data/locales/cs.toml");
 const LOCALE_CY: &str = include_str!("../../data/locales/cy.toml");
@@ -27,6 +28,7 @@ const LOCALE_SL: &str = include_str!("../../data/locales/sl.toml");
 const LOCALE_TR: &str = include_str!("../../data/locales/tr.toml");
 
 pub(crate) const LOCALE_DATA: &[(&str, &str)] = &[
+        ("ar", LOCALE_AR),
         ("ca", LOCALE_CA),
         ("cs", LOCALE_CS),
         ("cy", LOCALE_CY),

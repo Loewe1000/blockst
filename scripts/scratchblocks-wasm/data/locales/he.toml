@@ -1,5 +1,7 @@
 # he locale
 
+
+dir = "rtl"
 [specs]
 CONTROL_CREATECLONEOF = "יצירת כפיל של %1"
 CONTROL_DELETETHISCLONE = "מחק כפיל זה"
