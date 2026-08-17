@@ -14,6 +14,7 @@
 #let _with-local-options(
   theme: auto,
   scale: auto,
+  font: auto,
   line-numbering: auto,
   line-numbers: auto,
   line-number-start: auto,
@@ -23,7 +24,7 @@
   language: auto,
   body,
 ) = context {
-  if theme == auto and scale == auto and line-numbering == auto and line-numbers == auto and line-number-start == auto and line-number-first-block == auto and line-number-gutter == auto and inset-scale == auto and language == auto {
+  if theme == auto and scale == auto and font == auto and line-numbering == auto and line-numbers == auto and line-number-start == auto and line-number-first-block == auto and line-number-gutter == auto and inset-scale == auto and language == auto {
     return body
   }
 
@@ -31,6 +32,7 @@
   let resolved-opts = previous-opts
   resolved-opts.theme = if theme == auto { previous-opts.at("theme", default: "normal") } else { theme }
   resolved-opts.scale = if scale == auto { previous-opts.at("scale", default: 100%) } else { scale }
+  resolved-opts.insert("font", if font == auto { previous-opts.at("font", default: "Helvetica Neue") } else { font })
   resolved-opts.insert("line-numbering", if line-numbering == auto { previous-opts.at("line-numbering", default: none) } else { line-numbering })
   resolved-opts.insert("line-numbers", if line-numbers == auto { previous-opts.at("line-numbers", default: false) } else { line-numbers })
   resolved-opts.insert("line-number-start", if line-number-start == auto { previous-opts.at("line-number-start", default: 1) } else { line-number-start })
@@ -50,6 +52,7 @@
 #let blockst(
   theme: auto,
   scale: auto,
+  font: auto,
   line-numbering: auto,
   line-numbers: auto,
   line-number-start: auto,
@@ -63,6 +66,7 @@
   _with-local-options(
     theme: theme,
     scale: scale,
+    font: font,
     line-numbering: line-numbering,
     line-numbers: line-numbers,
     line-number-start: line-number-start,
@@ -162,6 +166,7 @@
   language: auto,
   theme: auto,
   scale: auto,
+  font: auto,
   line-numbering: auto,
   line-numbers: auto,
   line-number-start: auto,
@@ -176,6 +181,7 @@
   _with-local-options(
     theme: theme,
     scale: scale,
+    font: font,
     line-numbering: line-numbering,
     line-numbers: line-numbers,
     line-number-start: line-number-start,

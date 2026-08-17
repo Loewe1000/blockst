@@ -1,4 +1,4 @@
-#import "@preview/blockst:0.2.1": raw-scratch
+#import "@preview/blockst:0.3.0": raw-scratch
 
 #set page(width: auto, height: auto, margin: 3mm, fill: none)
 

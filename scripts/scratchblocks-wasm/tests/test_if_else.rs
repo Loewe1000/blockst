@@ -314,11 +314,23 @@ fn test_procedure_definition() {
 
 #[test]
 fn test_call_block() {
-    // "call" prefix should be recognized as custom stack block
+    // "call" prefix marks a custom stack block; like Scratch itself, the
+    // keyword is consumed and only the procedure name is drawn.
     use scratchblocks_wasm::render_request_json;
     let input = r#"{"code":"call my block","language":"en","inline":false}"#;
     let svg = render_request_json(input).expect("call render failed");
-    assert!(svg.contains("call"), "SVG should contain 'call':\n{svg}");
+    assert!(svg.contains(">my<"), "SVG should contain the procedure name:\n{svg}");
+    assert!(!svg.contains(">call<"), "SVG should not draw the 'call' keyword:\n{svg}");
+}
+
+#[test]
+fn test_call_block_localized_keyword() {
+    // The keyword is taken from the locale, so "appeler" must be consumed too.
+    use scratchblocks_wasm::render_request_json;
+    let input = r#"{"code":"appeler saut","language":"fr","inline":false}"#;
+    let svg = render_request_json(input).expect("fr call render failed");
+    assert!(svg.contains(">saut<"), "SVG should contain the procedure name:\n{svg}");
+    assert!(!svg.contains(">appeler<"), "SVG should not draw the 'appeler' keyword:\n{svg}");
 }
 
 #[test]

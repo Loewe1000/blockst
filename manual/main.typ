@@ -19,7 +19,7 @@ The current renderer uses a text-to-WASM pipeline: Typst passes Scratch text to 
 
 #info(title: "Core Design")[
   - Fully text-based: write Scratch blocks as plain text, get rendered blocks.
-  - _26 languages_ supported via built-in WASM locale data.
+  - _26 languages_ supported via built-in WASM locale data, including right-to-left scripts.
   - _Localized_ block rendering follows official Scratch translations.
   - _Turtle graphics_ execution engine for demonstrating program flow visually.
   - _SB3 import_ helpers for reading real Scratch project files.
@@ -32,7 +32,7 @@ The current renderer uses a text-to-WASM pipeline: Typst passes Scratch text to 
 == Quick start <quick-start>
 
 ```typst
-#import "@preview/blockst:0.2.1": blockst, scratch, raw-scratch, sb3
+#import "@preview/blockst:0.3.0": blockst, scratch, raw-scratch, sb3
 
 #scratch("
 when green flag clicked
@@ -45,7 +45,7 @@ turn cw (15) degrees
 
 == Package information <package-info>
 
-- *Version:* 0.2.1
+- *Version:* 0.3.0
 - *License:* MIT
 - *Repository:* #link("https://github.com/Loewe1000/blockst")[github.com/Loewe1000/blockst]
 - *Compiler requirement:* Typst 0.13.1+
@@ -85,8 +85,9 @@ The primary function for rendering Scratch blocks. It parses Scratch-like text a
   table.header([*Name*], [*Default*], [*Description*]),
   [`text`], [`—` (required)], [Scratch block text. Supports blocks, reporters, booleans, inputs, dropdowns, and nested control structures.],
   [`language`], [`"en"`], [Locale for block text. See #link("#languages")[Languages] for available options.],
-  [`theme`], [`auto`], [Visual theme: `"normal"`, `"high-contrast"`, `"print"`, or `auto` (global default).],
+  [`theme`], [`auto`], [Visual theme: `"normal"`, `"high-contrast"`, `"print"`, `"grayscale"`, or `auto` (global default).],
   [`scale`], [`auto`], [Overall size multiplier (e.g. `80%`, `0.8`, `50%`).],
+  [`font`], [`auto`], [Font for block labels. Set it here rather than with `#set text(font: ...)`: the renderer measures each label and writes the font into the SVG, so a document-level `set text` changes what is drawn but not what was measured, and the labels overlap.],
   [`line-numbers`], [`auto`], [Show line numbers (`true` or `false`).],
   [`line-number-start`], [`auto`], [Starting line number (integer, default `1`).],
   [`line-number-gutter`], [`auto`], [Width of line number gutter (pt, default `24`).],
@@ -142,7 +143,8 @@ All parameters are optional. Only provided values override the current defaults.
   table.header([*Theme*], [*Description*]),
   [`"normal"`], [Default — full color Scratch style.],
   [`"high-contrast"`], [Lighter, high-contrast variant for accessibility.],
-  [`"print"`], [Black-and-white optimized for print.],
+  [`"print"`], [Every block white with a black outline. The lightest on ink, but all categories look alike.],
+  [`"grayscale"`], [One distinct grey per category, so a control block still reads differently from an operator on a monochrome page.],
 )
 
 ```typst
@@ -220,7 +222,7 @@ blockst supports *26 languages* via built-in WASM locale data. Set via `scratch(
   [`"hr"`], [Croatian], [`"hu"`], [Hungarian],
   [`"id"`], [Indonesian], [`"nb"`], [Norwegian (Bokmål)],
   [`"ro"`], [Romanian], [`"sl"`], [Slovenian],
-  [`"tr"`], [Turkish], [], [],
+  [`"tr"`], [Turkish], [`"ar"`], [Arabic],
 )
 
 ```typst
@@ -237,6 +239,28 @@ end
 #image("/examples/example-de.svg")
 
 Block text must match the chosen locale's vocabulary — the parser matches against official Scratch translations.
+
+== Right-to-left languages <rtl>
+
+Arabic (`"ar"`), Hebrew (`"he"`) and Persian (`"fa"`) render right-to-left. Nothing has to be switched on: each locale declares its own direction, and the renderer mirrors the layout — the notch, the hat dome, the C-block mouth, the loop arrow, the pen badge, the `define` hat and the order of the labels all move to the reading edge.
+
+```typst
+#scratch("
+عند نقر @greenFlag
+تحرك (10) خطوة
+كرِّر (4) مرة
+استدر @turnRight (90) درجة
+نهاية
+", language: "ar")
+```
+
+#image("/examples/example-rtl.svg")
+
+#info(title: "What is mirrored, and what is not")[
+  Layout is mirrored; meaning is not. The loop arrow points back to the top of the loop, which is a claim about the drawing, so it flips with the drawing. `@turnRight` and `@turnLeft` are never mirrored — their direction is what the sprite is being told to do, and a mirrored `@turnRight` would tell the reader to turn the other way.
+]
+
+Arabic short vowels are optional and their order is not canonical, so blocks match whether or not you type the harakat: `كرِّر` and `كرر` both find the repeat block.
 
 = Labels and Line Numbers <labels>
 
@@ -383,7 +407,7 @@ blockst includes an execution engine that runs Scratch programs visually — ide
 Import via the `scratch-run` module:
 
 ```typst
-#import "@preview/blockst:0.2.1": scratch-run, set-scratch-run
+#import "@preview/blockst:0.3.0": scratch-run, set-scratch-run
 
 #scratch-run.stage("...", scale: 2)
 #scratch-run.grid("...", grid: true)

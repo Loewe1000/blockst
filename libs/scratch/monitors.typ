@@ -13,11 +13,18 @@
   variables: (primary: white),
   lists:     (primary: white, tertiary: black),
 )
+// Same greys the renderer gives those two categories, so a monitor sitting
+// next to a `set [score] to (0)` block matches it.
+#let _colors-grayscale = (
+  variables: (primary: rgb("#bfbfbf")),
+  lists:     (primary: rgb("#7b7b7b"), tertiary: rgb("#4c4c4c")),
+)
 
 #let _get-colors(options) = {
   let theme = options.at("theme", default: "normal")
   if theme == "high-contrast" { _colors-high-contrast }
   else if theme == "print"    { _colors-print }
+  else if theme == "grayscale" { _colors-grayscale }
   else                        { _colors-normal }
 }
 

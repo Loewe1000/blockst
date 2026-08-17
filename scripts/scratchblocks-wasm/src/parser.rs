@@ -33,6 +33,11 @@ struct LocaleToml {
     specs: HashMap<String, String>,
     #[serde(default)]
     aliases: HashMap<String, String>,
+    /// Writing direction of the language: "ltr" (default) or "rtl".
+    /// Declared by the locale itself so a new right-to-left translation
+    /// only has to add one line, with no engine change.
+    #[serde(default)]
+    dir: Option<String>,
 }
 
 // Internal structures (same as before, loaded from TOML instead of JSON)
@@ -45,6 +50,7 @@ struct LanguageRuntime {
     else_spec: String,
     define_spec: String,
     call_spec: String,
+    rtl: bool,
 }
 
 #[derive(Debug)]
@@ -77,6 +83,10 @@ struct ParseRequest {
     widths: Option<HashMap<String, f32>>,
     #[serde(default = "default_font")]
     font: String,
+    /// Force the writing direction, overriding the locale's own `dir`.
+    /// `None` (the usual case) means "ask the locale".
+    #[serde(default)]
+    rtl: Option<bool>,
 }
 
 fn default_language() -> String {
@@ -151,6 +161,15 @@ pub enum PublicPart {
 
 static DATA: OnceLock<ParserData> = OnceLock::new();
 
+/// Is this language written right-to-left? Unknown codes are left-to-right.
+pub fn language_is_rtl(language: &str) -> bool {
+    data()
+        .languages
+        .get(language)
+        .map(|runtime| runtime.rtl)
+        .unwrap_or(false)
+}
+
 pub fn parse_request_json(input: &str) -> Result<String, String> {
     let request: ParseRequest = serde_json::from_str(input)
         .map_err(|err| format!("scratchblocks-wasm: invalid parse request: {err}"))?;
@@ -172,6 +191,8 @@ pub fn render_request_json(input: &str) -> Result<String, String> {
         line_number_gutter: request.line_number_gutter.unwrap_or(24.0),
         inset_scale: request.inset_scale.unwrap_or(1.0),
         font: if request.font.is_empty() { default_font() } else { request.font },
+        // The caller may force a direction; otherwise the locale decides.
+        rtl: request.rtl.unwrap_or_else(|| language_is_rtl(&request.language)),
         scripts: scripts
             .into_iter()
             .map(|blocks| ScriptSpec {
@@ -193,6 +214,7 @@ pub fn render_request_json(input: &str) -> Result<String, String> {
         Ok(render_document(&document))
     };
     crate::measure::clear_inset_scale();
+    crate::measure::clear_rtl();
     result
 }
 
@@ -245,6 +267,14 @@ fn data() -> &'static ParserData {
             let locale: LocaleToml = toml::from_str(locale_toml)
                 .unwrap_or_else(|e| panic!("locales/{code}.toml: {e}"));
             let native_specs: HashMap<String, String> = locale.specs;
+            // A locale is right-to-left when it says so. Falling back to a
+            // hard-coded list of language codes would mean editing the engine
+            // every time a new RTL translation is contributed.
+            let is_rtl = locale
+                .dir
+                .as_deref()
+                .map(|d| d.eq_ignore_ascii_case("rtl"))
+                .unwrap_or(false);
 
             let else_spec = native_specs
                 .get("control_else")
@@ -319,6 +349,7 @@ fn data() -> &'static ParserData {
                     else_spec,
                     define_spec,
                     call_spec,
+                    rtl: is_rtl,
                 },
             );
         }
@@ -1455,27 +1486,68 @@ fn hash_spec(spec: &str) -> String {
     minify_hash(&out)
 }
 
+/// Strip Arabic short vowels and normalise letter variants for matching.
+///
+/// Two problems make raw string comparison useless for Arabic:
+///
+///   * short vowels (fatha, kasra, shadda, sukun, ...) are optional, and a
+///     teacher will rarely type them — `كرِّر` in the locale must still match
+///     a typed `كرر`;
+///   * when they ARE typed, their order is not canonical: shadda+kasra and
+///     kasra+shadda render identically but are different strings. This is
+///     exactly what made the Arabic repeat block fail while Hebrew, which
+///     has no such marks in these specs, worked.
+///
+/// Folding both away is safe here because the result is only ever used as a
+/// lookup key, never displayed.
+fn fold_arabic(value: &str) -> String {
+    value
+        .chars()
+        .filter(|c| {
+            // combining marks: harakat, tatweel, and the superscript alef
+            !matches!(*c as u32,
+                0x0610..=0x061A | 0x064B..=0x065F | 0x0670 | 0x0640
+                | 0x06D6..=0x06DC | 0x06DF..=0x06E8 | 0x06EA..=0x06ED)
+        })
+        .map(|c| match c {
+            // alef with any hamza/madda, and the dotless/te-marbuta variants
+            'أ' | 'إ' | 'آ' | 'ٱ' => 'ا',
+            'ة' => 'ه',
+            'ى' => 'ي',
+            'ﷲ' => 'ا',
+            c => c,
+        })
+        .collect()
+}
+
 fn minify_hash(value: &str) -> String {
     // Replace hyphens only between word characters (e.g. 'mouse-pointer' -> 'mouse pointer')
     // Standalone '-' operators (e.g. '_ - _') must be preserved for OPERATORS_SUBTRACT matching
     let mut result = value.replace('_', " _ ");
-    let bytes = result.as_bytes().to_vec();
+    // Iterate over CHARS, not bytes. `b as char` reinterprets each byte of a
+    // multi-byte sequence as its own character, which turns every non-Latin
+    // script into mojibake: the Arabic spec then hashes to something no user
+    // input can ever match and the block falls back to the grey "unknown"
+    // shape. Hebrew happened to survive only because the following
+    // `split_whitespace` rejoined its mangled pieces the same way on both
+    // sides of the comparison.
+    let chars: Vec<char> = result.chars().collect();
     let mut out = String::with_capacity(result.len());
-    for (i, &b) in bytes.iter().enumerate() {
-        if b == b'-' {
-            let prev_word = i > 0 && (bytes[i - 1].is_ascii_alphanumeric() || bytes[i - 1] == b'_');
-            let next_word = i + 1 < bytes.len() && (bytes[i + 1].is_ascii_alphanumeric() || bytes[i + 1] == b'_');
+    for (i, &c) in chars.iter().enumerate() {
+        if c == '-' {
+            let prev_word = i > 0 && (chars[i - 1].is_alphanumeric() || chars[i - 1] == '_');
+            let next_word = i + 1 < chars.len() && (chars[i + 1].is_alphanumeric() || chars[i + 1] == '_');
             if prev_word && next_word {
                 out.push(' ');
             } else {
                 out.push('-');
             }
         } else {
-            out.push(b as char);
+            out.push(c);
         }
     }
     result = out;
-    result
+    let result = result
         .replace([',', '%', '?', ':'], "")
         .split_whitespace()
         .collect::<Vec<_>>()
@@ -1487,7 +1559,10 @@ fn minify_hash(value: &str) -> String {
         .replace(". . .", "...")
         .replace('…', "...")
         .trim()
-        .to_lowercase()
+        .to_lowercase();
+    // Fold Arabic vowel marks last, so every hash — locale spec and user
+    // input alike — is compared in the same normalised form.
+    fold_arabic(&result)
 }
 
 fn extract_icon(spec: &str) -> Option<&str> {

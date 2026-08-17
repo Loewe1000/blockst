@@ -11,6 +11,26 @@ thread_local! {
     static WIDTHS_ACTIVE: RefCell<bool> = const { RefCell::new(false) };
     static WIDTHS_MAP: RefCell<HashMap<String, f32>> = RefCell::new(HashMap::new());
     static INSET_SCALE: RefCell<f32> = const { RefCell::new(1.0) };
+    static RTL: RefCell<bool> = const { RefCell::new(false) };
+}
+
+/// Right-to-left layout, set once per document before rendering.
+///
+/// This is a thread-local rather than a parameter threaded through every
+/// call because the renderer is a deep tree of small functions
+/// (`render_block` -> `render_segments` -> `render_block` ...) and the flag
+/// is a property of the whole document, not of any one block. The plugin is
+/// single-threaded WASM, so the cell is effectively a global.
+pub fn set_rtl(value: bool) {
+    RTL.with(|r| *r.borrow_mut() = value);
+}
+
+pub fn clear_rtl() {
+    RTL.with(|r| *r.borrow_mut() = false);
+}
+
+pub fn is_rtl() -> bool {
+    RTL.with(|r| *r.borrow())
 }
 
 pub fn set_widths(widths: HashMap<String, f32>) {

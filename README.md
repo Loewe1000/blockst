@@ -22,6 +22,19 @@ The current renderer is text-based: Typst passes Scratch text to a bundled WASM 
 
 Starting with version 0.2.0, Blockst uses only the WASM-based text parser and renderer. The earlier native Typst rendering approach was dropped because it ran into Typst's limits on more complex Scratch layouts.
 
+### New in 0.3.0
+
+- **Right-to-left rendering** for Arabic, Hebrew and Persian, plus a new
+  **Arabic locale** — see [Right-to-Left Languages](#right-to-left-languages)
+- **`grayscale` theme**: one distinct grey per category, for photocopied worksheets
+- **`font:` parameter** on `scratch()` and `blockst()`
+- French localisation completed (`définir`, `appeler`, `tourner à droite/gauche`,
+  French pen-effect values) — thanks to @remiangot and @XanderLeaDaren
+- Fixes: block labels no longer fall back to the surrounding font inside
+  ```` ```scratch ```` blocks; non-Latin locales are matched correctly
+  (the spec hash used to mangle multi-byte characters); C-block headers are
+  no longer drawn twice
+
 ## Contents
 
 - [Highlights](#highlights)
@@ -29,6 +42,7 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - [Quick Start](#quick-start)
 - [Example Gallery](#example-gallery)
 - [SB3 Import via Typst Plugin WASM](#sb3-import-via-typst-plugin-wasm)
+- [Right-to-Left Languages](#right-to-left-languages)
 - [Catalog](#catalog)
 - [Contributing](#contributing)
 
@@ -37,6 +51,9 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - Scratchblocks-style syntax for scripts, reporters, booleans, inputs, dropdowns, and nested control blocks
 - Themes: normal, high-contrast, print
 - Localized text rendering through the WASM locale data
+- **Right-to-left languages** (Arabic, Hebrew, Persian): the block layout is
+  mirrored automatically — notch, hat, C-block mouth, loop arrow and label
+  order all follow the reading direction
 - Category suffixes via `::motion`, `::control`, ... (scratchblocks-style)
 - Optional line numbers and `#label` references for line-aware worksheets
 - Optional compact block geometry with `inset-scale` (text size unchanged, e.g. `60%`, `90%`, `125%`)
@@ -45,7 +62,7 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 ## Install and Import
 
 ```typst
-#import "@preview/blockst:0.2.1": blockst, scratch, raw-scratch, sb3
+#import "@preview/blockst:0.3.0": blockst, scratch, raw-scratch, sb3
 ```
 
 > Font requirement: Blockst is designed for Helvetica Neue (Scratch-like look).
@@ -455,6 +472,48 @@ Source: [examples/example-monitors.typ](examples/example-monitors.typ)
 - Images: `sb3.sb3-images-catalog(...)`, `sb3.sb3-image(...)`
 - Screen: `sb3.sb3-screen-preview(...)`
 - Catalogs: `sb3.sb3-scripts-catalog(...)`, `sb3.sb3-state-catalog(...)`
+
+## Right-to-Left Languages
+
+Arabic, Hebrew and Persian render right-to-left. Nothing extra is required:
+pass the language and the renderer mirrors the layout.
+
+```typ
+#scratch("
+عند نقر @greenFlag
+تحرك (10) خطوة
+كرر (4) مرة
+استدر @turnRight (90) درجة
+نهاية
+", language: "ar")
+```
+
+![RTL example](examples/example-rtl.svg)
+
+> Right-to-left layout, the Arabic locale and the `grayscale` theme arrived in
+> `0.3.0`. The Arabic and Hebrew scripts need fonts that cover them — see
+> [examples/README-rtl.md](examples/README-rtl.md).
+
+What is mirrored: the order of labels and inputs, the top/bottom notch, the
+hat dome, the C-block mouth and its indented body, the loop arrow, and the
+text/arrow inside a dropdown. What is *not* mirrored: the glyphs themselves
+and the digits, which stay upright and in Western form.
+
+A language is right-to-left when its locale says so — the TOML carries a
+top-level `dir = "rtl"`. Contributing another RTL translation therefore needs
+no change to the renderer:
+
+```toml
+# data/locales/ar.toml
+dir = "rtl"
+
+[specs]
+MOTION_MOVESTEPS = "تحرك %1 خطوة"
+```
+
+Arabic short vowels are optional in practice, so `كرِّر` and `كرر` match the
+same block; the matcher folds harakat and normalises alef/te-marbuta
+variants before comparing.
 
 ## Catalog
 
