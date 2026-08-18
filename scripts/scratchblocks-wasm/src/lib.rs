@@ -1,3 +1,4 @@
+mod geometry;
 mod measure;
 mod model;
 mod generated;

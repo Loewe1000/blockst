@@ -1,3 +1,4 @@
+use crate::geometry::geometry;
 use crate::model::{BlockSpec, SegmentSpec};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -259,7 +260,7 @@ pub(crate) fn line_metrics(block: &BlockSpec) -> (f32, f32, f32, f32) {
         // cmw = 48 - horizontal_padding(block, first_segment)
         if is_notch_block && !first_non_label_aligned && !is_label(segment) && !is_icon(segment) {
             if let Some(first) = segments.first() {
-                let cmw = 48.0 - horizontal_padding(block, first);
+                let cmw = geometry().notch_end - horizontal_padding(block, first);
                 if width < cmw {
                     width = cmw;
                 }
@@ -280,7 +281,7 @@ pub fn c_block_inner_width(block: &BlockSpec) -> f32 {
     let (header_inner, _, _, _) = line_metrics(block);
     // Keep c-shapes readable, but avoid a large fixed minimum that leaves
     // too much empty header area for short labels like "répéter (12) fois".
-    header_inner.max(inset(96.0, 72.0))
+    header_inner.max(inset(geometry().mouth_min_width, geometry().mouth_min_width_min))
 }
 
 /// Returns the maximum height of any nested block/input segment within a block's segments.
@@ -426,7 +427,7 @@ pub fn c_block_size(block: &BlockSpec) -> (f32, f32) {
 
     // Dynamic header height: expand when header contains tall nested blocks
     let header_nested_h = max_nested_height(block);
-    let header_base = inset(48.0, 36.0);
+    let header_base = inset(geometry().row_height, geometry().row_height_min);
     let header_h = if header_nested_h > 32.0 { header_base + (header_nested_h - 32.0) } else { header_base };
 
     let script_line_height = (body_h + s(3.0)).max(29.0) - s(2.0);

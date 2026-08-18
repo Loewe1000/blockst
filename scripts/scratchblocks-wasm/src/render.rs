@@ -1,6 +1,7 @@
 use crate::measure::{block_size, c_block_inner_width, c_block_size, current_inset_scale, input_box_height, is_rtl, max_nested_height, script_size_with_inside, segment_width, text_width};
 use crate::model::{BlockSpec, DocumentSpec, ScriptSpec, SegmentSpec};
 use crate::svg::{boolean_path, cap_path, escape_text, hat_path, mouth_cap_path, mouth_path, proc_hat_path, reporter_path, stack_path};
+use crate::geometry::{geometry, set_geometry, Geometry};
 use crate::palette::{colors_for, set_palette, Palette};
 
 const LABEL_MARGIN: f32 = 4.447_998;
@@ -40,8 +41,9 @@ fn label_fill(theme: &str, fill: &str) -> String {
 
 pub fn render_document(document: &DocumentSpec) -> String {
     crate::measure::set_rtl(document.rtl);
-    // Scratch is the only palette so far; a profile will choose here.
+    // Scratch is the only profile so far; a second one will choose here.
     set_palette(Palette::scratch());
+    set_geometry(Geometry::scratch());
     let scale = document.scale.unwrap_or(1.0).max(0.1);
     let theme = document.theme.as_deref().unwrap_or("normal");
     let font = &document.font;
@@ -272,7 +274,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     }
     
     // Inner outline: 48px tall (line_height=40 + corner_radii=8)
-    let content_h = 48.0;
+    let content_h = geometry().row_height;
     
     // Compute inner outline width from remaining segments (without leading define keyword)
     let mut remaining: Vec<SegmentSpec> = block.segments.clone();
@@ -304,7 +306,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     let inner_w = inner_content_w.max(100.0);
     
     // Define keyword text on the reading side, vertically centered
-    let define_y = 20.0 + (48.0 - 12.0) / 2.0;
+    let define_y = 20.0 + (geometry().row_height - 12.0) / 2.0;
     // Position of inner outline: after pad(8) + "define" + margin
     let define_gap = 8.0;
     // In RTL the keyword sits on the right and the procedure prototype to
@@ -413,9 +415,10 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
 
     // Dynamic header height: expand when header contains tall nested blocks
     let header_nested_h = max_nested_height(block);
-    let header_base = inset(48.0, 36.0);
+    let header_base = inset(geometry().row_height, geometry().row_height_min);
     let header_h = if header_nested_h > 32.0 { header_base + (header_nested_h - 32.0) } else { header_base };
-    let body_indent = (header_h / 48.0).clamp(0.6, 1.2) * 16.0;
+    let g = geometry();
+    let body_indent = (header_h / g.row_height).clamp(0.6, 1.2) * g.body_indent;
 
     // The C outline is asymmetric — the mouth is cut into its left side, and
     // the top/bottom notches sit 48px from the left. Mirroring just this one
@@ -568,7 +571,7 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
         // Scratchblocks notch alignment: align the first non-label, non-icon
         // input so its left edge clears the notch area (right of notch is ~48px).
         if is_notch_block && !first_non_label_aligned && !matches!(segment, SegmentSpec::Text { .. }) && !matches!(segment, SegmentSpec::Icon { .. }) {
-            let cmw = 48.0 - pad_left;
+            let cmw = geometry().notch_end - pad_left;
             if x < cmw {
                 x = cmw;
             }
