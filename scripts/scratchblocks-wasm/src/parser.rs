@@ -215,6 +215,7 @@ pub fn render_request_json(input: &str) -> Result<String, String> {
     };
     crate::measure::clear_inset_scale();
     crate::measure::clear_rtl();
+    crate::palette::clear_palette();
     result
 }
 

@@ -1,7 +1,7 @@
 use crate::measure::{block_size, c_block_inner_width, c_block_size, current_inset_scale, input_box_height, is_rtl, max_nested_height, script_size_with_inside, segment_width, text_width};
 use crate::model::{BlockSpec, DocumentSpec, ScriptSpec, SegmentSpec};
 use crate::svg::{boolean_path, cap_path, escape_text, hat_path, mouth_cap_path, mouth_path, proc_hat_path, reporter_path, stack_path};
-use crate::theme::colors_for;
+use crate::palette::{colors_for, set_palette, Palette};
 
 const LABEL_MARGIN: f32 = 4.447_998;
 
@@ -40,6 +40,8 @@ fn label_fill(theme: &str, fill: &str) -> String {
 
 pub fn render_document(document: &DocumentSpec) -> String {
     crate::measure::set_rtl(document.rtl);
+    // Scratch is the only palette so far; a profile will choose here.
+    set_palette(Palette::scratch());
     let scale = document.scale.unwrap_or(1.0).max(0.1);
     let theme = document.theme.as_deref().unwrap_or("normal");
     let font = &document.font;
@@ -212,8 +214,8 @@ fn render_block(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
         return render_pen_block(block, theme);
     }
     match block.shape.as_str() {
-        "reporter" => render_reporter_like(block, theme, colors.fill, colors.stroke, false),
-        "boolean" => render_reporter_like(block, theme, colors.fill, colors.stroke, true),
+        "reporter" => render_reporter_like(block, theme, &colors.fill, &colors.stroke, false),
+        "boolean" => render_reporter_like(block, theme, &colors.fill, &colors.stroke, true),
         "c-block" => render_c_block(block, theme, false),
         "c-block cap" => render_c_block(block, theme, true),
         "define-hat" => render_define_hat(block, theme),
@@ -253,7 +255,7 @@ fn render_pen_block(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     } else {
         svg.push_str(&format!("<g transform=\"translate(4 {}) scale({})\"><use href=\"{pen_icon}\"/></g>", icon_y, icon_scale));
     }
-    svg.push_str(&render_segments(block, &block.segments, theme, colors.text, pen_extra, height, 0.0));
+    svg.push_str(&render_segments(block, &block.segments, theme, &colors.text, pen_extra, height, 0.0));
     (svg, total_width, height)
 }
 
@@ -317,7 +319,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     };
 
     svg.push_str(&format!("<text class=\"sb-label\" x=\"0\" y=\"13\" {} transform=\"translate({} {})\">{}</text>",
-        label_fill(theme, colors.text), keyword_x, define_y, define_label));
+        label_fill(theme, &colors.text), keyword_x, define_y, define_label));
 
     // Inner outline starts after "define" label + gap
     svg.push_str(&format!("<g transform=\"translate({} 20)\">", inner_x));
@@ -339,7 +341,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
             else_body: vec![],
             else_segments: vec![],
         };
-        svg.push_str(&render_segments(&temp, &temp.segments, theme, colors.text, 0.0, 40.0, 5.0));
+        svg.push_str(&render_segments(&temp, &temp.segments, theme, &colors.text, 0.0, 40.0, 5.0));
     }
     
     svg.push_str("</g>");
@@ -362,7 +364,7 @@ fn render_simple_block(
     } else {
     svg.push_str(&format!("<path d=\"{}\" fill=\"{}\" stroke=\"{}\"/>", path_fn(width, height), colors.fill, colors.stroke));
     }
-    svg.push_str(&render_segments(block, &block.segments, theme, colors.text, 0.0, height, 0.0));
+    svg.push_str(&render_segments(block, &block.segments, theme, &colors.text, 0.0, height, 0.0));
     if block.shape == "cap" {
         svg.push_str("<circle cx=\"0\" cy=\"0\" r=\"0\"/>");
     }
@@ -381,7 +383,7 @@ fn render_reporter_like(block: &BlockSpec, theme: &str, fill: &str, stroke: &str
         path,
         fill,
         stroke,
-        render_segments(block, &block.segments, theme, text_fill, base_x, height, 0.0),
+        render_segments(block, &block.segments, theme, &text_fill, base_x, height, 0.0),
     );
     (svg, width, height)
 }
@@ -444,7 +446,7 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
     //
     // (This call also used to appear twice in a row — the same header was
     // painted on top of itself.)
-    svg.push_str(&render_segments_in(block, &block.segments, theme, colors.text, 0.0, header_h, 0.0, Some(outer_w)));
+    svg.push_str(&render_segments_in(block, &block.segments, theme, &colors.text, 0.0, header_h, 0.0, Some(outer_w)));
 
     let body_y = header_h - 1.0;
     let (body_svg, body_w, _) = render_script(&ScriptSpec { blocks: block.body.clone() }, theme, true);
@@ -472,7 +474,7 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
         // So visual center = line_y + 16.5. Target = arm_y + 17.5.
         // => line_y = arm_y + 1.0
         let else_text_line_y = arm_y + inset(1.0, 0.5);
-        svg.push_str(&render_segments_in(block, &block.else_segments, theme, colors.text, 0.0, 32.0, else_text_line_y, Some(outer_w)));
+        svg.push_str(&render_segments_in(block, &block.else_segments, theme, &colors.text, 0.0, 32.0, else_text_line_y, Some(outer_w)));
 
         // Place else body blocks at the top of the else section interior.
         // Analogy to the first body: body_y = header_h - 1 (i.e. notch_y - 1).
@@ -632,22 +634,22 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
                             color.as_str()
                         }
                     } else if is_dropdown {
-                        if is_square_dropdown { cat_colors.fill } else { if custom_fill { cat_colors.fill } else { cat_colors.alt } }
+                        if is_square_dropdown { cat_colors.fill.as_str() } else if custom_fill { cat_colors.fill.as_str() } else { cat_colors.alt.as_str() }
                     } else if custom_fill {
-                        cat_colors.fill
+                        cat_colors.fill.as_str()
                     } else {
                         "#ffffff"
                     };
                     let stroke = if input == "boolean" {
-                        if theme == "print" || theme == "high-contrast" { cat_colors.stroke } else { "rgba(0,0,0,0.2)" }
+                        if theme == "print" || theme == "high-contrast" { cat_colors.stroke.as_str() } else { "rgba(0,0,0,0.2)" }
                     } else if is_square_dropdown {
-                        cat_colors.stroke
+                        cat_colors.stroke.as_str()
                     } else if is_dropdown {
-                        cat_colors.stroke
+                        cat_colors.stroke.as_str()
                     } else if custom_fill {
-                        cat_colors.stroke
+                        cat_colors.stroke.as_str()
                     } else {
-                        if theme == "print" || theme == "high-contrast" { cat_colors.stroke } else { "rgba(0,0,0,0.15)" }
+                        if theme == "print" || theme == "high-contrast" { cat_colors.stroke.as_str() } else { "rgba(0,0,0,0.15)" }
                     };
                     let opacity_fill = if theme == "print" || theme == "high-contrast" { "#ffffff" } else { "rgba(0,0,0,0.15)" };
                     let opacity_stroke = if theme == "print" || theme == "high-contrast" { "#000000" } else { "rgba(0,0,0,0.2)" };
@@ -655,7 +657,7 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
                         svg.push_str(&format!("<path d=\"{}\" fill=\"{}\" stroke=\"{}\" transform=\"translate({} {})\"/>", boolean_path(w, input_h), opacity_fill, opacity_stroke, place(x, w), child_y));
                     } else if is_dropdown {
                         // Dropdown: rounded rect + text left-aligned + real dropdown arrow
-                        let text_fill = if theme == "print" || theme == "high-contrast" { "#000000" } else { cat_colors.text };
+                        let text_fill = if theme == "print" || theme == "high-contrast" { "#000000" } else { cat_colors.text.as_str() };
                         let dropdown_fill = if theme == "print" && is_round {
                             "#ffffff"
                         } else if theme == "print" {
