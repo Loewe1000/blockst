@@ -20,6 +20,11 @@ pub struct DocumentSpec {
     /// key, or forced by the caller via the JSON payload.
     #[serde(default)]
     pub rtl: bool,
+    /// Which profile to draw with: the block shapes, measurements and
+    /// palette. Defaults to Scratch, which is what every existing document
+    /// asks for by saying nothing.
+    #[serde(default)]
+    pub profile: Option<String>,
     pub scripts: Vec<ScriptSpec>,
 }
 

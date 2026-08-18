@@ -1,7 +1,7 @@
 use crate::measure::{block_size, c_block_inner_width, c_block_size, current_inset_scale, input_box_height, is_rtl, max_nested_height, script_size_with_inside, segment_width, text_width};
 use crate::model::{BlockSpec, DocumentSpec, ScriptSpec, SegmentSpec};
 use crate::svg::{boolean_path, cap_path, escape_text, hat_path, mouth_cap_path, mouth_path, proc_hat_path, reporter_path, stack_path};
-use crate::geometry::{geometry, set_geometry, Geometry};
+use crate::geometry::{for_profile, geometry, set_geometry};
 use crate::palette::{colors_for, set_palette, Palette};
 
 const LABEL_MARGIN: f32 = 4.447_998;
@@ -41,9 +41,8 @@ fn label_fill(theme: &str, fill: &str) -> String {
 
 pub fn render_document(document: &DocumentSpec) -> String {
     crate::measure::set_rtl(document.rtl);
-    // Scratch is the only profile so far; a second one will choose here.
     set_palette(Palette::scratch());
-    set_geometry(Geometry::scratch());
+    set_geometry(for_profile(document.profile.as_deref()));
     let scale = document.scale.unwrap_or(1.0).max(0.1);
     let theme = document.theme.as_deref().unwrap_or("normal");
     let font = &document.font;
@@ -615,7 +614,12 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
                     let is_round = input == "number" || input == "color" || input == "string" || input == "dropdown";
                     let is_square_dropdown = input == "dropdown-field";
                     let rx = if is_round {
-                        (input_h / 2.0).max(8.0)
+                        // Scratch's fields are pills; Blockly's are boxes with
+                        // a small radius, so the profile decides.
+                        match geometry().field_radius {
+                            Some(radius) => radius,
+                            None => (input_h / 2.0).max(8.0),
+                        }
                     } else if is_square_dropdown {
                         inset(4.0, 3.0)
                     } else {
@@ -1005,6 +1009,7 @@ mod tests {
     fn test_render_document_with_line_numbers() {
         let doc = DocumentSpec {
             rtl: false,
+            profile: None,
             scale: Some(1.0),
             theme: Some("normal".to_string()),
             line_numbers: true,
@@ -1044,6 +1049,7 @@ mod tests {
     fn test_render_document_line_numbers_start_from_second_block() {
         let doc = DocumentSpec {
             rtl: false,
+            profile: None,
             scale: Some(1.0),
             theme: Some("normal".to_string()),
             line_numbers: true,

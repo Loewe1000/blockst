@@ -87,6 +87,8 @@ struct ParseRequest {
     /// `None` (the usual case) means "ask the locale".
     #[serde(default)]
     rtl: Option<bool>,
+    #[serde(default)]
+    profile: Option<String>,
 }
 
 fn default_language() -> String {
@@ -193,6 +195,7 @@ pub fn render_request_json(input: &str) -> Result<String, String> {
         font: if request.font.is_empty() { default_font() } else { request.font },
         // The caller may force a direction; otherwise the locale decides.
         rtl: request.rtl.unwrap_or_else(|| language_is_rtl(&request.language)),
+        profile: request.profile.clone(),
         scripts: scripts
             .into_iter()
             .map(|blocks| ScriptSpec {

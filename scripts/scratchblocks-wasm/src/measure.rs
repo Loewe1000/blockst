@@ -73,13 +73,9 @@ fn v(base_child_h: f32, base_padding: f32) -> f32 {
     base_child_h + (base_padding * current_inset_scale())
 }
 
-pub fn input_box_height(input: &str) -> f32 {
-    match input {
-        "boolean" => inset(32.0, 24.0),
-        "color" => inset(32.0, 24.0),
-        "dropdown" | "dropdown-field" => inset(32.0, 24.0),
-        _ => inset(32.0, 24.0),
-    }
+pub fn input_box_height(_input: &str) -> f32 {
+    let g = geometry();
+    inset(g.field_height, g.field_height_min)
 }
 
 fn is_label(segment: &SegmentSpec) -> bool {

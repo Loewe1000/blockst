@@ -81,6 +81,7 @@
 /// Global settings applied to all scratch() and sb3 calls.
 #let set-blockst(
   theme: none,
+  profile: none,
   scale: none,
   stroke-width: none,
   font: none,
@@ -95,6 +96,7 @@
   scratch-block-options.update(old => {
     let new-opts = old
     if theme != none { new-opts.insert("theme", theme) }
+    if profile != none { new-opts.insert("profile", profile) }
     if scale != none { new-opts.insert("scale", scale) }
     if stroke-width != none { new-opts.insert("stroke-width", stroke-width) }
     if font != none { new-opts.insert("font", font) }
