@@ -230,7 +230,7 @@ pub fn segment_width(segment: &SegmentSpec) -> f32 {
                 }
                 _ => {
                     let side_pad = inset(22.0, 14.0);
-                    let min_w = inset(40.0, 30.0);
+                    let min_w = inset(geometry().value_min_width, geometry().value_min_width_min);
                     (text_width(value) + side_pad).max(min_w)
                 }
             }
@@ -303,23 +303,25 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
         "reporter" => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 24.0 {
+            let g = geometry();
+            let height = if nested_h > g.field_height_min {
                 nested_h + inset(8.0, 6.0)
             } else {
-                inset(32.0, 24.0)
+                inset(g.field_height, g.field_height_min)
             };
-            let min_w = inset(40.0, 30.0).max(height + inset(8.0, 6.0));
+            let min_w = inset(g.value_min_width, g.value_min_width_min).max(height + inset(8.0, 6.0));
             (inner.max(min_w), height)
         }
         "boolean" => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 24.0 {
+            let g = geometry();
+            let height = if nested_h > g.field_height_min {
                 nested_h + inset(8.0, 6.0)
             } else {
-                inset(32.0, 24.0)
+                inset(g.field_height, g.field_height_min)
             };
-            let min_w = inset(40.0, 30.0).max(height + inset(8.0, 6.0));
+            let min_w = inset(g.value_min_width, g.value_min_width_min).max(height + inset(8.0, 6.0));
             (inner.max(min_w), height)
         }
         "c-block" | "c-block cap" => c_block_size(block),
@@ -327,10 +329,11 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
             let (inner, _, _, _) = line_metrics(block);
             let width = inner.max(s(100.0));
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 32.0 {
-                v(32.0, 32.0) + (nested_h - 32.0)
+            let g = geometry();
+            let height = if nested_h > g.content_height {
+                v(g.content_height, g.hat_padding) + (nested_h - g.content_height)
             } else {
-                v(32.0, 32.0)
+                v(g.content_height, g.hat_padding)
             };
             (width, height)
         }
@@ -363,21 +366,24 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
             let define_gap: f32 = s(8.0);
             let width = (s(8.0) + define_w + define_gap + inner_w + s(8.0)).max(s(100.0));
             let nested_h = max_nested_height(block);
-            let base_h: f32 = v(32.0, 52.0);
-            let height = if nested_h > 32.0 { base_h + (nested_h - 32.0) } else { base_h };
+            let ch = geometry().content_height;
+            let base_h: f32 = v(ch, 52.0);
+            let height = if nested_h > ch { base_h + (nested_h - ch) } else { base_h };
             (width, height)
         }
         "cap" => {
             let (inner, _, _, _) = line_metrics(block);
             let width = inner.max(s(64.0));
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 32.0 { nested_h + s(8.0) } else { v(32.0, 8.0) };
+            let g = geometry();
+            let height = if nested_h > g.content_height { nested_h + s(8.0) } else { v(g.content_height, g.cap_padding) };
             (width, height)
         }
         _ => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 32.0 { nested_h + s(16.0) } else { v(32.0, 16.0) };
+            let g = geometry();
+            let height = if nested_h > g.content_height { nested_h + s(g.stack_padding) } else { v(g.content_height, g.stack_padding) };
             
             // Pen blocks have an extra space for the pen icon on the left
             let pen_extra = if block.category == "pen" && !block.segments.is_empty() {
@@ -424,7 +430,8 @@ pub fn c_block_size(block: &BlockSpec) -> (f32, f32) {
     // Dynamic header height: expand when header contains tall nested blocks
     let header_nested_h = max_nested_height(block);
     let header_base = inset(geometry().row_height, geometry().row_height_min);
-    let header_h = if header_nested_h > 32.0 { header_base + (header_nested_h - 32.0) } else { header_base };
+    let ch = geometry().content_height;
+    let header_h = if header_nested_h > ch { header_base + (header_nested_h - ch) } else { header_base };
 
     let script_line_height = (body_h + s(3.0)).max(29.0) - s(2.0);
     let tail_line_height = inset(40.0, 30.0) - inset(11.0, 8.0);

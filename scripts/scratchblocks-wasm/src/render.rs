@@ -807,9 +807,9 @@ fn collect_block_line_markers(block: &BlockSpec, y: f32, out: &mut Vec<LineMarke
     let has_else = !block.else_body.is_empty() || !block.else_segments.is_empty();
     let header_nested_h = max_nested_height(block);
     let header_h = if header_nested_h > 32.0 {
-        48.0 + (header_nested_h - 32.0)
+        geometry().row_height + (header_nested_h - geometry().content_height)
     } else {
-        48.0
+        geometry().row_height
     };
     let body_origin = y + header_h - 1.0;
     collect_script_line_markers(&block.body, body_origin, out);
@@ -832,9 +832,9 @@ fn block_text_baseline(block: &BlockSpec, block_height: f32) -> f32 {
     let line_height = if matches!(block.shape.as_str(), "c-block" | "c-block cap") {
         let header_nested_h = max_nested_height(block);
         if header_nested_h > 32.0 {
-            48.0 + (header_nested_h - 32.0)
+            geometry().row_height + (header_nested_h - geometry().content_height)
         } else {
-            48.0
+            geometry().row_height
         }
     } else {
         block_height

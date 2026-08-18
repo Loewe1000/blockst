@@ -73,6 +73,17 @@ pub struct Geometry {
     pub field_height: f32,
     pub field_height_min: f32,
     pub field_radius: Option<f32>,
+
+    /// What a row is built out of: the height of its tallest ordinary
+    /// content, plus the padding each block shape adds around it. Scratch
+    /// puts 32 of content in a 48 row; Blockly puts 16 in a 24 row.
+    pub content_height: f32,
+    pub stack_padding: f32,
+    pub cap_padding: f32,
+    pub hat_padding: f32,
+    /// Narrowest a value block may be.
+    pub value_min_width: f32,
+    pub value_min_width_min: f32,
 }
 
 impl Geometry {
@@ -100,6 +111,12 @@ impl Geometry {
             field_height: 32.0,
             field_height_min: 24.0,
             field_radius: None,
+            content_height: 32.0,
+            stack_padding: 16.0,
+            cap_padding: 8.0,
+            hat_padding: 32.0,
+            value_min_width: 40.0,
+            value_min_width_min: 30.0,
         }
     }
 
@@ -132,6 +149,15 @@ impl Geometry {
             field_height: 16.0,
             field_height_min: 12.0,
             field_radius: Some(4.0),
+            // A Blockly row is 24 high: a 16px field with 4px above and
+            // below. The hat adds the three quarters of its curve that
+            // Blockly reserves.
+            content_height: 16.0,
+            stack_padding: 8.0,
+            cap_padding: 8.0,
+            hat_padding: 19.0,
+            value_min_width: 24.0,
+            value_min_width_min: 18.0,
         }
     }
 
