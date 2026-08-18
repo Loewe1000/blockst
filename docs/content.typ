@@ -1,17 +1,14 @@
-// blockst — Complete Manual
-// Built with the manifesto HTML template.
+#import "@schule/schuldocs:0.2.0": doc-target, info, show-code, show-example, show-module, tip, warning
+#import "../lib.typ": scratch
 
-#import "/manual/template/utils.typ": template, info, warning, example
-#import "/lib.typ": scratch, set-blockst, scratch-run, set-scratch-run, blockst
-#import "/libs/scratch/monitors.typ": list-monitor, variable-monitor
+// Gesetzte Scratch-Blöcke brauchen im HTML-Export einen Rahmen: ohne ihn
+// verwirft Typst den Zustand, den `scratch()` über `hide` mitführt, und warnt
+// („hide was ignored during HTML export"). Im Handbuch bleibt alles, wie es ist.
+#let framed(body) = context if doc-target() == "web" { html.frame(body) } else { body }
 
-#set document(title: "blockst — Scratch Blocks in Typst")
+= Introduction
 
-#show: template
-
-= Introduction <introduction>
-
-== About blockst <about>
+== About blockst
 
 *blockst* renders Scratch-style programming blocks directly in Typst documents. It is designed for worksheets, tutorials, teaching material, and visual programming explanations — anything where Scratch-like block syntax needs to appear in print or online documentation.
 
@@ -29,9 +26,9 @@ The current renderer uses a text-to-WASM pipeline: Typst passes Scratch text to 
   The old pre-0.2.0 native-Typst renderer syntax is *removed*. From 0.2.0 onward, blockst uses only the text-to-WASM pipeline. Documents that still rely on the previous syntax must be migrated.
 ]
 
-== Quick start <quick-start>
+== Quick start
 
-```typst
+#show-code(```typ
 #import "@preview/blockst:0.3.0": blockst, scratch, raw-scratch, sb3
 
 #scratch("
@@ -39,32 +36,35 @@ when green flag clicked
 move (10) steps
 turn cw (15) degrees
 ")
-```
+```)
 
-#image("/examples/example-quickstart.svg")
+#image("../examples/example-quickstart.svg")
 
-== Package information <package-info>
+== Package information
 
 - *Version:* 0.3.0
 - *License:* MIT
 - *Repository:* #link("https://github.com/Loewe1000/blockst")[github.com/Loewe1000/blockst]
 - *Compiler requirement:* Typst 0.15.0+
-- *Font requirement:* Designed for Helvetica Neue (Scratch look). On Linux/Windows install a compatible font (e.g. Nimbus Sans) or override via #link("#set-blockst")[set-blockst].
+- *Font requirement:* Designed for Helvetica Neue (Scratch look). On Linux/Windows install a compatible font (e.g. Nimbus Sans) or override via #link("#set-blockst-global-defaults")[set-blockst].
 
-= Core Rendering API <core-api>
+= Core Rendering API
 
-== scratch() — Render Scratch Blocks <scratch>
+== scratch() — Render Scratch Blocks
 
 The primary function for rendering Scratch blocks. It parses Scratch-like text and produces visual blocks.
 
-#example(
-  `#scratch("when green flag clicked\nmove (10) steps")`,
-  context scratch("when green flag clicked\nmove (10) steps"),
+#show-example(
+  rendered: context scratch("when green flag clicked\nmove (10) steps"),
+  source: ```typ
+#scratch("when green flag clicked\nmove (10) steps")
+```,
+  side-by-side: true,
 )
 
-=== Signature <scratch-sig>
+=== Signature
 
-```typst
+#show-code(```typ
 #scratch(
   text,
   language: "en",
@@ -75,9 +75,9 @@ The primary function for rendering Scratch blocks. It parses Scratch-like text a
   line-number-gutter: auto,
   inset-scale: auto,
 )
-```
+```)
 
-=== Parameters <scratch-params>
+=== Parameters
 
 #table(
   columns: (auto, auto, auto),
@@ -94,7 +94,7 @@ The primary function for rendering Scratch blocks. It parses Scratch-like text a
   [`inset-scale`], [`auto`], [Proportional block geometry scaling. `100%` = default, `60%` = thin blocks, `125%` = thick blocks. Does not affect text size.],
 )
 
-=== Supported block syntax <scratch-syntax>
+=== Supported block syntax
 
 The text parser supports the full Scratch 3 block vocabulary in all 26 locales. Key syntax patterns:
 
@@ -111,16 +111,16 @@ The text parser supports the full Scratch 3 block vocabulary in all 26 locales. 
   [Input: dropdown], [`[random position v]`], [Dropdown selector],
   [C-block], [`repeat (4)\n...\nend`], [Block with body],
   [C-block + else], [`if <...> then\n...\nelse\n...\nend`], [Conditional with else],
-  [Line labels], [`move (10) steps #step`], [Named label (see #link("#labels")[Labels])],
-  [Category prefix], [`@motion free text`], [Force category color (see #link("#category-prefix")[category])],
+  [Line labels], [`move (10) steps #step`], [Named label (see #link("#labels-and-line-numbers")[Labels])],
+  [Category prefix], [`@motion free text`], [Force category color (see #link("#category-quick-color-defaults")[category])],
   [Category prefix (render)], [`#text("@category")` + text], [Matches real block when text fits],
 )
 
-== set-blockst() — Global Defaults <set-blockst>
+== set-blockst() — Global Defaults
 
 Sets global rendering options for all subsequent `scratch()` and SB3 render calls.
 
-```typst
+#show-code(```typ
 #set-blockst(
   theme: none,
   scale: none,
@@ -131,11 +131,11 @@ Sets global rendering options for all subsequent `scratch()` and SB3 render call
   line-number-gutter: none,
   inset-scale: none,
 )
-```
+```)
 
 All parameters are optional. Only provided values override the current defaults.
 
-=== Themes <themes>
+=== Themes
 
 #table(
   columns: (auto, auto),
@@ -147,41 +147,41 @@ All parameters are optional. Only provided values override the current defaults.
   [`"grayscale"`], [One distinct grey per category, so a control block still reads differently from an operator on a monochrome page.],
 )
 
-```typst
+#show-code(```typ
 #set-blockst(theme: "print", scale: 70%)
 #scratch("when green flag clicked\nmove (10) steps")
-```
+```)
 
-=== Fonts <fonts>
+=== Fonts
 
-```typst
+#show-code(```typ
 #set-blockst(font: "Nimbus Sans")
-```
+```)
 
 The default font is Helvetica Neue. On systems without it, set an alternative.
 
-=== Line numbers <line-numbers>
+=== Line numbers
 
-```typst
+#show-code(```typ
 #set-blockst(line-numbers: true, line-number-start: 1, line-number-gutter: 24)
-```
+```)
 
-#image("/examples/example-labels.svg")
+#image("../examples/example-labels.svg")
 
-=== Inset scale <inset-scale>
+=== Inset scale
 
 Controls the visual thickness/slimness of blocks without changing text size.
 
-```typst
+#show-code(```typ
 #set-blockst(inset-scale: 60%)   // compact blocks
 #set-blockst(inset-scale: 125%)  // generous blocks
-```
+```)
 
-== blockst() — Group Override Container <blockst>
+== blockst() — Group Override Container
 
 Optional wrapper for grouped blocks that differ from global settings.
 
-```typst
+#show-code(```typ
 #blockst(
   theme: auto,
   scale: auto,
@@ -192,17 +192,17 @@ Optional wrapper for grouped blocks that differ from global settings.
   spacing: 1.5em,
   body,
 )
-```
+```)
 
 All parameters match `scratch()` but apply only within the body. Use when a specific group of blocks needs different scaling or theme.
 
-```typst
+#show-code(```typ
 #blockst(theme: "high-contrast")[
   #scratch("when green flag clicked\nmove (10) steps")
 ]
-```
+```)
 
-= Languages <languages>
+= Languages
 
 blockst supports *26 languages* via built-in WASM locale data. Set via `scratch(..., language: "de")` or `set-blockst(...)`.
 
@@ -225,7 +225,7 @@ blockst supports *26 languages* via built-in WASM locale data. Set via `scratch(
   [`"tr"`], [Turkish], [`"ar"`], [Arabic],
 )
 
-```typst
+#show-code(```typ
 #set-blockst(scale: 67.5%)
 #scratch("
 Wenn die grüne Flagge angeklickt
@@ -234,17 +234,17 @@ wiederhole (4) mal
   drehe dich nach rechts um (90) Grad
 end
 ", language: "de")
-```
+```)
 
-#image("/examples/example-de.svg")
+#image("../examples/example-de.svg")
 
 Block text must match the chosen locale's vocabulary — the parser matches against official Scratch translations.
 
-== Right-to-left languages <rtl>
+== Right-to-left languages
 
 Arabic (`"ar"`), Hebrew (`"he"`) and Persian (`"fa"`) render right-to-left. Nothing has to be switched on: each locale declares its own direction, and the renderer mirrors the layout — the notch, the hat dome, the C-block mouth, the loop arrow, the pen badge, the `define` hat and the order of the labels all move to the reading edge.
 
-```typst
+#show-code(```typ
 #scratch("
 عند نقر @greenFlag
 تحرك (10) خطوة
@@ -252,9 +252,9 @@ Arabic (`"ar"`), Hebrew (`"he"`) and Persian (`"fa"`) render right-to-left. Noth
 استدر @turnRight (90) درجة
 نهاية
 ", language: "ar")
-```
+```)
 
-#image("/examples/example-rtl.svg")
+#image("../examples/example-rtl.svg")
 
 #info(title: "What is mirrored, and what is not")[
   Layout is mirrored; meaning is not. The loop arrow points back to the top of the loop, which is a claim about the drawing, so it flips with the drawing. `@turnRight` and `@turnLeft` are never mirrored — their direction is what the sprite is being told to do, and a mirrored `@turnRight` would tell the reader to turn the other way.
@@ -262,15 +262,15 @@ Arabic (`"ar"`), Hebrew (`"he"`) and Persian (`"fa"`) render right-to-left. Noth
 
 Arabic short vowels are optional and their order is not canonical, so blocks match whether or not you type the harakat: `كرِّر` and `كرر` both find the repeat block.
 
-= Labels and Line Numbers <labels>
+= Labels and Line Numbers
 
 blockst provides a label system for creating line-aware worksheets. Lines ending with `#label-name` are tagged and can be referenced later.
 
-== scratch-labels() — Extract Labels <scratch-labels>
+== scratch-labels() — Extract Labels
 
 Parses Scratch text and returns a dictionary mapping label names to line numbers.
 
-```typst
+#show-code(```typ
 #let labels = scratch-labels("
 repeat (4) #loop
   move (20) steps #step
@@ -278,39 +278,39 @@ repeat (4) #loop
 end
 ")
 // labels = ("loop": 1, "step": 2)
-```
+```)
 
-== blockst-labels() — Query Labels <blockst-labels>
+== blockst-labels() — Query Labels
 
 Queries globally collected labels from all rendered `scratch()` calls.
 
-```typst
+#show-code(```typ
 #blockst-labels("loop")   // → line number or "NaN"
 #blockst-labels()         // → full label → line dictionary
-```
+```)
 
-== blockst-register-labels() — Pre-register Labels <blockst-register-labels>
+== blockst-register-labels() — Pre-register Labels
 
 Register labels globally without rendering blocks. Useful when labels are needed before the first block output.
 
-```typst
+#show-code(```typ
 #blockst-register-labels("
 repeat (4) #loop
   move (20) steps #step
 end
 ")
-```
+```)
 
-#image("/examples/example-labels.svg")
+#image("../examples/example-labels.svg")
 
-= `@category` — Quick Color Defaults <category-prefix>
+= `@category` — Quick Color Defaults
 
 Use `@category` prefix to force a block's category color, even without matching full localized syntax.
 
-```typst
+#show-code(```typ
 @motion         // → default motion block
 @motion free text  // → unrecognized block in motion color
-```
+```)
 
 Available categories:
 
@@ -330,57 +330,57 @@ Available categories:
   [`@pen`], [pen], [`clear`],
   [`@event`], [events], [(alias for `events`)],
   [`@operator`], [operators], [(alias for `operators`)],
-) |
+)
 
 When `@category` is followed by text that matches a known block in that category, the actual block is rendered:
 
-```typst
+#show-code(```typ
 @list add (12) to [my list v]    // → DATA_ADDTOLIST
 @variable change [score v] by (1) // → DATA_CHANGEVARIABLEBY
-```
+```)
 
 If the text does not match any known block, the fallback is an `unrecognized` block in the forced category color.
 
-= Parsing API <parsing>
+= Parsing API
 
-== scratch-parse() — Parse to AST <scratch-parse>
+== scratch-parse() — Parse to AST
 
 Parses Scratch text to an abstract syntax tree for programmatic use.
 
-```typst
+#show-code(```typ
 #scratch-parse(
   text,              // Scratch block text
   language: "en",    // locale for parsing
 )
-```
+```)
 
 Returns a nested structure representing blocks, inputs, and bodies.
 
-= Markdown Code Blocks with raw-scratch <raw-scratch>
+= Markdown Code Blocks with raw-scratch
 
 The `raw-scratch()` show rule converts scratch code fences into rendered blocks automatically.
 
-```typst
+#show-code(```typ
 #show: raw-scratch(language: "en")   // locale for block text
-```
+```)
 
 Then use scratch code fences in your document:
 
-```scratch
+#show-code(```scratch
 when green flag clicked
 repeat (4)
   move (30) steps
   turn cw (90) degrees
 end
-```
+```)
 
-#image("/examples/example-raw-scratch.svg")
+#image("../examples/example-raw-scratch.svg")
 
 Optionally pass language: raw-scratch(language: "de") in the show rule.
 
-= Theme and Styling Examples <theme-examples>
+= Theme and Styling Examples
 
-```typst
+#show-code(```typ
 #let script = "when green flag clicked
 go to (random position v)
 turn cw (30) degrees"
@@ -394,30 +394,30 @@ turn cw (30) degrees"
 #v(5mm)
 
 #blockst(theme: "print")[#scratch(script)]
-```
+```)
 
-#image("/examples/example-theme.svg")
+#image("../examples/example-theme.svg")
 
-= Turtle Graphics / Executable Scratch <turtle-graphics>
+= Turtle Graphics / Executable Scratch
 
 blockst includes an execution engine that runs Scratch programs visually — ideal for demonstrating program flow and pen drawing.
 
-== scratch-run Module <scratch-run>
+== scratch-run Module
 
 Import via the `scratch-run` module:
 
-```typst
+#show-code(```typ
 #import "@preview/blockst:0.3.0": scratch-run, set-scratch-run
 
 #scratch-run.stage("...", scale: 2)
 #scratch-run.grid("...", grid: true)
-```
+```)
 
-=== scratch-run.stage() — Stage Canvas <stage>
+=== scratch-run.stage() — Stage Canvas
 
 Renders pen drawing on a stage canvas, like the Scratch stage.
 
-```typst
+#show-code(```typ
 #scratch-run.stage(
   program,
   language: "en",      // locale for block text
@@ -429,13 +429,13 @@ Renders pen drawing on a stage canvas, like the Scratch stage.
   cursor: auto,        // show/hide turtle cursor (default: true)
   border: auto,        // show/hide stage border (default: true)
 )
-```
+```)
 
-=== scratch-run.grid() — Coordinate Grid <grid>
+=== scratch-run.grid() — Coordinate Grid
 
 Renders the drawing on a Cartesian coordinate grid with optional axes and grid lines.
 
-```typst
+#show-code(```typ
 #scratch-run.grid(
   program,
   language: "en",      // locale for block text
@@ -452,11 +452,11 @@ Renders the drawing on a Cartesian coordinate grid with optional axes and grid l
   cursor: auto,        // show/hide turtle cursor (default: true)
   fit: auto,           // auto-fit view to drawing bounds
 )
-```
+```)
 
-=== set-scratch-run() — Run Global Defaults <set-scratch-run>
+=== set-scratch-run() — Run Global Defaults
 
-```typst
+#show-code(```typ
 #set-scratch-run(
   scale: none,         // default scale for all runs
   start: none,         // (x: 0, y: 0, angle: 90)
@@ -466,9 +466,9 @@ Renders the drawing on a Cartesian coordinate grid with optional axes and grid l
   stage: none,         // (size: (480, 360), border: true)
   grid: none,          // (visible: false, axes: false, step: auto, style: auto)
 )
-```
+```)
 
-=== Supported Execution Commands <exec-commands>
+=== Supported Execution Commands
 
 #table(
   columns: (auto, auto),
@@ -484,11 +484,11 @@ Renders the drawing on a Cartesian coordinate grid with optional axes and grid l
   [German], [`gehe`, `drehe-rechts`, `drehe-links`, `setze-richtung`, `gehe-zu`, `stift-ein`, `stift-aus`, `setze-stiftfarbe-auf`, `setze-stiftdicke`, `setze-variable`, `aendere-variable`, `groesser`, `kleiner`, `gleich`, `und`, `oder`, `nicht`, `mal`, `geteilt`, `zufallszahl`],
 )
 
-=== Complete Example <exec-example>
+=== Complete Example
 
-#image("/examples/example-executable.svg")
+#image("../examples/example-executable.svg")
 
-```typst
+#show-code(```typ
 #let square-program = "
 go to x: (-45) y: (45)
 pen down
@@ -511,25 +511,25 @@ end"
   [#scratch(square-program)],
   [#scratch-run.stage(square-program, scale: 2)],
 )
-```
+```)
 
-= SB3 Import API <sb3>
+= SB3 Import API
 
 blockst can read real Scratch 3 project files (`.sb3`) and extract scripts, variables, lists, images, and screen previews.
 
-== Basic Workflow <sb3-workflow>
+== Basic Workflow
 
-```typst
+#show-code(```typ
 #let project = read("my-project.sb3", encoding: none)
 
 #sb3.render-sb3-scripts(project, language: "en", target: "Sprite1")
-```
+```)
 
 The `.sb3` file must be read as raw bytes (`encoding: none`).
 
-== render-sb3-scripts() <sb3-scripts>
+== render-sb3-scripts()
 
-```typst
+#show-code(```typ
 #sb3.render-sb3-scripts(
   sb3-bytes,                   // raw .sb3 file bytes (read with encoding: none)
   script-number: auto,         // global script index (1-based)
@@ -541,13 +541,13 @@ The `.sb3` file must be read as raw bytes (`encoding: none`).
   header-gap: 1.5mm,           // spacing between target name and scripts
   script-gap: 3mm,             // spacing between individual scripts
 )
-```
+```)
 
-#image("/examples/example-sb3-import.svg")
+#image("../examples/example-sb3-import.svg")
 
-== render-sb3-variables() <sb3-variables>
+== render-sb3-variables()
 
-```typst
+#show-code(```typ
 #sb3.render-sb3-variables(
   sb3-bytes,                   // raw .sb3 file bytes
   target: auto,                // filter by target name
@@ -559,11 +559,11 @@ The `.sb3` file must be read as raw bytes (`encoding: none`).
   target-gap: 2mm,             // spacing between targets
   item-gap: 0.8mm,             // spacing between variable items
 )
-```
+```)
 
-== render-sb3-lists() <sb3-lists>
+== render-sb3-lists()
 
-```typst
+#show-code(```typ
 #sb3.render-sb3-lists(
   sb3-bytes,                   // raw .sb3 file bytes
   target: auto,                // filter by target name
@@ -575,13 +575,13 @@ The `.sb3` file must be read as raw bytes (`encoding: none`).
   target-gap: 2mm,             // spacing between targets
   item-gap: 0.8mm,             // spacing between list items
 )
-```
+```)
 
-== Standalone Monitors <monitors>
+== Standalone Monitors
 
-=== list-monitor() <list-monitor>
+=== list-monitor()
 
-```typst
+#show-code(```typ
 #list-monitor(
   name: "List",      // display name shown in header
   items: (),         // array of values to display
@@ -589,22 +589,22 @@ The `.sb3` file must be read as raw bytes (`encoding: none`).
   height: auto,      // auto-grows to fit content
   length-label: auto,// show length indicator (e.g. "length: 3")
 )
-```
+```)
 
-=== variable-monitor() <variable-monitor>
+=== variable-monitor()
 
-```typst
+#show-code(```typ
 #variable-monitor(
   name: "Variable",  // display name shown in header
   value: 0,          // current value to display
 )
-```
+```)
 
-#image("/examples/example-monitors.svg")
+#image("../examples/example-monitors.svg")
 
-== screen-preview() <sb3-screen>
+== screen-preview()
 
-```typst
+#show-code(```typ
 #sb3.sb3-screen-preview(
   sb3-bytes,           // raw .sb3 file bytes
   width: 480,          // stage rendering width in pixels
@@ -616,13 +616,13 @@ The `.sb3` file must be read as raw bytes (`encoding: none`).
   monitor-scale: 1.5,  // scale factor for variable/list overlays
   language: auto,      // locale for monitor text
 )
-```
+```)
 
 Renders a static Scratch stage preview with sprites, backdrop, and monitors.
 
-== Image Helpers <sb3-images>
+== Image Helpers
 
-```typst
+#show-code(```typ
 // List all image assets in the project
 #sb3.sb3-image-assets-catalog(sb3-bytes, target: auto)
 
@@ -636,11 +636,11 @@ Renders a static Scratch stage preview with sprites, backdrop, and monitors.
   width: auto,        // output width (auto = original size)
   height: auto,       // output height
 )
-```
+```)
 
-== Catalog Helpers <sb3-catalogs>
+== Catalog Helpers
 
-```typst
+#show-code(```typ
 // Grouped script metadata (targets, scripts, blocks count)
 #sb3.sb3-scripts-catalog(sb3-bytes)
 
@@ -653,9 +653,9 @@ Renders a static Scratch stage preview with sprites, backdrop, and monitors.
   script-number: auto,// global script index (1-based)
   language: "en",     // locale for output text
 )
-```
+```)
 
-= Catalog <catalog>
+= Catalog
 
 The catalog shows every block in each Scratch 3 category, rendered live.
 
@@ -663,10 +663,10 @@ The catalog shows every block in each Scratch 3 category, rendered live.
   columns: (auto, auto),
   align: (left, left),
   table.header([*Block*], [*Code*]),
-  ..blocks.map(block => (table.cell[#scratch(block)], table.cell[#raw(block)])).flatten(),
+  ..blocks.map(block => (table.cell[#framed(scratch(block))], table.cell[#raw(block)])).flatten(),
 )
 
-== Motion <cat-motion>
+== Motion
 
 #_catalog-table("move (10) steps
 turn cw (15) degrees
@@ -687,7 +687,7 @@ set rotation style [left-right v]
 (y position)
 (direction)".split("\n"))
 
-== Looks <cat-looks>
+== Looks
 
 #_catalog-table("say [Hello!] for (2) seconds
 say [Hello!]
@@ -710,7 +710,7 @@ go [forward v] (1) layers
 (backdrop [number v])
 (size)".split("\n"))
 
-== Sound <cat-sound>
+== Sound
 
 #_catalog-table("play sound [pop v] until done
 start sound [pop v]
@@ -722,7 +722,7 @@ change volume by (-10)
 set volume to (100) %
 (volume)".split("\n"))
 
-== Pen <cat-pen>
+== Pen
 
 #_catalog-table("erase all
 stamp
@@ -736,7 +736,7 @@ set pen shade to (50)
 change pen size by (1)
 set pen size to (1)".split("\n"))
 
-== Variables <cat-variables>
+== Variables
 
 #_catalog-table("set [my variable v] to (0)
 change [my variable v] by (1)
@@ -744,7 +744,7 @@ show variable [my variable v]
 hide variable [my variable v]
 (my variable)".split("\n"))
 
-== Lists <cat-lists>
+== Lists
 
 #_catalog-table("add [thing] to [my list v]
 delete (1) of [my list v]
@@ -758,7 +758,7 @@ replace item (1) of [my list v] with [thing]
 show list [my list v]
 hide list [my list v]".split("\n"))
 
-== Events <cat-events>
+== Events
 
 #_catalog-table("when green flag clicked
 when [space v] key pressed
@@ -769,7 +769,7 @@ when I receive [message1 v]
 broadcast [message1 v]
 broadcast [message1 v] and wait".split("\n"))
 
-== Control <cat-control>
+== Control
 
 #_catalog-table("wait (1) seconds
 repeat (10)
@@ -789,7 +789,7 @@ when I start as a clone
 create clone of [myself v]
 delete this clone".split("\n"))
 
-== Sensing <cat-sensing>
+== Sensing
 
 #_catalog-table("<touching [mouse-pointer v]?>
 <touching color [#ff0000]?>
@@ -809,7 +809,7 @@ reset timer
 (days since 2000)
 (username)".split("\n"))
 
-== Operators <cat-operators>
+== Operators
 
 #_catalog-table("(() + ())
 (() - ())
@@ -830,9 +830,17 @@ not <>
 (round ())
 ([sqrt v] of (9))".split("\n"))
 
-= Contributing <contributing>
+= Contributing
 
 Contributions are welcome: bug reports, missing blocks, parser improvements, rendering polish, docs, and new localizations.
 
 - *Repository:* #link("https://github.com/Loewe1000/blockst")[github.com/Loewe1000/blockst]
 - *License:* MIT
+
+= API Reference
+
+The reference is generated from the `///` comments in the source. It covers the
+public rendering API in `libs/scratch/api.typ`, which `lib.typ` and
+`package.typ` re-export unchanged.
+
+#show-module(read("../libs/scratch/api.typ"), name: "blockst")

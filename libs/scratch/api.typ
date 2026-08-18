@@ -159,7 +159,7 @@
   })
 }
 
-/// Render scratch blocks from text. Works standalone or inside #blockst[].
+/// Render scratch blocks from text. Works standalone or inside `#blockst[...]`.
 /// Supports 26 languages: en, de, fr, es, it, pt, nl, pl, ru, ja, ...
 #let scratch(
   text,
@@ -202,22 +202,22 @@
   _generic-parse(text, language: language)
 }
 
-/// Parse scratch text and return a dictionary mapping #labels to rendered line numbers.
+/// Parse scratch text and return a dictionary mapping `#labels` to rendered line numbers.
 #let scratch-labels(text, language: "en") = {
   _collect-labels-from-nodes(scratch-parse(text, language: language))
 }
 
 /// Register labels globally without rendering blocks.
-/// Useful when labels are needed before the first #scratch() output appears.
+/// Useful when labels are needed before the first `#scratch()` output appears.
 #let blockst-register-labels(text, language: "en") = {
   let parsed = scratch-parse(text, language: language)
   let labels = _collect-labels-from-nodes(parsed)
   hide(_merge-labels(labels))
 }
 
-/// Read globally collected line labels from all previously rendered scratch() blocks.
-/// With a name: #blockst-labels("start", default: "?")
-/// Without a name: returns the full label->line dictionary.
+/// Read globally collected line labels from all previously rendered `scratch()` blocks.
+/// With a name: `#blockst-labels("start", default: "?")`.
+/// Without a name: returns the full label-to-line dictionary.
 #let blockst-labels(name) = context {
   let labels = _blockst-label-store.final()
   if name == none {
@@ -231,12 +231,12 @@
 #let scratch-execute(text, language: "en") = execute-scratch-text(_normalize-source(text), language: language)
 
 /// Enable scratch code blocks in raw text:
-///   #show: raw-scratch()
-///   ```scratch
-///   move (10) steps
-///   ```
-/// With language:
-///   #show: raw-scratch(language: "de")
+///
+/// ```typ
+/// #show: raw-scratch()
+/// ```
+///
+/// With language: `#show: raw-scratch(language: "de")`.
 #let raw-scratch(..args) = (
   body => {
     show raw.where(block: true, lang: "scratch"): scratch.with(..args)

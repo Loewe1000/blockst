@@ -3,4 +3,5 @@
 target/
 examples/comparison-*
 examples/compiled-blocks*
-manual/main.html
+docs/build/
+public/

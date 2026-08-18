@@ -20,19 +20,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # docs/docs.typ importiert @schule/schuldocs:0.2.0. Das Paket steht nicht
+      # im offiziellen Verzeichnis, sondern im Schwesterrepo Typst-Schule.
+      - name: Check out Typst-Schule (schuldocs)
+        uses: actions/checkout@v4
+        with:
+          repository: Loewe1000/Typst-Schule
+          path: typst-schule
+
+      # --package-path erwartet <pfad>/<namensraum>/<name>/<version>; im
+      # Schwesterrepo liegt das Paket flach unter schuldocs/0.2.0.
+      - name: Arrange local package path
+        run: |
+          mkdir -p typst-packages/schule
+          cp -R typst-schule/schuldocs typst-packages/schule/schuldocs
+          test -f typst-packages/schule/schuldocs/0.2.0/typst.toml
+
       - name: Install Typst
         uses: typst-community/setup-typst@v4
         with:
-          version: 'latest'
+          # Nicht 'latest': der Bündel-Export ist ausdrücklich experimentell und
+          # kann sich mit jeder Version ändern.
+          version: '0.15.0'
 
-      - name: Compile Manual
+      # Ein Lauf, drei Dateien: public/index.html, public/docs.css,
+      # public/blockst.pdf.
+      - name: Build manual and website
         run: |
           mkdir -p public
-          typst compile \
+          typst compile docs/docs.typ public \
+            --format bundle \
+            --features bundle,html \
             --root . \
-            --features html \
-            manual/main.typ \
-            public/index.html
+            --package-path typst-packages
+
+      - name: Check bundle output
+        run: |
+          test -f public/index.html
+          test -f public/docs.css
+          test -f public/blockst.pdf
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
