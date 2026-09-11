@@ -66,6 +66,14 @@ pub struct Geometry {
     /// Draw the raised edge that makes a block look embossed. The classic
     /// Blockly look has it; thrasos and Scratch are flat.
     pub bevel: bool,
+    /// Classic Blockly rounds only the left corners; the right ones are
+    /// square. Scratch and today's Blockly round all four.
+    pub square_right_corners: bool,
+    /// The label font. Scratch draws 12pt medium; Blockly 11pt regular, and
+    /// the widths are measured with the same face, so this decides the
+    /// layout as much as the look.
+    pub font_size_pt: f32,
+    pub font_weight: u16,
 
     /// Input fields. Scratch draws a pill — a radius of half the height —
     /// while Blockly draws a small rounded rectangle. `field_radius` of
@@ -108,6 +116,9 @@ impl Geometry {
             hat_width: 100.0,
             hat_curve_height: 15.0,
             bevel: false,
+            square_right_corners: false,
+            font_size_pt: 12.0,
+            font_weight: 500,
             field_height: 32.0,
             field_height_min: 24.0,
             field_radius: None,
@@ -146,6 +157,9 @@ impl Geometry {
             hat_width: 100.0,
             hat_curve_height: 15.0,
             bevel: false,
+            square_right_corners: false,
+            font_size_pt: 11.0,
+            font_weight: 400,
             field_height: 16.0,
             field_height_min: 12.0,
             field_radius: Some(4.0),
@@ -173,6 +187,7 @@ impl Geometry {
             row_height_min: 19.0,
             tab_height: 20.0,
             bevel: true,
+            square_right_corners: true,
             ..Self::blockly_modern()
         }
     }

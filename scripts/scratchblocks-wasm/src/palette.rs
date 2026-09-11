@@ -281,9 +281,13 @@ fn derive(fill: &str) -> Option<(CategoryColors, CategoryColors, f32)> {
         fill: to_hex(r, g, b),
         // Blockly's tertiary colour: the same hue, a fifth darker.
         stroke: to_hex(r * 0.8, g * 0.8, b * 0.8),
-        text: contrast_text(r, g, b).to_string(),
+        // Blockly labels are always white, even on its lightest greens;
+        // the contrast rule is kept for the greyscale variant, where it
+        // matters.
+        text: "#ffffff".to_string(),
         alt: to_hex(r * 0.9, g * 0.9, b * 0.9),
     };
+    let _ = contrast_text(r, g, b);
     // High contrast: pull the fill towards white and switch to black labels,
     // as the Scratch high-contrast palette does.
     let mix = |c: f32| c + (1.0 - c) * 0.45;

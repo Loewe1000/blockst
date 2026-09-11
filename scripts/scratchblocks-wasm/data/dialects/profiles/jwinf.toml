@@ -8,6 +8,7 @@ name = "jwinf"
 inherits = "blockly-klassisch"
 
 [colors]
+start = "#4789cc"
 aktionen = "#723ca5"
 schildkroete = "#7347cc"
 sensoren = "#2b7ca5"

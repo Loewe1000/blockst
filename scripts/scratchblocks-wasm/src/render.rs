@@ -1,7 +1,7 @@
 use crate::measure::{block_size, mouth_indent, c_block_inner_width, c_block_size, current_inset_scale, input_box_height, is_rtl, max_nested_height, script_size_with_inside, segment_width, text_width};
 use crate::model::{BlockSpec, DocumentSpec, ScriptSpec, SegmentSpec};
 use crate::svg::{boolean_path, cap_path, escape_text, hat_path, mouth_cap_path, mouth_path, proc_hat_path, reporter_path, stack_path};
-use crate::geometry::{for_profile, geometry, set_geometry};
+use crate::geometry::{for_profile, geometry, set_geometry, Shapes};
 use crate::palette::{colors_for, palette_for, set_palette};
 
 const LABEL_MARGIN: f32 = 4.447_998;
@@ -134,6 +134,9 @@ fn css_font_stack(font: &str) -> String {
 
 fn defs(theme: &str, font: &str) -> String {
     let font = &css_font_stack(font);
+    let g = geometry();
+    let size = g.font_size_pt;
+    let weight = g.font_weight;
     let text_fill = if theme == "high-contrast" || theme == "print" { "#000" } else { "#fff" };
 
     // The green flag stays a flag in greyscale: a dark outline round a light
@@ -159,7 +162,7 @@ fn defs(theme: &str, font: &str) -> String {
         let input_text_fill = if theme == "print" || theme == "high-contrast" { "#000" } else { "#575e75" };
 
     format!(
-        "<style>.sb-label{{font:500 12pt {font};fill:{text_fill};word-spacing:1pt}}.sb-input-text{{font:500 12pt {font};fill:{input_text_fill}}}.sb-line-number{{font:500 12pt {font};fill:#6b7280}}</style>\
+        "<style>.sb-label{{font:{weight} {size}pt {font};fill:{text_fill};word-spacing:1pt}}.sb-input-text{{font:{weight} {size}pt {font};fill:{input_text_fill}}}.sb-line-number{{font:{weight} {size}pt {font};fill:#6b7280}}</style>\
         <g id=\"sb-greenFlag\">\
           <path d=\"M20.8 3.7c-.4-.2-.9-.1-1.2.2-2 1.6-4.8 1.6-6.8 0-2.3-1.9-5.6-2.3-8.3-1v-.4c0-.6-.5-1-1-1s-1 .4-1 1v18.8c0 .5.5 1 1 1h.1c.5 0 1-.5 1-1v-6.4c1-.7 2.1-1.2 3.4-1.3 1.2 0 2.4.4 3.4 1.2 2.9 2.3 7 2.3 9.8 0 .3-.2.4-.5.4-.9V4.7c0-.5-.3-.9-.8-1zm-.3 10.2C18 16 14.4 16 11.9 14c-1.1-.9-2.5-1.4-4-1.4-1.2.1-2.3.5-3.4 1.1V4c2.5-1.4 5.5-1.1 7.7.6 2.4 1.9 5.7 1.9 8.1 0h.2l.1.1-.1 9.2z\" fill=\"{flag_outer}\"/>\
           <path d=\"M20.6 4.8l-.1 9.1v.1c-2.5 2-6.1 2-8.6 0-1.1-.9-2.5-1.4-4-1.4-1.2.1-2.3.5-3.4 1.1V4c2.5-1.4 5.5-1.1 7.7.6 2.4 1.9 5.7 1.9 8.1 0h.2c0 .1.1.1.1.2z\" fill=\"{flag_inner}\"/>\
@@ -185,6 +188,9 @@ fn defs(theme: &str, font: &str) -> String {
 }
 
 fn render_script(script: &ScriptSpec, theme: &str, inside: bool) -> (String, f32, f32) {
+    if geometry().shapes == Shapes::Blockly {
+        return crate::blockly::render_stack(&script.blocks, theme);
+    }
     let (width, height) = script_size_with_inside(&script.blocks, inside);
     let mut y = 1.0;
     let mut svg = String::new();
@@ -299,6 +305,8 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
             else_body: vec![],
             else_segments: vec![],
         mouth: None,
+        slots: Vec::new(),
+        inline: None,
         };
         let (tw, _) = block_size(&temp);
         tw
@@ -343,6 +351,8 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
             else_body: vec![],
             else_segments: vec![],
         mouth: None,
+        slots: Vec::new(),
+        inline: None,
         };
         svg.push_str(&render_segments(&temp, &temp.segments, theme, &colors.text, 0.0, 40.0, 5.0));
     }
@@ -995,6 +1005,8 @@ mod tests {
                     else_body: vec![],
                     else_segments: vec![],
                 mouth: None,
+                slots: Vec::new(),
+                inline: None,
                 }
             ],
             else_body: vec![
@@ -1007,10 +1019,14 @@ mod tests {
                     else_body: vec![],
                     else_segments: vec![],
                 mouth: None,
+                slots: Vec::new(),
+                inline: None,
                 }
             ],
             else_segments: vec![SegmentSpec::Text { value: "sonst".to_string() }],
             mouth: None,
+            slots: Vec::new(),
+            inline: None,
         };
         let (svg, width, height) = render_c_block(&block, "normal", false);
         // Check that the else segment appears in SVG
@@ -1054,6 +1070,8 @@ mod tests {
                     else_body: vec![],
                     else_segments: vec![],
                 mouth: None,
+                slots: Vec::new(),
+                inline: None,
                 }],
             }],
         };
@@ -1087,6 +1105,8 @@ mod tests {
                         else_body: vec![],
                         else_segments: vec![],
                     mouth: None,
+                    slots: Vec::new(),
+                    inline: None,
                     },
                     BlockSpec {
                         shape: "stack".to_string(),
@@ -1105,6 +1125,8 @@ mod tests {
                         else_body: vec![],
                         else_segments: vec![],
                     mouth: None,
+                    slots: Vec::new(),
+                    inline: None,
                     },
                 ],
             }],

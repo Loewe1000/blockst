@@ -6,21 +6,22 @@ Regenerate with `python3 scripts/blockly-data/generate.py`.
 
 | Set | Blocks |
 | --- | ---: |
-| Blockly standard (German) | 46 |
+| Blockly standard (German) | 44 |
 | jwinf robot world | 38 |
 | jwinf turtle world | 42 |
-| standard blocks worded differently in the old Blockly | 6 |
+| standard blocks worded differently in the old Blockly | 4 |
+| world blocks dropped as socket-twins of a field variant | 23 |
 
 ## Shapes
 
 | Shape | Blockly | jwinf worlds |
 | --- | ---: | ---: |
-| boolean | 7 | 0 |
+| boolean | 12 | 0 |
 | c-block | 8 | 0 |
-| cap | 3 | 0 |
+| cap | 2 | 0 |
 | hat | 1 | 0 |
-| reporter | 21 | 22 |
-| stack | 6 | 56 |
+| reporter | 16 | 22 |
+| stack | 5 | 56 |
 
 ## Gaps
 
@@ -35,7 +36,5 @@ The old wording is what a learner sees on jwinf, so the jwinf locale keeps it.
 | --- | --- | --- |
 | `controls_repeat_ext` | wiederhole %1 mal: | wiederhole %1-mal: |
 | `lists_repeat` | erzeuge Liste mit %2 mal dem Element %1 | erzeuge Liste mit %2-mal dem Element %1 |
-| `procedures_defnoreturn` | %1 | um %1 |
-| `procedures_defreturn` | %1 | um %1 |
 | `text_create_join_container` | Text %1 %2 | verbinden %1 %2 |
 | `text_create_join_item` | etwas | Element |

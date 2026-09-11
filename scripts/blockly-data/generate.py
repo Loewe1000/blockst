@@ -352,6 +352,39 @@ def shape_of(definition: dict) -> str:
     return "stack"
 
 
+SLOT_KINDS = {
+    "input_value": "value",
+    "input_statement": "statement",
+    "field_dropdown": "dropdown",
+    "field_variable": "dropdown",
+    "field_number": "field",
+    "field_input": "field",
+    "field_angle": "field",
+    "field_checkbox": "field",
+    "field_colour": "field",
+    "field_label": "field",
+    "field_image": "field",
+}
+
+
+def slots_of(definition: dict) -> list[str]:
+    """What each %n placeholder is, across message0, message1, …
+
+    The renderer needs this to tell a socket (a value block plugs in) from
+    a field (a white box the block owns): both are written `(…)` in the text
+    notation, and Blockly draws them very differently.
+    """
+    kinds: list[str] = []
+    index = 0
+    while f"args{index}" in definition:
+        for arg in definition[f"args{index}"]:
+            kind = SLOT_KINDS.get(arg.get("type", ""))
+            if kind:
+                kinds.append(kind)
+        index += 1
+    return kinds
+
+
 def block_specs(definitions: list[dict], messages: dict[str, str]) -> tuple[dict, list[str]]:
     specs: dict[str, dict] = {}
     gaps: list[str] = []
@@ -368,12 +401,21 @@ def block_specs(definitions: list[dict], messages: dict[str, str]) -> tuple[dict
         if text is None:
             gaps.append(block_type)
             continue
+        # A spec made of placeholders alone — "%1", "%1 %2 %3" — would match
+        # any bare input, so `(7)` on its own would become a procedure call.
+        # Such blocks are named by the author (a procedure's name, an
+        # operator dropdown) and are written as free text instead.
+        if re.fullmatch(r"(\s*%\d+\s*)+", text):
+            continue
 
         entry = {
             "text": clean(text),
             "shape": shape_of(definition),
             "category": STYLE_TO_CATEGORY.get(definition.get("style", ""), "sonstige"),
+            "slots": slots_of(definition),
         }
+        if "inputsInline" in definition:
+            entry["inline"] = bool(definition["inputsInline"])
 
         # A C-block carries a second row ("mache %1") that labels its mouth.
         mouth = definition.get("message1")
@@ -418,6 +460,21 @@ def clean(value: str) -> str:
     return re.sub(r"[​‌‍﻿]", "", value).strip()
 
 
+def world_slots(entry: str) -> list[str]:
+    """Slot kinds of a France-IOI block entry.
+
+    A `blocklyJson` carries Blockly arg types; a bare `params: [null, …]`
+    means one value socket per parameter; no parameters, no slots.
+    """
+    kinds = [SLOT_KINDS[t] for t in re.findall(r'"type"\s*:\s*"(\w+)"', entry) if t in SLOT_KINDS]
+    if kinds:
+        return kinds
+    params = re.search(r"params\s*:\s*\[([^\]]*)\]", entry)
+    if params:
+        return ["value"] * (params.group(1).count("null") + params.group(1).count("{"))
+    return []
+
+
 def load_world_blocks(path: Path, context: str) -> tuple[dict, list[str]]:
     """Read block metadata and German labels out of a pemFioi library.
 
@@ -458,6 +515,7 @@ def load_world_blocks(path: Path, context: str) -> tuple[dict, list[str]]:
             "shape": "reporter" if "yieldsValue" in body else "stack",
             "category": BEBRAS_CATEGORY.get(category, category),
             "untranslated": english.get(name) == labels[name],
+            "slots": world_slots(body),
         }
 
     # The turtle library uses a second, terser form: a `customBlocks` table
@@ -480,11 +538,16 @@ def load_world_blocks(path: Path, context: str) -> tuple[dict, list[str]]:
                 if name not in gaps:
                     gaps.append(name)
                 continue
+            # The entry may run over several lines when it carries a
+            # blocklyJson; take everything up to the next `{ name:`.
+            tail = region[token.end(): token.end() + 900]
+            entry = token.group("rest") + tail.split("{ name:")[0].split("{name:")[0]
             blocks[name] = {
                 "text": labels[name],
                 "shape": "reporter" if "yieldsValue" in token.group("rest") else "stack",
                 "category": BEBRAS_CATEGORY.get(category, category),
                 "untranslated": english.get(name) == labels[name],
+                "slots": world_slots(entry),
             }
 
     return blocks, gaps
@@ -546,6 +609,18 @@ def write_locale(
             lines.append(f'"{key}" = "{marker_shapes[key][1]}"' if ":" in key else f'{key} = "{marker_shapes[key][1]}"')
     for block_id in sorted(specs):
         lines.append(f'{block_id} = "{specs[block_id]["category"]}"')
+
+    slots = {k: v["slots"] for k, v in specs.items() if v.get("slots")}
+    if slots:
+        lines += ["", "# What each %n is: a value socket, a field box, a dropdown, a statement mouth.", "[slots]"]
+        for block_id in sorted(slots):
+            lines.append(f'{block_id} = "{",".join(slots[block_id])}"')
+
+    inline = {k: v["inline"] for k, v in specs.items() if "inline" in v}
+    if inline:
+        lines += ["", "# Blocks that declare inputsInline explicitly.", "[inline]"]
+        for block_id in sorted(inline):
+            lines.append(f'{block_id} = {str(inline[block_id]).lower()}')
 
     mouths = {k: v["mouth"] for k, v in specs.items() if "mouth" in v}
     if mouths:
@@ -637,6 +712,7 @@ PROFILES = {
         ),
         "geometry": {},
         "colors": {
+            "start": "#4789cc",
             "aktionen": "#723ca5",
             "schildkroete": "#7347cc",
             "sensoren": "#2b7ca5",
@@ -709,11 +785,47 @@ def main() -> int:
     classic, classic_gaps = block_specs(definitions, classic_messages)
     print(f"  {len(definitions)} definitions, {len(modern)} with German text")
 
+    # Blockly's operator blocks read "%1 %2 %3" with a dropdown in the
+    # middle, which nobody can type, and the parser aligns a matched spec
+    # with what was typed placeholder by placeholder — so an alias with two
+    # placeholders for a spec with three loses its inputs. Each operator
+    # therefore becomes a block of its own with a two-placeholder spec; the
+    # renderer draws the operator label between two values as the dropdown
+    # Blockly shows. Alternative spellings are aliases of those.
+    operators = {
+        "logic_compare": ("boolean", "logik", {"eq": ("=", ["=="]), "ne": ("≠", ["!="]), "lt": ("<", []), "le": ("≤", ["<="]), "gt": (">", []), "ge": ("≥", [">="])}),
+        "math_arithmetic": ("reporter", "mathe", {"add": ("+", []), "sub": ("-", ["−"]), "mul": ("×", ["*"]), "div": ("÷", ["/"]), "pow": ("^", [])}),
+        "logic_operation": ("boolean", "logik", {"and": ("und", []), "or": ("oder", [])}),
+    }
+    # controls_whileUntil reads "%1 %2": a dropdown whose options are
+    # "wiederhole solange" / "wiederhole bis", then the condition. Written
+    # out, that is "wiederhole [solange v] <…>".
+    modern["controls_whileUntil"] = {"text": "wiederhole %1 %2", "shape": "c-block", "category": "schleifen", "slots": ["dropdown", "value"], "mouth": modern_messages.get("CONTROLS_REPEAT_INPUT_DO", "mache")}
+    classic["controls_whileUntil"] = {"text": "wiederhole %1 %2", "shape": "c-block", "category": "schleifen", "slots": ["dropdown", "value"], "mouth": classic_messages.get("CONTROLS_REPEAT_INPUT_DO", "mache")}
+
+    # math_number_property reads "%1 %2" too, its predicate sitting in the
+    # dropdown ("ist gerade", …). jwinf's editor shows it as "0 ist [gerade]",
+    # which is also how a worksheet writes it: <(0) ist [gerade v]>.
+    for table in (modern, classic):
+        table["math_number_property"] = {"text": "%1 ist %2", "shape": "boolean", "category": "mathe", "slots": ["value", "dropdown"], "inline": True}
+
+    operator_aliases = {}
+    for base, (shape, category, table) in operators.items():
+        modern.pop(base, None)
+        classic.pop(base, None)
+        for suffix, (symbol, spellings) in table.items():
+            block_id = f"{base}_{suffix}"
+            # Blockly's compare and arithmetic blocks are inline; the logic
+            # operation stacks its two values on two rows, `und` on the second.
+            modern[block_id] = {"text": f"%1 {symbol} %2", "shape": shape, "category": category, "slots": ["value", "value"], "inline": base != "logic_operation"}
+            for spelling in spellings:
+                operator_aliases[f"%1 {spelling} %2"] = block_id
+
     # Keywords the text syntax needs beyond the blocks themselves: how a
     # C-block is closed and how its else branch is introduced.
     else_word = modern_messages.get("CONTROLS_IF_MSG_ELSE", "sonst")
     markers = {"scratchblocks:end": "ende", "control_else": else_word}
-    aliases = {"ende": "scratchblocks:end", "Ende": "scratchblocks:end"}
+    aliases = {"ende": "scratchblocks:end", "Ende": "scratchblocks:end", **operator_aliases}
     write_locale(
         OUT / "locales" / "blockly-de.toml",
         "Blockly standard blocks, German (current wording).",
@@ -742,11 +854,41 @@ def main() -> int:
     # console. They are not in the France-IOI libraries, which build them at
     # runtime, so they are declared here from what was observed on jwinf.de.
     starts = {
-        "robot_start": {"text": "Roboter-Programm", "shape": "hat", "category": "aktionen"},
-        "turtle_start": {"text": "Schildkröten-Programm", "shape": "hat", "category": "schildkroete"},
-        "program_start": {"text": "Programm", "shape": "hat", "category": "aktionen"},
+        "robot_start": {"text": "Roboter-Programm", "shape": "hat", "category": "start"},
+        "turtle_start": {"text": "Schildkröten-Programm", "shape": "hat", "category": "start"},
+        "program_start": {"text": "Programm", "shape": "hat", "category": "start"},
     }
-    jwinf_specs = {**robot, **turtle, **differing, **starts}
+    world = {}
+    for name, entry in {**robot, **turtle}.items():
+        # Same rule as for the standard blocks: a label that is nothing but
+        # placeholders would match any bare input.
+        if re.fullmatch(r"(\s*%\d+\s*)+", entry["text"]):
+            continue
+        # France-IOI appends a block's parameters after a label that has no
+        # placeholder of its own — "setze Farbe" with one parameter shows as
+        # "setze Farbe ?" — so the spec has to say so.
+        if entry["slots"] and "%" not in entry["text"]:
+            entry = dict(entry, text=entry["text"] + "".join(f" %{i + 1}" for i in range(len(entry["slots"]))))
+        world[name] = entry
+    # Many blocks come in two flavours that read identically — one takes a
+    # value block ("moveamount"), one a typed-in field ("moveamountvalue").
+    # A worksheet writes the number, so the field flavour is kept; a block
+    # plugged in is drawn as a socket regardless of the flavour.
+    by_text: dict[str, list[str]] = {}
+    for name, entry in world.items():
+        by_text.setdefault(entry["text"], []).append(name)
+    twins = []
+    for names in by_text.values():
+        if len(names) < 2:
+            continue
+        fields_only = [n for n in names if "value" not in world[n]["slots"]]
+        keep = fields_only[0] if fields_only else names[0]
+        for n in names:
+            if n != keep:
+                twins.append(n)
+    for name in twins:
+        del world[name]
+    jwinf_specs = {**world, **differing, **starts}
     write_locale(
         OUT / "locales" / "jwinf-de.toml",
         "jwinf world blocks, plus standard blocks whose wording differs.",
@@ -775,6 +917,7 @@ def main() -> int:
         f"| jwinf robot world | {len(robot)} |",
         f"| jwinf turtle world | {len(turtle)} |",
         f"| standard blocks worded differently in the old Blockly | {len(differing)} |",
+        f"| world blocks dropped as socket-twins of a field variant | {len(twins)} |",
         "",
         "## Shapes",
         "",

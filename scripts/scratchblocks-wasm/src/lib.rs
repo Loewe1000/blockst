@@ -1,3 +1,4 @@
+mod blockly;
 mod geometry;
 mod measure;
 mod model;

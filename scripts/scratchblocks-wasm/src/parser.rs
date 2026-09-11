@@ -29,6 +29,10 @@ struct BlockDef {
     /// Label Blockly draws on the arm beside a C-block's mouth ("mache").
     #[serde(default)]
     mouth: Option<String>,
+    #[serde(default)]
+    slots: Vec<String>,
+    #[serde(default)]
+    inline: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,6 +56,10 @@ struct LocaleToml {
     categories: HashMap<String, String>,
     #[serde(default)]
     mouths: HashMap<String, String>,
+    #[serde(default)]
+    slots: HashMap<String, String>,
+    #[serde(default)]
+    inline: HashMap<String, bool>,
 }
 
 // Internal structures (same as before, loaded from TOML instead of JSON)
@@ -285,6 +293,23 @@ fn collect_texts(blocks: &[ParsedBlock], texts: &mut std::collections::BTreeSet<
                 _ => {}
             }
         }
+        if let Some(label) = data().commands_by_id.get(&block.id).and_then(|def| def.mouth.clone()) {
+            texts.insert(label);
+        }
+        // Blockly draws a run of words as one label, so its width has to be
+        // measured as one string rather than summed from the words.
+        let mut run: Vec<&str> = Vec::new();
+        for child in block.children.iter().chain(std::iter::once(&Child::Icon(String::new()))) {
+            match child {
+                Child::Label(value) => run.push(value),
+                _ => {
+                    if run.len() > 1 {
+                        texts.insert(run.join(" "));
+                    }
+                    run.clear();
+                }
+            }
+        }
         collect_texts(&block.body, texts);
         collect_texts(&block.else_body, texts);
     }
@@ -314,6 +339,12 @@ fn data() -> &'static ParserData {
                     category: locale.categories.get(block_id).cloned().unwrap_or_default(),
                     inputs: Vec::new(),
                     mouth: locale.mouths.get(block_id).cloned(),
+                    slots: locale
+                        .slots
+                        .get(block_id)
+                        .map(|list| list.split(',').map(|k| k.trim().to_string()).collect())
+                        .unwrap_or_default(),
+                    inline: locale.inline.get(block_id).copied(),
                 });
             }
             // A locale is right-to-left when it says so. Falling back to a
@@ -663,6 +694,8 @@ fn to_render_block(block: ParsedBlock) -> BlockSpec {
         category: normalize_category(&block.category).to_string(),
         line_number: block.line_number,
         mouth: data().commands_by_id.get(&block.id).and_then(|def| def.mouth.clone()),
+        slots: data().commands_by_id.get(&block.id).map(|def| def.slots.clone()).unwrap_or_default(),
+        inline: data().commands_by_id.get(&block.id).and_then(|def| def.inline),
         segments,
         body: block.body.into_iter().map(to_render_block).collect(),
         else_body: block.else_body.into_iter().map(to_render_block).collect(),

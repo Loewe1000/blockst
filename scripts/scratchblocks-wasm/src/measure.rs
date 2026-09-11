@@ -1,4 +1,4 @@
-use crate::geometry::geometry;
+use crate::geometry::{geometry, Shapes};
 use crate::model::{BlockSpec, SegmentSpec};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -309,6 +309,9 @@ pub fn max_nested_height(block: &BlockSpec) -> f32 {
 }
 
 pub fn block_size(block: &BlockSpec) -> (f32, f32) {
+    if geometry().shapes == Shapes::Blockly {
+        return crate::blockly::extent(block);
+    }
     match block.shape.as_str() {
         "reporter" => {
             let (inner, _, _, _) = line_metrics(block);
@@ -370,6 +373,8 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
                     else_body: vec![],
                     else_segments: vec![],
                 mouth: None,
+                slots: Vec::new(),
+                inline: None,
                 };
                 block_size(&temp).0.max(100.0)
             };
@@ -410,6 +415,9 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
 }
 
 pub fn script_size_with_inside(blocks: &[BlockSpec], inside: bool) -> (f32, f32) {
+    if geometry().shapes == Shapes::Blockly {
+        return crate::blockly::stack_size(blocks);
+    }
     let mut width: f32 = 0.0;
     let mut y: f32 = 1.0;
     for block in blocks {

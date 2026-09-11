@@ -71,6 +71,13 @@ pub struct BlockSpec {
     /// blocks carry one ("mache"); Scratch's do not.
     #[serde(default)]
     pub mouth: Option<String>,
+    /// What each `%n` of the block is — "value", "field", "dropdown",
+    /// "statement" — so the Blockly renderer can tell a socket from a box.
+    #[serde(default)]
+    pub slots: Vec<String>,
+    /// Blockly's `inputsInline`, when the block declares it.
+    #[serde(default)]
+    pub inline: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
