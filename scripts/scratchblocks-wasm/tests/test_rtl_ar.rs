@@ -427,3 +427,32 @@ fn first_block_fill(svg: &str) -> Option<String> {
     let end = rest.find('"')?;
     Some(rest[..end].to_string())
 }
+
+/// Issue #13: the assignment block is commonly written with مساوية لـ or
+/// مساويًا لـ rather than the canonical مساويًا. Each wording must resolve to
+/// the variables category rather than fall back to the grey "unknown" one.
+#[test]
+fn arabic_assignment_wordings_all_resolve() {
+    use scratchblocks_wasm::parse_request_json;
+
+    for code in [
+        "اجعل [س v] مساويًا (7)",      // canonical Scratch wording
+        "اجعل [س v] مساوية لـ (7)",    // the wording reported in #13
+        "اجعل [س v] مساوية (7)",
+        "اجعل [س v] مساويًا لـ (7)",
+    ] {
+        let payload = serde_json::json!({ "code": code, "language": "ar", "inline": false });
+        let parsed: serde_json::Value =
+            serde_json::from_str(&parse_request_json(&payload.to_string()).expect("parse failed")).unwrap();
+        assert_eq!(parsed[0]["id"], "DATA_SETVARIABLETO", "{code}");
+        assert_eq!(parsed[0]["category"], "variables", "{code}");
+    }
+}
+
+/// And an instruction the locale does not know must still fall back, so the
+/// aliases have not made the matcher permissive.
+#[test]
+fn arabic_unknown_instruction_still_falls_back() {
+    let svg = render("افعل شيئًا غريبًا (7)", "ar");
+    assert!(svg.contains("#bfbfbf") || svg.contains("#BFBFBF"), "unknown block should be grey");
+}

@@ -234,3 +234,9 @@ argument_reporter_boolean = "منطقي %1"
 "عند نقر العلم الأخضر" = "EVENT_WHENFLAGCLICKED"
 "النهاية" = "scratchblocks:end"
 "انتهى" = "scratchblocks:end"
+# Assignment as it is commonly written by hand: مساوية لـ / مساويًا لـ
+# alongside the canonical مساويًا. Harakat and tatweel are folded before
+# matching, so the spelling variants of each line resolve too.
+"اجعل %1 مساوية لـ %2" = "DATA_SETVARIABLETO"
+"اجعل %1 مساوية %2" = "DATA_SETVARIABLETO"
+"اجعل %1 مساويًا لـ %2" = "DATA_SETVARIABLETO"
