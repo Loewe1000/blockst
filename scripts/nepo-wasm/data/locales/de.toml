@@ -1,0 +1,130 @@
+# German block text from OpenRoberta/blockly `msg/js/de.js`.
+#
+# Pattern syntax:
+#   %NAME   a field or socket declared in blocks.toml
+#   |       row separator; a NEPO block is laid out row by row
+
+dir = "ltr"
+
+[specs]
+# START_PROGRAM; GAP is the two-space field before the hidden DEBUG field.
+robControls_start = "%MUTATOR Start %GAP | %ST"
+# DISPLAY_SHOW, DISPLAY_TEXT, DISPLAY_CHARACTER
+mbedActions_display_text = "Zeige %TYPE %OUT"
+# DISPLAY_SHOW, DISPLAY_IMAGE, DISPLAY_ANIMATION
+mbedActions_display_image = "Zeige %TYPE %VALUE"
+# DISPLAY_CLEAR
+mbedActions_display_clear = "Lösche Bildschirm"
+mbedActions_play_note = "Spiele %DURATION %NOTE"
+# RGBLED_ON + BRICKLIGHT_COLOR; RGBLED_OFF
+actions_rgbLed_hidden_on_calliope = "Schalte RGB LED an Farbe %COLOUR"
+actions_rgbLed_hidden_off_calliope = "Schalte RGB LED aus"
+# SENSOR_KEY + SENSOR_IS_PRESSED
+robSensors_key_getSample = "Taste %PORT gedrückt?"
+robSensors_pintouch_getSample = "Pin %PORT gedrückt?"
+robSensors_gesture_getSample = "gib %MODE Lage"
+robSensors_compass_getSample = "gib %MODE ° Kompasssensor"
+robSensors_sound_getSample = "gib %MODE % Mikrofon"
+robSensors_timer_getSample = "gib %MODE ms Zeitgeber %PORT"
+robSensors_temperature_getSample = "gib %MODE ° Temperatursensor"
+robSensors_light_getSample = "gib %MODE % Lichtsensor"
+mbedSensors_timer_reset = "Setze Zeitgeber %PORT zurück"
+# LOOP_FOREVER / CONTROLS_*
+robControls_loopForever = "Wiederhole unendlich oft | mache %DO"
+controls_repeat_ext = "Wiederhole %TIMES mal | mache %DO"
+controls_whileUntil = "Wiederhole %MODE %BOOL | mache %DO"
+robControls_if = "%MUTATOR wenn %IF0 | mache %DO0"
+robControls_ifElse = "%MUTATOR wenn %IF0 | mache %DO0 | sonst %ELSE"
+# WAIT / WAIT_UNTIL
+robControls_wait_time = "Warte ms %WAIT"
+robControls_wait_for = "Warte bis %WAIT0"
+# Standard Blockly reporting blocks.
+text = "%OPEN %TEXT %CLOSE"
+math_number = "%NUM"
+logic_boolean = "%BOOL"
+logic_compare = "%A %OP %B"
+logic_operation = "%A %OP %B"
+math_arithmetic = "%A %OP %B"
+math_random_int = "ganzzahliger Zufallswert zwischen %FROM bis %TO"
+mbedColour_picker = "%COLOUR"
+mbedImage_image = "%PICTURE"
+mbedImage_get_image = "%IMAGE"
+text_comment = "Kommentar %TEXT"
+variables_get = "%VAR"
+variables_set = "Schreibe %VAR %VALUE"
+# VARIABLES_TITLE + name + ':' + type + '\u2190'. The arrow is a literal in
+# `blocks/variables.js`, mirrored to '\u2192' in right-to-left locales.
+robGlobalVariables_declare = "%MUTATOR Variable %VAR : %TYPE \u2190 %VALUE"
+# MATH_CHANGE_TITLE
+robMath_change = "erhöhe %VAR um %DELTA"
+# LISTS_CREATE_TITLE, then one right-aligned index label per further item.
+robLists_create_with = "%PLUS %MINUS Liste : %LIST_TYPE \u2190 %N0 %ADD0 | %N1 %ADD1 | %N2 %ADD2 | %N3 %ADD3 | %N4 %ADD4 | %N5 %ADD5"
+# LISTS_REPEAT_TITLE, split at its two placeholders.
+robLists_repeat = "Erzeuge Liste mit Element %LIST_TYPE %ITEM wiederhole es %NUM mal"
+# LISTS_LENGTH_TITLE
+robLists_length = "Länge von %VALUE"
+# LISTS_ISEMPTY_TITLE
+robLists_isEmpty = "%VALUE ist leer?"
+# LISTS_INLIST + LISTS_INDEX_OF_*
+robLists_indexOf = "von der Liste %VALUE %END %FIND"
+robLists_getIndex = "von der Liste %VALUE %MODE %WHERE %AT"
+# LISTS_SET_INDEX_INPUT_TO closes the row: "... ein <Wert>".
+robLists_setIndex = "von der Liste %LIST %MODE %WHERE %AT ein %TO"
+
+[dropdowns]
+mbedActions_display_text.TYPE = ["Text", "Zeichen"]
+mbedActions_display_image.TYPE = ["Bild", "Animation"]
+robSensors_key_getSample.PORT = ["A", "B", "A+B"]
+logic_boolean.BOOL = ["wahr", "falsch"]
+logic_compare.OP = ["=", "≠", "<", "≤", ">", "≥"]
+logic_operation.OP = ["und", "oder"]
+math_arithmetic.OP = ["+", "-", "×", "÷", "^"]
+mbedActions_play_note.DURATION = ["ganze Note", "halbe Note", "Viertelnote", "Achtelnote"]
+mbedActions_play_note.NOTE = ["C4", "D4", "E4", "F4", "G4", "A4", "H4"]
+robSensors_pintouch_getSample.PORT = ["0", "1", "2", "3"]
+robSensors_gesture_getSample.MODE = ["aufrecht", "kopfüber", "auf der Vorderseite", "auf der Rückseite", "geschüttelt", "frei fallend"]
+robSensors_compass_getSample.MODE = ["Winkel"]
+robSensors_sound_getSample.MODE = ["Wert", "Geräusch"]
+robSensors_timer_getSample.MODE = ["Wert"]
+robSensors_temperature_getSample.MODE = ["Wert"]
+robSensors_light_getSample.MODE = ["Wert"]
+robSensors_timer_getSample.PORT = ["1"]
+mbedSensors_timer_reset.PORT = ["1"]
+mbedImage_get_image.IMAGE = ["Herz", "Lächeln", "Strichmännchen", "Giraffe", "Regenschirm"]
+controls_whileUntil.MODE = ["bis", "solange"]
+# Blockly.TYPE_DROPDOWN('calliope') — the order is the one blocks.toml pairs
+# its type ids with, so the two lists must stay in step.
+robGlobalVariables_declare.TYPE = [
+  "Zahl", "logischer Wert", "Zeichenkette", "Farbe", "Bild",
+  "Liste Zahl", "Liste logischer Wert", "Liste Zeichenkette", "Liste Farbe", "Liste Bild",
+]
+robLists_create_with.LIST_TYPE = ["Zahl", "logischer Wert", "Zeichenkette", "Farbe", "Bild"]
+robLists_repeat.LIST_TYPE = ["Zahl", "logischer Wert", "Zeichenkette", "Farbe", "Bild"]
+robLists_indexOf.END = ["suche erstes Auftreten von", "suche letztes Auftreten von"]
+robLists_getIndex.MODE = ["nimm", "nimm und entferne", "entferne"]
+robLists_getIndex.WHERE = ["#tes", "#tes von hinten", "erstes", "letztes"]
+robLists_setIndex.MODE = ["setze", "füge"]
+robLists_setIndex.WHERE = ["#tes", "#tes von hinten", "erstes", "letztes"]
+
+# These short forms were accepted by the original prototype. Keep them as
+# parsing aliases while the renderer prints Open Roberta's current wording.
+[aliases]
+robControls_start = ["Programmstart"]
+robControls_loopForever = ["Wiederhole fortlaufend | mache %DO", "Wiederhole unendlich | mache %DO"]
+actions_rgbLed_hidden_on_calliope = ["Schalte RGB LED an %COLOUR", "Schalte RGB-LED ein %COLOUR", "Schalte LED an %COLOUR"]
+mbedActions_display_text = ["Zeige Text %OUT"]
+mbedActions_display_image = ["Zeige Bild %VALUE"]
+robSensors_key_getSample = ["Taste %PORT gedrückt"]
+variables_set = ["Setze %VAR auf %VALUE"]
+# The arrow is hard to type, and a worksheet author should not have to.
+robGlobalVariables_declare = [
+  "Variable %VAR : %TYPE = %VALUE",
+  "Variable %VAR : %TYPE <- %VALUE",
+  "Anlegen %TYPE %VAR = %VALUE",
+  "Variable %VAR : %TYPE %VALUE",
+]
+robMath_change = ["Erhöhe %VAR um %DELTA", "Ändere %VAR um %DELTA"]
+robLists_create_with = [
+  "Liste : %LIST_TYPE <- %N0 %ADD0 | %N1 %ADD1 | %N2 %ADD2 | %N3 %ADD3 | %N4 %ADD4 | %N5 %ADD5",
+  "Liste %LIST_TYPE mit %N0 %ADD0 | %N1 %ADD1 | %N2 %ADD2 | %N3 %ADD3 | %N4 %ADD4 | %N5 %ADD5",
+]

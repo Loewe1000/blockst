@@ -1,0 +1,489 @@
+# NEPO block catalog
+#
+# Structure only: what shape a block has, which category colours it, and what
+# kind of field or socket each placeholder in the localised pattern stands for.
+# The visible text lives in data/locales/<lang>.toml, so a translation never
+# touches this file and a new block never touches Rust.
+#
+# The block set and the ids are taken from the robot's own toolbox,
+#   openroberta-lab RobotMbed/src/main/resources/calliope/
+#     program.toolbox.beginner.xml   which blocks a beginner is offered
+#     program.default.xml            which start block a new program gets
+#     configuration.default.xml      which ports the dropdowns offer
+# and the structures from the block definitions in OpenRoberta/blockly.
+#
+# shape:    start | statement | cap | value
+# category: keys of Blockly.CAT_*_RGB (see src/theme.rs)
+# check:    the data types a connection accepts. A single type colours the
+#           socket or plug; a list leaves it plain, exactly as Blockly's
+#           drawInputType_ does.
+#
+# field kinds:
+#   dropdown  a menu; options come from the locale
+#   variable  a dynamic FieldVariable menu; its name comes from the source
+#   variable_name an editable FieldTextInput naming a variable being declared
+#   mode      a fixed sensor mode, styled as a field without a dropdown arrow
+#   text      an editable text field
+#   number    an editable numeric field
+#   colour    a colour swatch
+#   matrix    the 5x5 LED grid (expanded by src/matrix.rs)
+#   image     a compact predefined 5x5-image dropdown
+#   spacer    a label that exists only to take up room
+#   value     a socket for a reporting block, typed by `check`
+#   inline_value a socket inside a row, for reporter composition
+#   statement a mouth holding a stack of blocks
+#
+# field options:
+#   values    the ids Blockly pairs with the locale's dropdown labels, in the
+#             same order — `[[Blockly.Msg.X, 'Number'], ...]`
+#   check_from  take this socket's type from the id another field selected;
+#             on a block, type its output that way. `check_prefix` turns
+#             "Number" into "Array_Number", which is how a list block reports
+#             the type of what it holds.
+#   optional  drop the row entirely when nothing is bound to it
+#   align     "right", for the ruler-style rows a list block stacks up
+#   connection (block level) the name Blockly's setPreviousStatement gives this
+#             block's notch, so a mouth can accept only its own kind
+
+# ===== Start =============================================================
+# program.default.xml gives a new Calliope program a robControls_start, not
+# the mbedControls_start that also exists in blockly. The `  ` spacer is real:
+# `appendField('  ')` sits between the title and the hidden DEBUG field and is
+# worth two spaces plus a separator of block width.
+[blocks.robControls_start]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "start"
+category = "activity"
+# `setMutatorPlus` in the block's init, so the plus is on every Start block,
+# declarations or not: it is the control that creates them.
+fields.MUTATOR = { kind = "icon", default = "plus" }
+fields.GAP = { kind = "spacer", default = "  " }
+# `robControls_start.updateShape_` appends the statement input `ST` the first
+# time the plus-mutator declares a variable, and its connection only accepts
+# `declarationGlobal`. `optional` is that mutation: no declarations, no mouth,
+# which is the Start block every program without variables still shows.
+fields.ST = { kind = "statement", optional = true, check = "declarationGlobal" }
+
+# ===== TOOLBOX_ACTION ====================================================
+
+# setCheck(['Number','Boolean','String']) — three types, so the empty socket
+# stays plain rather than naming one of them.
+[blocks.mbedActions_display_text]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "action"
+fields.TYPE = { kind = "dropdown" }
+fields.OUT = { kind = "value", check = ["Number", "Boolean", "String"] }
+
+[blocks.mbedActions_display_image]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "action"
+fields.TYPE = { kind = "dropdown" }
+fields.VALUE = { kind = "value", check = "Image" }
+
+[blocks.mbedActions_display_clear]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "action"
+
+[blocks.mbedActions_play_note]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "action"
+fields.DURATION = { kind = "dropdown" }
+fields.NOTE = { kind = "dropdown" }
+
+# The Calliope mini's built-in RGB LED. The older mbedActions_leds_on is
+# rewritten into this by the lab's expansion.xslt; the port is hidden, so the
+# block shows only the colour socket.
+[blocks.actions_rgbLed_hidden_on_calliope]
+platforms = ["calliope"]
+shape = "statement"
+category = "action"
+fields.COLOUR = { kind = "value", check = "Colour" }
+
+[blocks.actions_rgbLed_hidden_off_calliope]
+platforms = ["calliope"]
+shape = "statement"
+category = "action"
+
+# ===== TOOLBOX_SENSOR ====================================================
+
+# robSensors.js builds this from sensors.key.calliope. Its mode field is a
+# FieldHidden because there is only one mode, so the block reads
+# "title - port - question" and nothing else.
+[blocks.robSensors_key_getSample]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "sensor"
+check = "Boolean"
+fields.PORT = { kind = "dropdown" }
+
+[blocks.robSensors_pintouch_getSample]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "sensor"
+check = "Boolean"
+fields.PORT = { kind = "dropdown" }
+
+[blocks.robSensors_gesture_getSample]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "sensor"
+check = "Boolean"
+fields.MODE = { kind = "dropdown" }
+
+[blocks.robSensors_compass_getSample]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "sensor"
+check = "Number"
+fields.MODE = { kind = "mode" }
+
+[blocks.robSensors_sound_getSample]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "sensor"
+check = "Number"
+fields.MODE = { kind = "mode" }
+
+[blocks.robSensors_timer_getSample]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "sensor"
+check = "Number"
+fields.MODE = { kind = "mode" }
+fields.PORT = { kind = "dropdown" }
+
+[blocks.robSensors_temperature_getSample]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "sensor"
+check = "Number"
+fields.MODE = { kind = "mode" }
+
+[blocks.robSensors_light_getSample]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "sensor"
+check = "Number"
+fields.MODE = { kind = "mode" }
+
+[blocks.mbedSensors_timer_reset]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "sensor"
+fields.PORT = { kind = "dropdown" }
+
+# ===== TOOLBOX_CONTROL ===================================================
+
+[blocks.robControls_loopForever]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "control"
+fields.DO = { kind = "statement" }
+
+# CONTROLS_REPEAT_TITLE is "Wiederhole %1 mal", so the count is followed by a
+# dummy input holding "mal". `getInputsInline` turns a dummy input that comes
+# after a value input into an inline row, which is why the number sits inside
+# the sentence and not on the block's right edge.
+[blocks.controls_repeat_ext]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "control"
+fields.TIMES = { kind = "inline_value", check = "Number" }
+fields.DO = { kind = "statement" }
+
+# Blockly names this `controls_whileUntil`.  The German toolbox puts the
+# condition after the mode selector: “Wiederhole solange <Bedingung>”.
+[blocks.controls_whileUntil]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "control"
+fields.MODE = { kind = "dropdown" }
+fields.BOOL = { kind = "value", check = "Boolean" }
+fields.DO = { kind = "statement" }
+
+[blocks.robControls_if]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "control"
+fields.MUTATOR = { kind = "icon", default = "plus" }
+fields.IF0 = { kind = "value", check = "Boolean" }
+fields.DO0 = { kind = "statement" }
+
+# Two mouths. This is the block that decides where a statement stack has to
+# live in the data model: on the row, not on the block.
+[blocks.robControls_ifElse]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "control"
+fields.MUTATOR = { kind = "icon", default = "plus" }
+fields.IF0 = { kind = "value", check = "Boolean" }
+fields.DO0 = { kind = "statement" }
+fields.ELSE = { kind = "statement" }
+
+[blocks.robControls_wait_time]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "control"
+fields.WAIT = { kind = "value", check = "Number" }
+
+# The beginner toolbox offers this condition wait alongside the timed wait.
+# Its plus-mutator can add further conditions; this is the unmutated base
+# block, which has one Boolean socket.
+[blocks.robControls_wait_for]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "control"
+fields.WAIT0 = { kind = "value", check = "Boolean" }
+
+# ===== Reporting blocks ==================================================
+
+[blocks.text]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "text"
+check = "String"
+fields.OPEN = { kind = "icon", default = "quote_open" }
+fields.TEXT = { kind = "text" }
+fields.CLOSE = { kind = "icon", default = "quote_close" }
+
+[blocks.math_number]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "math"
+check = "Number"
+fields.NUM = { kind = "number", default = "0" }
+
+[blocks.logic_boolean]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "logic"
+check = "Boolean"
+fields.BOOL = { kind = "dropdown" }
+
+[blocks.logic_compare]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "logic"
+check = "Boolean"
+fields.A = { kind = "inline_value" }
+fields.OP = { kind = "dropdown" }
+fields.B = { kind = "inline_value" }
+
+[blocks.logic_operation]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "logic"
+check = "Boolean"
+fields.A = { kind = "inline_value", check = "Boolean" }
+fields.OP = { kind = "dropdown" }
+fields.B = { kind = "inline_value", check = "Boolean" }
+
+[blocks.math_arithmetic]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "math"
+check = "Number"
+fields.A = { kind = "inline_value", check = "Number" }
+fields.OP = { kind = "dropdown" }
+fields.B = { kind = "inline_value", check = "Number" }
+
+[blocks.math_random_int]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "math"
+check = "Number"
+fields.FROM = { kind = "inline_value", check = "Number" }
+fields.TO = { kind = "inline_value", check = "Number" }
+
+[blocks.mbedColour_picker]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "colour"
+check = "Colour"
+fields.COLOUR = { kind = "colour", default = "#ff0000" }
+
+# mbedImage_image builds itself out of six right-aligned rows; the single
+# `matrix` field stands in for all of them until src/matrix.rs expands it.
+[blocks.mbedImage_image]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "image"
+check = "Image"
+fields.PICTURE = { kind = "matrix" }
+
+[blocks.mbedImage_get_image]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "image"
+check = "Image"
+fields.IMAGE = { kind = "image" }
+
+[blocks.text_comment]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "text"
+fields.TEXT = { kind = "text" }
+
+# ===== TOOLBOX_VARIABLE ==================================================
+# The beginner toolbox declares this category as `custom="VARIABLE"` rather
+# than listing static blocks. Blockly creates these two blocks dynamically for
+# each variable name, so the renderer deliberately accepts any identifier.
+#
+# The declaration itself is not in the category at all: it is what the Start
+# block's plus-mutator adds, which is why a program that uses a variable has
+# to declare it inside `Start` (see `robControls_start.ST`).
+[blocks.variables_get]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "variable"
+fields.VAR = { kind = "variable", default = "Element" }
+
+[blocks.variables_set]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "variable"
+fields.VAR = { kind = "variable", default = "Element" }
+fields.VALUE = { kind = "value" }
+
+# `blocks/variables.js`: `robGlobalVariables_declare` is coloured
+# CAT_ACTIVITY_RGB, not the variable violet — it belongs to the Start block it
+# lives in. Its name is a `FieldTextInput`, not the `FieldVariable` dropdown
+# the getter and setter use, and its minus-mutator deletes the declaration.
+#
+# `connection` is Blockly's `setPreviousStatement(true, 'declarationGlobal')`:
+# it is why a declaration can only sit in the Start block's mouth and an
+# action block cannot.
+[blocks.robGlobalVariables_declare]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "activity"
+connection = "declarationGlobal"
+fields.MUTATOR = { kind = "icon", default = "minus" }
+fields.VAR = { kind = "variable_name", default = "Element" }
+fields.TYPE = { kind = "dropdown", values = [
+  "Number", "Boolean", "String", "Colour", "Image",
+  "Array_Number", "Array_Boolean", "Array_String", "Array_Colour", "Array_Image",
+] }
+# `updateShape_` re-checks the socket every time the type changes, so the
+# empty socket always announces the declared type rather than a fixed one.
+fields.VALUE = { kind = "value", check_from = "TYPE" }
+
+# ===== TOOLBOX_MATH, the variable part ===================================
+# `robMath_change` takes a *socket*, not a variable field: Open Roberta wants
+# the getter block plugged in, which is why this reads "erhöhe (Punkte) um 1".
+[blocks.robMath_change]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "math"
+fields.VAR = { kind = "inline_value", check = "Number" }
+fields.DELTA = { kind = "inline_value", check = "Number" }
+
+# ===== TOOLBOX_LIST ======================================================
+# Expert-toolbox blocks, but a beginner meets them the moment the Start
+# block's type dropdown offers "Liste Zahl": a declared list needs something
+# to put in it. `blocks/lists.js`, the `robLists_*` half of the file.
+
+# `createIt` builds one value input per item: the first carries the title,
+# the type dropdown and the arrow, the rest are right-aligned index labels.
+# Blockly grows that list with the plus mutator; the catalog offers a fixed
+# six, and drops every row that stays empty, which comes to the same thing
+# for a printed worksheet. The index labels are spacers: Open Roberta paints
+# them, nobody types them.
+[blocks.robLists_create_with]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "list"
+check_from = "LIST_TYPE"
+check_prefix = "Array_"
+fields.PLUS = { kind = "icon", default = "plus" }
+fields.MINUS = { kind = "icon", default = "minus" }
+fields.LIST_TYPE = { kind = "dropdown", values = [
+  "Number", "Boolean", "String", "Colour", "Image",
+] }
+fields.N0 = { kind = "spacer", default = "0" }
+fields.ADD0 = { kind = "value", check_from = "LIST_TYPE" }
+fields.N1 = { kind = "spacer", default = "1" }
+fields.ADD1 = { kind = "value", check_from = "LIST_TYPE", optional = true, align = "right" }
+fields.N2 = { kind = "spacer", default = "2" }
+fields.ADD2 = { kind = "value", check_from = "LIST_TYPE", optional = true, align = "right" }
+fields.N3 = { kind = "spacer", default = "3" }
+fields.ADD3 = { kind = "value", check_from = "LIST_TYPE", optional = true, align = "right" }
+fields.N4 = { kind = "spacer", default = "4" }
+fields.ADD4 = { kind = "value", check_from = "LIST_TYPE", optional = true, align = "right" }
+fields.N5 = { kind = "spacer", default = "5" }
+fields.ADD5 = { kind = "value", check_from = "LIST_TYPE", optional = true, align = "right" }
+
+# The remaining list blocks all set `inputsInline`, or are given it by
+# Blockly's own "dummy input after a value input" rule in `getInputsInline`,
+# so every one of them is a single row of sockets and fields.
+[blocks.robLists_repeat]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "list"
+check_from = "LIST_TYPE"
+check_prefix = "Array_"
+fields.LIST_TYPE = { kind = "dropdown", values = [
+  "Number", "Boolean", "String", "Colour", "Image",
+] }
+fields.ITEM = { kind = "inline_value", check_from = "LIST_TYPE" }
+fields.NUM = { kind = "inline_value", check = "Number" }
+
+# setCheck of six array types, so the socket stays plain: Blockly names a
+# type on an empty connection only when there is exactly one to name.
+[blocks.robLists_length]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "list"
+check = "Number"
+fields.VALUE = { kind = "value", check = [
+  "Array_Number", "Array_String", "Array_Boolean", "Array_Colour", "Array_Connection", "Array_Image",
+] }
+
+[blocks.robLists_isEmpty]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "list"
+check = "Boolean"
+fields.VALUE = { kind = "inline_value", check = [
+  "Array_Number", "Array_String", "Array_Boolean", "Array_Colour", "Array_Connection", "Array_Image",
+] }
+
+[blocks.robLists_indexOf]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "list"
+check = "Number"
+fields.VALUE = { kind = "inline_value", check = [
+  "Array_Number", "Array_String", "Array_Boolean", "Array_Colour", "Array_Connection", "Array_Image",
+] }
+fields.END = { kind = "dropdown" }
+fields.FIND = { kind = "inline_value" }
+
+# `updateAt_` hangs the WHERE dropdown on the AT input and moves it into
+# place, which is why the index socket follows both menus.
+[blocks.robLists_getIndex]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "list"
+fields.VALUE = { kind = "inline_value", check = [
+  "Array_Number", "Array_String", "Array_Boolean", "Array_Colour", "Array_Connection", "Array_Image",
+] }
+fields.MODE = { kind = "dropdown" }
+fields.WHERE = { kind = "dropdown" }
+fields.AT = { kind = "inline_value", check = "Number" }
+
+[blocks.robLists_setIndex]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "list"
+fields.LIST = { kind = "inline_value", check = [
+  "Array_Number", "Array_String", "Array_Boolean", "Array_Colour", "Array_Connection", "Array_Image",
+] }
+fields.MODE = { kind = "dropdown" }
+fields.WHERE = { kind = "dropdown" }
+fields.AT = { kind = "inline_value", check = "Number" }
+fields.TO = { kind = "inline_value" }

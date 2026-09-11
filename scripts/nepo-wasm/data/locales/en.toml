@@ -1,0 +1,100 @@
+# English block text from OpenRoberta/blockly `msg/js/en.js`.
+
+dir = "ltr"
+
+[specs]
+robControls_start = "%MUTATOR start %GAP | %ST"
+mbedActions_display_text = "show %TYPE %OUT"
+mbedActions_display_image = "show %TYPE %VALUE"
+mbedActions_display_clear = "clear display"
+mbedActions_play_note = "play %DURATION %NOTE"
+actions_rgbLed_hidden_on_calliope = "turn RGB LED on colour %COLOUR"
+actions_rgbLed_hidden_off_calliope = "turn RGB LED off"
+robSensors_key_getSample = "button %PORT pressed?"
+robSensors_pintouch_getSample = "pin %PORT pressed?"
+robSensors_gesture_getSample = "get %MODE gesture"
+robSensors_compass_getSample = "get %MODE ° compass sensor"
+robSensors_sound_getSample = "get %MODE % microphone"
+robSensors_timer_getSample = "get %MODE ms timer %PORT"
+robSensors_temperature_getSample = "get %MODE ° temperature sensor"
+robSensors_light_getSample = "get %MODE % light sensor"
+mbedSensors_timer_reset = "reset timer %PORT"
+robControls_loopForever = "repeat indefinitely | do %DO"
+controls_repeat_ext = "repeat %TIMES times | do %DO"
+controls_whileUntil = "repeat %MODE %BOOL | do %DO"
+robControls_if = "%MUTATOR if %IF0 | do %DO0"
+robControls_ifElse = "%MUTATOR if %IF0 | do %DO0 | else %ELSE"
+robControls_wait_time = "wait ms %WAIT"
+robControls_wait_for = "wait until %WAIT0"
+text = "%OPEN %TEXT %CLOSE"
+math_number = "%NUM"
+logic_boolean = "%BOOL"
+logic_compare = "%A %OP %B"
+logic_operation = "%A %OP %B"
+math_arithmetic = "%A %OP %B"
+math_random_int = "random integer from %FROM to %TO"
+mbedColour_picker = "%COLOUR"
+mbedImage_image = "%PICTURE"
+mbedImage_get_image = "%IMAGE"
+text_comment = "comment %TEXT"
+variables_get = "%VAR"
+variables_set = "set %VAR to %VALUE"
+robGlobalVariables_declare = "%MUTATOR variable %VAR : %TYPE \u2190 %VALUE"
+robMath_change = "change %VAR by %DELTA"
+robLists_create_with = "%PLUS %MINUS list : %LIST_TYPE \u2190 %N0 %ADD0 | %N1 %ADD1 | %N2 %ADD2 | %N3 %ADD3 | %N4 %ADD4 | %N5 %ADD5"
+robLists_repeat = "create list with item %LIST_TYPE %ITEM repeated %NUM times"
+robLists_length = "length of %VALUE"
+robLists_isEmpty = "%VALUE is empty"
+robLists_indexOf = "in list %VALUE %END %FIND"
+robLists_getIndex = "in list %VALUE %MODE %WHERE %AT"
+robLists_setIndex = "in list %LIST %MODE %WHERE %AT as %TO"
+
+[dropdowns]
+mbedActions_display_text.TYPE = ["text", "character"]
+mbedActions_display_image.TYPE = ["image", "animation"]
+robSensors_key_getSample.PORT = ["A", "B", "A+B"]
+logic_boolean.BOOL = ["true", "false"]
+logic_compare.OP = ["=", "≠", "<", "≤", ">", "≥"]
+logic_operation.OP = ["and", "or"]
+math_arithmetic.OP = ["+", "-", "×", "÷", "^"]
+mbedActions_play_note.DURATION = ["whole note", "half note", "quarter note", "eighth note"]
+mbedActions_play_note.NOTE = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"]
+robSensors_pintouch_getSample.PORT = ["0", "1", "2", "3"]
+robSensors_gesture_getSample.MODE = ["upright", "upside down", "face down", "face up", "shaken", "freefall"]
+robSensors_compass_getSample.MODE = ["angle"]
+robSensors_sound_getSample.MODE = ["value", "sound"]
+robSensors_timer_getSample.MODE = ["value"]
+robSensors_temperature_getSample.MODE = ["value"]
+robSensors_light_getSample.MODE = ["value"]
+robSensors_timer_getSample.PORT = ["1"]
+mbedSensors_timer_reset.PORT = ["1"]
+mbedImage_get_image.IMAGE = ["Heart", "Smile", "Stick figure", "Giraffe", "Umbrella"]
+controls_whileUntil.MODE = ["until", "while"]
+robGlobalVariables_declare.TYPE = [
+  "Number", "Boolean", "String", "Colour", "Image",
+  "List Number", "List Boolean", "List String", "List Colour", "List Image",
+]
+robLists_create_with.LIST_TYPE = ["Number", "Boolean", "String", "Colour", "Image"]
+robLists_repeat.LIST_TYPE = ["Number", "Boolean", "String", "Colour", "Image"]
+robLists_indexOf.END = ["find first occurrence of item", "find last occurrence of item"]
+robLists_getIndex.MODE = ["get", "get and remove", "remove"]
+robLists_getIndex.WHERE = ["#", "# from end", "first", "last"]
+robLists_setIndex.MODE = ["set", "insert at"]
+robLists_setIndex.WHERE = ["#", "# from end", "first", "last"]
+
+[aliases]
+robControls_start = ["Start"]
+mbedActions_display_text = ["show text %OUT", "Show Text %OUT"]
+mbedActions_display_image = ["show image %VALUE", "Show Image %VALUE"]
+actions_rgbLed_hidden_on_calliope = ["turn RGB LED on %COLOUR"]
+robSensors_key_getSample = ["key %PORT pressed?"]
+variables_set = ["write %VAR %VALUE"]
+robLists_create_with = [
+  "list : %LIST_TYPE <- %N0 %ADD0 | %N1 %ADD1 | %N2 %ADD2 | %N3 %ADD3 | %N4 %ADD4 | %N5 %ADD5",
+]
+robGlobalVariables_declare = [
+  "variable %VAR : %TYPE = %VALUE",
+  "variable %VAR : %TYPE <- %VALUE",
+  "declare %TYPE %VAR = %VALUE",
+  "variable %VAR : %TYPE %VALUE",
+]
