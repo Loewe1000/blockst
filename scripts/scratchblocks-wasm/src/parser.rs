@@ -26,6 +26,9 @@ struct BlockDef {
     category: String,
     #[serde(default)]
     inputs: Vec<String>,
+    /// Label Blockly draws on the arm beside a C-block's mouth ("mache").
+    #[serde(default)]
+    mouth: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,6 +41,17 @@ struct LocaleToml {
     /// only has to add one line, with no engine change.
     #[serde(default)]
     dir: Option<String>,
+    /// A dialect locale carries its own block catalog inline rather than
+    /// relying on blocks.toml, and may name a base locale whose blocks it
+    /// extends. Scratch locales leave all three empty.
+    #[serde(default)]
+    inherits: Option<String>,
+    #[serde(default)]
+    shapes: HashMap<String, String>,
+    #[serde(default)]
+    categories: HashMap<String, String>,
+    #[serde(default)]
+    mouths: HashMap<String, String>,
 }
 
 // Internal structures (same as before, loaded from TOML instead of JSON)
@@ -51,6 +65,8 @@ struct LanguageRuntime {
     define_spec: String,
     call_spec: String,
     rtl: bool,
+    /// Base locale to consult after this one, for dialects.
+    inherits: Option<String>,
 }
 
 #[derive(Debug)]
@@ -172,10 +188,22 @@ pub fn language_is_rtl(language: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// The locale a request parses with. A Blockly profile reads its vocabulary
+/// from the dialect locale of that profile and language — `jwinf` with `de`
+/// is `jwinf-de` — while Scratch, the default, uses the language alone.
+fn locale_key(profile: Option<&str>, language: &str) -> String {
+    match profile {
+        Some(p) if p.starts_with("jwinf") => format!("jwinf-{language}"),
+        Some(p) if p.starts_with("blockly") => format!("blockly-{language}"),
+        _ => language.to_string(),
+    }
+}
+
 pub fn parse_request_json(input: &str) -> Result<String, String> {
     let request: ParseRequest = serde_json::from_str(input)
         .map_err(|err| format!("scratchblocks-wasm: invalid parse request: {err}"))?;
-    let nodes = parse_code(&request.code, &request.language, request.inline)?;
+    let locale = locale_key(request.profile.as_deref(), &request.language);
+    let nodes = parse_code(&request.code, &locale, request.inline)?;
     serde_json::to_string(&nodes)
         .map_err(|err| format!("scratchblocks-wasm: failed to encode parse result: {err}"))
 }
@@ -183,7 +211,8 @@ pub fn parse_request_json(input: &str) -> Result<String, String> {
 pub fn render_request_json(input: &str) -> Result<String, String> {
     let request: ParseRequest = serde_json::from_str(input)
         .map_err(|err| format!("scratchblocks-wasm: invalid render request: {err}"))?;
-    let scripts = parse_internal(&request.code, &request.language, request.inline)?;
+    let locale = locale_key(request.profile.as_deref(), &request.language);
+    let scripts = parse_internal(&request.code, &locale, request.inline)?;
     let document = DocumentSpec {
         scale: request.scale,
         theme: request.theme,
@@ -229,7 +258,8 @@ pub fn render_request_json(input: &str) -> Result<String, String> {
 pub fn extract_texts_json(input: &str) -> Result<String, String> {
     let request: ParseRequest = serde_json::from_str(input)
         .map_err(|err| format!("scratchblocks-wasm: invalid extract request: {err}"))?;
-    let scripts = parse_internal(&request.code, &request.language, request.inline)?;
+    let locale = locale_key(request.profile.as_deref(), &request.language);
+    let scripts = parse_internal(&request.code, &locale, request.inline)?;
     let mut texts = std::collections::BTreeSet::new();
     for script in &scripts {
         collect_texts(script, &mut texts);
@@ -263,15 +293,29 @@ fn collect_texts(blocks: &[ParsedBlock], texts: &mut std::collections::BTreeSet<
 fn data() -> &'static ParserData {
     DATA.get_or_init(|| {
         let blocks_file: BlocksToml = toml::from_str(BLOCKS_TOML).expect("blocks.toml");
-        let commands_by_id = blocks_file.blocks;
+        let mut commands_by_id = blocks_file.blocks;
         let default_blocks = blocks_file.defaults;
 
         let mut languages: HashMap<String, LanguageRuntime> = HashMap::new();
 
-        for &(code, locale_toml) in crate::generated::LOCALE_DATA {
+        let all_locales = crate::generated::LOCALE_DATA
+            .iter()
+            .chain(crate::generated::DIALECT_LOCALE_DATA.iter());
+        for &(code, locale_toml) in all_locales {
             let locale: LocaleToml = toml::from_str(locale_toml)
                 .unwrap_or_else(|e| panic!("locales/{code}.toml: {e}"));
             let native_specs: HashMap<String, String> = locale.specs;
+            // A dialect locale brings its own catalog. Its ids never collide
+            // with the Scratch ones (checked when the data is generated), and
+            // an id that already exists keeps its Scratch definition.
+            for (block_id, shape) in &locale.shapes {
+                commands_by_id.entry(block_id.clone()).or_insert_with(|| BlockDef {
+                    shape: shape.clone(),
+                    category: locale.categories.get(block_id).cloned().unwrap_or_default(),
+                    inputs: Vec::new(),
+                    mouth: locale.mouths.get(block_id).cloned(),
+                });
+            }
             // A locale is right-to-left when it says so. Falling back to a
             // hard-coded list of language codes would mean editing the engine
             // every time a new RTL translation is contributed.
@@ -355,6 +399,7 @@ fn data() -> &'static ParserData {
                     define_spec,
                     call_spec,
                     rtl: is_rtl,
+                    inherits: locale.inherits.clone(),
                 },
             );
         }
@@ -375,12 +420,27 @@ pub(crate) fn parse_internal(code: &str, language: &str, inline: bool) -> Result
         .languages
         .get(language)
         .ok_or_else(|| format!("scratchblocks-wasm: unknown language '{language}'"))?;
-    let english = data().languages.get("en").expect("english");
+    // A Scratch locale is backed by English, so an English spec matches in
+    // any document. A dialect locale is backed by the base it names instead:
+    // a jwinf worksheet must not pick up Scratch's English vocabulary.
+    let mut chain = vec![requested];
+    let mut next = requested.inherits.as_deref();
+    while let Some(base) = next {
+        let runtime = data()
+            .languages
+            .get(base)
+            .ok_or_else(|| format!("scratchblocks-wasm: locale '{language}' inherits unknown '{base}'"))?;
+        chain.push(runtime);
+        next = runtime.inherits.as_deref();
+    }
+    if requested.inherits.is_none() && language != "en" {
+        chain.push(data().languages.get("en").expect("english"));
+    }
     let mut parser = Parser::new(
         if inline { code.replace('\n', " ") } else { code.to_string() }
             .replace("&lt;", "<")
             .replace("&gt;", ">"),
-        if language == "en" { vec![english] } else { vec![requested, english] },
+        chain,
     );
     let mut scripts = parser.parse_file()?;
     let mut line = 1u32;
@@ -602,6 +662,7 @@ fn to_render_block(block: ParsedBlock) -> BlockSpec {
         shape: normalize_shape(&block.shape).to_string(),
         category: normalize_category(&block.category).to_string(),
         line_number: block.line_number,
+        mouth: data().commands_by_id.get(&block.id).and_then(|def| def.mouth.clone()),
         segments,
         body: block.body.into_iter().map(to_render_block).collect(),
         else_body: block.else_body.into_iter().map(to_render_block).collect(),

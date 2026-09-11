@@ -206,13 +206,14 @@ pub fn proc_hat_path(w: f32, h: f32) -> String {
         get_right_and_bottom(w, h, true, 0.0))
 }
 
-pub fn mouth_path(w: f32, body_h: f32, else_h: Option<f32>, header_h: f32) -> String {
+pub fn mouth_path(w: f32, body_h: f32, else_h: Option<f32>, header_h: f32, inset_x: f32) -> String {
     // Reference JS formula:
     //   adjusted = max(29, raw_script_height + 3) - 2
     //   arm_y    = header_height + adjusted - 3
     //   tail_y   = arm_y + tail_height + 3  (tail_height = 40 - 11 = 29)
     let k = (header_h / geometry().row_height).clamp(0.6, 1.2);
-    let inset_x = 16.0 * k;
+    // The mouth is indented by what the body was placed at — including a
+    // labelled arm, which is wider than the bare indent.
     let tail_h = 29.0 * k;
     let plus = 3.0 * k;
     let minus = 2.0 * k;
@@ -239,9 +240,10 @@ pub fn mouth_path(w: f32, body_h: f32, else_h: Option<f32>, header_h: f32) -> St
 
 /// Mouth path for c-block-cap blocks (like forever).
 /// Same as mouth_path but bottom is a cap (rounded, no notch).
-pub fn mouth_cap_path(w: f32, body_h: f32, header_h: f32) -> String {
+pub fn mouth_cap_path(w: f32, body_h: f32, header_h: f32, inset_x: f32) -> String {
     let k = (header_h / geometry().row_height).clamp(0.6, 1.2);
-    let inset_x = 16.0 * k;
+    // The mouth is indented by what the body was placed at — including a
+    // labelled arm, which is wider than the bare indent.
     let tail_h = 29.0 * k;
     let plus = 3.0 * k;
     let minus = 2.0 * k;

@@ -67,6 +67,10 @@ pub struct BlockSpec {
     pub else_body: Vec<BlockSpec>,
     #[serde(default)]
     pub else_segments: Vec<SegmentSpec>,
+    /// Label on the arm beside the mouth of a C-block. Blockly's control
+    /// blocks carry one ("mache"); Scratch's do not.
+    #[serde(default)]
+    pub mouth: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

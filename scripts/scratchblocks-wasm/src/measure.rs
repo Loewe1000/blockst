@@ -73,6 +73,16 @@ fn v(base_child_h: f32, base_padding: f32) -> f32 {
     base_child_h + (base_padding * current_inset_scale())
 }
 
+/// How far a C-block's body is indented. Scratch indents by a fixed amount
+/// scaled with the header; Blockly widens the arm to fit its mouth label
+/// ("mache"), so a labelled mouth is indented by the label plus padding.
+pub fn mouth_indent(block: &BlockSpec, base: f32) -> f32 {
+    match block.mouth.as_deref() {
+        Some(label) if !label.is_empty() => base.max(text_width(label) + 2.0 * inset(8.0, 6.0)),
+        _ => base,
+    }
+}
+
 pub fn input_box_height(_input: &str) -> f32 {
     let g = geometry();
     inset(g.field_height, g.field_height_min)
@@ -359,6 +369,7 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
                     body: vec![],
                     else_body: vec![],
                     else_segments: vec![],
+                mouth: None,
                 };
                 block_size(&temp).0.max(100.0)
             };
@@ -422,7 +433,7 @@ pub fn c_block_size(block: &BlockSpec) -> (f32, f32) {
     let inner_width = c_block_inner_width(block);
     let (body_w, body_h) = script_size_with_inside(&block.body, true);
     let script_width = body_w.max(1.0);
-    let body_indent = inset(16.0, 10.0);
+    let body_indent = mouth_indent(block, inset(geometry().body_indent, 10.0));
     let width = inner_width.max(body_indent + script_width);
 
     let has_else = !block.else_body.is_empty() || !block.else_segments.is_empty();

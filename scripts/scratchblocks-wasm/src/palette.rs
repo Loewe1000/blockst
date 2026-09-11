@@ -203,3 +203,148 @@ pub fn colors_for(category: &str, theme: &str) -> CategoryColors {
         borrowed.as_ref().unwrap().colors_for(category, theme)
     })
 }
+
+// ---------------------------------------------------------------------------
+// Palettes from profiles
+//
+// A profile TOML names its categories and gives each a fill. Everything else
+// a category needs — outline, dropdown fill, label colour, the high-contrast
+// and greyscale variants — is derived here, so a profile stays a short list
+// of colours rather than a table of twelve values per category.
+// ---------------------------------------------------------------------------
+
+#[derive(serde::Deserialize)]
+struct ProfileToml {
+    #[serde(default)]
+    inherits: Option<String>,
+    #[serde(default)]
+    colors: HashMap<String, String>,
+}
+
+/// Resolve a profile name to its merged colour table, following `inherits`.
+fn profile_colors(name: &str) -> Option<Vec<(String, String)>> {
+    let source = crate::generated::PROFILE_DATA
+        .iter()
+        .find(|(n, _)| *n == name)
+        .map(|(_, toml)| *toml)?;
+    let profile: ProfileToml = toml::from_str(source).ok()?;
+    // Base first, so the profile's own entries override it while the base's
+    // ordering — which fixes the greyscale ranking — is kept for the rest.
+    let mut merged: Vec<(String, String)> = profile
+        .inherits
+        .as_deref()
+        .and_then(profile_colors)
+        .unwrap_or_default();
+    // toml::from_str yields the table in file order only through a map with
+    // preserve_order; sort by name for a stable order independent of that.
+    let mut own: Vec<(String, String)> = profile.colors.into_iter().collect();
+    own.sort();
+    for (category, fill) in own {
+        match merged.iter_mut().find(|(c, _)| *c == category) {
+            Some(entry) => entry.1 = fill,
+            None => merged.push((category, fill)),
+        }
+    }
+    Some(merged)
+}
+
+fn parse_hex(hex: &str) -> Option<(f32, f32, f32)> {
+    let hex = hex.trim().trim_start_matches('#');
+    if hex.len() != 6 {
+        return None;
+    }
+    let channel = |i: usize| u8::from_str_radix(&hex[i..i + 2], 16).ok().map(|v| v as f32 / 255.0);
+    Some((channel(0)?, channel(2)?, channel(4)?))
+}
+
+fn to_hex(r: f32, g: f32, b: f32) -> String {
+    let byte = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+    format!("#{:02x}{:02x}{:02x}", byte(r), byte(g), byte(b))
+}
+
+/// Relative luminance as WCAG defines it, so the label colour is chosen by
+/// measured contrast rather than by eye.
+fn luminance(r: f32, g: f32, b: f32) -> f32 {
+    let lin = |c: f32| if c <= 0.03928 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) };
+    0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+}
+
+fn contrast_text(r: f32, g: f32, b: f32) -> &'static str {
+    // Contrast against white vs. against black; pick the better one.
+    let l = luminance(r, g, b);
+    if (1.05) / (l + 0.05) >= (l + 0.05) / 0.05 { "#ffffff" } else { "#000000" }
+}
+
+fn derive(fill: &str) -> Option<(CategoryColors, CategoryColors, f32)> {
+    let (r, g, b) = parse_hex(fill)?;
+    let normal = CategoryColors {
+        fill: to_hex(r, g, b),
+        // Blockly's tertiary colour: the same hue, a fifth darker.
+        stroke: to_hex(r * 0.8, g * 0.8, b * 0.8),
+        text: contrast_text(r, g, b).to_string(),
+        alt: to_hex(r * 0.9, g * 0.9, b * 0.9),
+    };
+    // High contrast: pull the fill towards white and switch to black labels,
+    // as the Scratch high-contrast palette does.
+    let mix = |c: f32| c + (1.0 - c) * 0.45;
+    let high = CategoryColors {
+        fill: to_hex(mix(r), mix(g), mix(b)),
+        stroke: normal.stroke.clone(),
+        text: "#000000".to_string(),
+        alt: to_hex(mix(r) * 0.95, mix(g) * 0.95, mix(b) * 0.95),
+    };
+    Some((normal, high, luminance(r, g, b)))
+}
+
+impl Palette {
+    /// Build a palette from a profile's colour list.
+    ///
+    /// The greyscale variant follows the same rule as Scratch's: converting
+    /// each colour to its own luminance lets categories collapse onto one
+    /// grey, so the steps are *assigned* — categories ranked by luminance,
+    /// then spread evenly over the eleven-step scale. Neighbours therefore
+    /// always differ by at least one step, whatever the profile's colours.
+    pub fn from_colors(colors: &[(String, String)]) -> Self {
+        let mut normal = HashMap::new();
+        let mut high_contrast = HashMap::new();
+        let mut ranked: Vec<(String, f32)> = Vec::new();
+        for (category, fill) in colors {
+            if let Some((n, h, lum)) = derive(fill) {
+                normal.insert(category.clone(), n);
+                high_contrast.insert(category.clone(), h);
+                ranked.push((category.clone(), lum));
+            }
+        }
+        ranked.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+        let count = ranked.len().max(1);
+        let grayscale = ranked
+            .iter()
+            .enumerate()
+            .map(|(rank, (category, _))| {
+                let step = if count == 1 { 5 } else { (rank * (GRAY_VALUES.len() - 1)) / (count - 1) };
+                (category.clone(), gray(step))
+            })
+            .collect();
+        Self {
+            normal,
+            high_contrast,
+            grayscale,
+            unknown: CategoryColors::new("#bfbfbf", "#909090", "#ffffff", "#b2b2b2"),
+            unknown_gray: CategoryColors::new("#f2f2f2", "#9a9a9a", "#000000", "#e2e2e2"),
+        }
+    }
+}
+
+/// The palette for a profile name; Scratch for none or an unknown one.
+pub fn palette_for(profile: Option<&str>) -> Palette {
+    let name = match profile {
+        Some("blockly") | Some("blockly-modern") => "blockly-modern",
+        Some("blockly-classic") | Some("blockly-klassisch") => "blockly-klassisch",
+        Some(other) => other,
+        None => return Palette::scratch(),
+    };
+    match profile_colors(name) {
+        Some(colors) => Palette::from_colors(&colors),
+        None => Palette::scratch(),
+    }
+}

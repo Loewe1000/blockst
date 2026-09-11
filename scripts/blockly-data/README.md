@@ -10,7 +10,8 @@ python3 scripts/blockly-data/generate.py --offline # generate from the cache alo
 ```
 
 Sources land in `sources/` (ignored by git) and are reused. Output goes to
-`generated/`, which **is** committed, so the data can be reviewed in a diff
+`scripts/scratchblocks-wasm/data/dialects/`, where the plugin embeds it at
+compile time; it **is** committed, so the data can be reviewed in a diff
 without anyone having to run the script.
 
 ## Where the data comes from
@@ -28,11 +29,14 @@ out of the `blockly_compressed.js` that bebras-modules bundles. Both sit in
 
 ## Output
 
-- `generated/locales/blockly-de.toml` — standard blocks, current wording
-- `generated/locales/jwinf-de.toml` — world blocks, plus the standard blocks
-  whose old wording differs from today's
-- `generated/profiles/*.toml` — geometry and palette per profile
-- `generated/REPORT.md` — counts, gaps, and the wording differences
+Relative to `scripts/scratchblocks-wasm/data/dialects/`:
+
+- `locales/blockly-de.toml` — standard blocks, current wording, plus the
+  `ende` / `sonst` keywords the text syntax needs
+- `locales/jwinf-de.toml` — world blocks and the standard blocks whose old
+  wording differs from today's; inherits the rest from `blockly-de`
+- `profiles/*.toml` — geometry and palette per profile
+- `REPORT.md` — counts, gaps, and the wording differences
 
 ## Reading the report
 

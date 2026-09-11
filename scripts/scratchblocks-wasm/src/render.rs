@@ -1,8 +1,8 @@
-use crate::measure::{block_size, c_block_inner_width, c_block_size, current_inset_scale, input_box_height, is_rtl, max_nested_height, script_size_with_inside, segment_width, text_width};
+use crate::measure::{block_size, mouth_indent, c_block_inner_width, c_block_size, current_inset_scale, input_box_height, is_rtl, max_nested_height, script_size_with_inside, segment_width, text_width};
 use crate::model::{BlockSpec, DocumentSpec, ScriptSpec, SegmentSpec};
 use crate::svg::{boolean_path, cap_path, escape_text, hat_path, mouth_cap_path, mouth_path, proc_hat_path, reporter_path, stack_path};
 use crate::geometry::{for_profile, geometry, set_geometry};
-use crate::palette::{colors_for, set_palette, Palette};
+use crate::palette::{colors_for, palette_for, set_palette};
 
 const LABEL_MARGIN: f32 = 4.447_998;
 
@@ -41,7 +41,7 @@ fn label_fill(theme: &str, fill: &str) -> String {
 
 pub fn render_document(document: &DocumentSpec) -> String {
     crate::measure::set_rtl(document.rtl);
-    set_palette(Palette::scratch());
+    set_palette(palette_for(document.profile.as_deref()));
     set_geometry(for_profile(document.profile.as_deref()));
     let scale = document.scale.unwrap_or(1.0).max(0.1);
     let theme = document.theme.as_deref().unwrap_or("normal");
@@ -298,6 +298,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
             body: vec![],
             else_body: vec![],
             else_segments: vec![],
+        mouth: None,
         };
         let (tw, _) = block_size(&temp);
         tw
@@ -341,6 +342,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
             body: vec![],
             else_body: vec![],
             else_segments: vec![],
+        mouth: None,
         };
         svg.push_str(&render_segments(&temp, &temp.segments, theme, &colors.text, 0.0, 40.0, 5.0));
     }
@@ -417,7 +419,7 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
     let header_base = inset(geometry().row_height, geometry().row_height_min);
     let header_h = if header_nested_h > 32.0 { header_base + (header_nested_h - 32.0) } else { header_base };
     let g = geometry();
-    let body_indent = (header_h / g.row_height).clamp(0.6, 1.2) * g.body_indent;
+    let body_indent = mouth_indent(block, (header_h / g.row_height).clamp(0.6, 1.2) * g.body_indent);
 
     // The C outline is asymmetric — the mouth is cut into its left side, and
     // the top/bottom notches sit 48px from the left. Mirroring just this one
@@ -436,9 +438,9 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
     };
     let flip_close = if is_rtl() { "</g>" } else { "" };
     if cap {
-        svg.push_str(&format!("{}<path d=\"{}\" fill=\"{}\" stroke=\"{}\" />{}", flip_open, mouth_cap_path(path_width, body_h.max(1.0), header_h), colors.fill, colors.stroke, flip_close));
+        svg.push_str(&format!("{}<path d=\"{}\" fill=\"{}\" stroke=\"{}\" />{}", flip_open, mouth_cap_path(path_width, body_h.max(1.0), header_h, body_indent), colors.fill, colors.stroke, flip_close));
     } else {
-        svg.push_str(&format!("{}<path d=\"{}\" fill=\"{}\" stroke=\"{}\" />{}", flip_open, mouth_path(path_width, body_h.max(1.0), else_h, header_h), colors.fill, colors.stroke, flip_close));
+        svg.push_str(&format!("{}<path d=\"{}\" fill=\"{}\" stroke=\"{}\" />{}", flip_open, mouth_path(path_width, body_h.max(1.0), else_h, header_h, body_indent), colors.fill, colors.stroke, flip_close));
     }
 
     // The header rides on the outline, and the outline now ends at `outer_w`,
@@ -461,6 +463,18 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
         body_indent
     };
     svg.push_str(&format!("<g transform=\"translate({} {body_y})\" >{body_svg}</g>", body_x));
+    if let Some(label) = block.mouth.as_deref().filter(|l| !l.is_empty()) {
+        // The arm label sits in the strip left of the mouth, on the first
+        // body row's baseline.
+        let pad = inset(8.0, 6.0);
+        let label_w = text_width(label);
+        let label_x = if is_rtl() { mirror_span(outer_w, pad, label_w) } else { pad };
+        let label_y = body_y + (geometry().row_height - 12.0) / 2.0;
+        svg.push_str(&format!(
+            "<text class=\"sb-label\" x=\"0\" y=\"13\" {} transform=\"translate({} {})\">{}</text>",
+            label_fill(theme, &colors.text), label_x, label_y, escape_text(label)
+        ));
+    }
 
     let tail_h = inset(40.0, 30.0) - inset(11.0, 8.0);
     let adjusted_body = (body_h + s(3.0)).max(tail_h) - s(2.0);
@@ -980,6 +994,7 @@ mod tests {
                     body: vec![],
                     else_body: vec![],
                     else_segments: vec![],
+                mouth: None,
                 }
             ],
             else_body: vec![
@@ -991,9 +1006,11 @@ mod tests {
                     body: vec![],
                     else_body: vec![],
                     else_segments: vec![],
+                mouth: None,
                 }
             ],
             else_segments: vec![SegmentSpec::Text { value: "sonst".to_string() }],
+            mouth: None,
         };
         let (svg, width, height) = render_c_block(&block, "normal", false);
         // Check that the else segment appears in SVG
@@ -1036,6 +1053,7 @@ mod tests {
                     body: vec![],
                     else_body: vec![],
                     else_segments: vec![],
+                mouth: None,
                 }],
             }],
         };
@@ -1068,6 +1086,7 @@ mod tests {
                         body: vec![],
                         else_body: vec![],
                         else_segments: vec![],
+                    mouth: None,
                     },
                     BlockSpec {
                         shape: "stack".to_string(),
@@ -1085,6 +1104,7 @@ mod tests {
                         body: vec![],
                         else_body: vec![],
                         else_segments: vec![],
+                    mouth: None,
                     },
                 ],
             }],
