@@ -6,7 +6,7 @@
 //
 // Les polices arabes sont décrites dans README-rtl.md.
 
-#import "@preview/blockst:0.3.0": blockst, scratch
+#import "@preview/blockst:0.4.0": blockst, scratch
 #import "showcase-data.typ": programs, catalogue
 
 #set page(

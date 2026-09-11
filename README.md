@@ -22,6 +22,17 @@ The current renderer is text-based: Typst passes Scratch text to a bundled WASM 
 
 Starting with version 0.2.0, Blockst uses only the WASM-based text parser and renderer. The earlier native Typst rendering approach was dropped because it ran into Typst's limits on more complex Scratch layouts.
 
+### New in 0.4.0
+
+- **Blockly** as a second block language: `blockly()` renders the same text
+  notation with Blockly's shapes — notch, puzzle tab, boxed fields — in the
+  current flat look. See [Blockly and jwinf](#blockly-and-jwinf)
+- **jwinf profile**: the Jugendwettbewerb Informatik's classic-Blockly look,
+  its robot and turtle blocks, and the palette of the training tasks
+- **NEPO (Open Roberta)** for the Calliope mini and micro:bit, contributed by
+  @lkoehl as a renderer of its own — see [examples/nepo](examples/nepo/README.md)
+- Arabic: the common assignment wordings `مساوية لـ` / `مساويًا لـ` now resolve (#13)
+
 ### New in 0.3.0
 
 - **Right-to-left rendering** for Arabic, Hebrew and Persian, plus a new
@@ -43,6 +54,7 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - [Example Gallery](#example-gallery)
 - [SB3 Import via Typst Plugin WASM](#sb3-import-via-typst-plugin-wasm)
 - [Right-to-Left Languages](#right-to-left-languages)
+- [Blockly and jwinf](#blockly-and-jwinf)
 - [Catalog](#catalog)
 - [Contributing](#contributing)
 
@@ -54,6 +66,7 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - **Right-to-left languages** (Arabic, Hebrew, Persian): the block layout is
   mirrored automatically — notch, hat, C-block mouth, loop arrow and label
   order all follow the reading direction
+- **Blockly** and **Open Roberta (NEPO)** as further block languages, with a **jwinf** profile
 - Category suffixes via `::motion`, `::control`, ... (scratchblocks-style)
 - Optional line numbers and `#label` references for line-aware worksheets
 - Optional compact block geometry with `inset-scale` (text size unchanged, e.g. `60%`, `90%`, `125%`)
@@ -62,7 +75,7 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 ## Install and Import
 
 ```typst
-#import "@preview/blockst:0.3.0": blockst, scratch, raw-scratch, sb3
+#import "@preview/blockst:0.4.0": blockst, scratch, raw-scratch, sb3
 ```
 
 > Font requirement: Blockst is designed for Helvetica Neue (Scratch-like look).
@@ -514,6 +527,57 @@ MOTION_MOVESTEPS = "تحرك %1 خطوة"
 Arabic short vowels are optional in practice, so `كرِّر` and `كرر` match the
 same block; the matcher folds harakat and normalises alef/te-marbuta
 variants before comparing.
+
+## Blockly and jwinf
+
+`blockly()` draws Blockly blocks from the same notation `scratch()` uses. A
+*profile* chooses the look and the vocabulary:
+
+| Profile | Look | Vocabulary |
+| --- | --- | --- |
+| `"blockly"` (default) | today's flat Blockly (thrasos) | Blockly's German standard blocks |
+| `"blockly-klassisch"` | Blockly before 2019 | same |
+| `"jwinf"` | jwinf.de — classic geometry, jwinf's palette | robot and turtle world blocks, plus the standard blocks in the old wording |
+
+```typst
+#blockly("
+Roboter-Programm
+wiederhole (4) mal:
+  gehe nach rechts
+  falls <auf Kiste>
+    hebe Murmel auf ::aktionen
+  ende
+ende
+", profile: "jwinf")
+```
+
+![Blockly example](examples/example-blockly.svg)
+
+On jwinf the same block reads differently from task to task — „hebe Murmel
+auf", „nimm Fisch", „Holzstapel einsammeln" — so there is no fixed
+vocabulary to match against. Write the label as it appears and name the
+category with a `::` suffix: `aktionen`, `schildkroete`, `sensoren`,
+`schleifen`, `logik`, `mathe`, `variablen`, `funktionen`, `text`, `listen`,
+`ausgeben`, `einlesen`. Blocks the profile knows — loops, conditions,
+variables, the robot and turtle commands — are recognised without a suffix.
+
+C-blocks close with `ende`; `sonst` opens the else branch. `<…>` and `(…)`
+are equivalent: Blockly draws no hexagon, a boolean plugs in with the same
+puzzle tab as any other value.
+
+In Markdown-style raw blocks, `#show: raw-blockly()` renders ````blockly`
+fences with the default profile and ````jwinf` fences with the jwinf
+profile. `set-blockst(profile: …)` sets the default profile for `blockly()`;
+`scratch()` is never affected by it.
+
+Themes work as for Scratch: `print`, `high-contrast` and `grayscale` are
+derived from the profile's palette, so a jwinf worksheet photocopies with its
+categories still told apart.
+
+Block texts and colours are generated from the published sources — Blockly
+(Apache-2.0) and France-IOI's bebras-modules (MIT) — by
+[scripts/blockly-data](scripts/blockly-data/README.md), which also reports
+the gaps in the upstream translations.
 
 ## Catalog
 

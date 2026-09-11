@@ -3,7 +3,7 @@
 // The point of this example is the thing it does not show: adding NEPO changed
 // nothing about how `scratch()` renders. The two dialects sit side by side and
 // keep their own shapes, colours and geometry.
-#import "../../lib.typ": scratch, nepo
+#import "@preview/blockst:0.4.0": scratch, nepo
 
 #set page(width: auto, height: auto, margin: 12pt, fill: white)
 #set text(font: "Helvetica Neue", fallback: true)

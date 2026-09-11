@@ -53,6 +53,7 @@
   code,
   language: "en",
   inline: false,
+  profile: "scratch",
 ) = context {
   let options = get-options()
   let theme = get-theme(options)
@@ -71,7 +72,7 @@
     line_number_first_block: get-line-number-first-block(options),
     line_number_gutter: get-line-number-gutter(options),
     inset_scale: _to-inset-scale-number(get-inset-scale(options)),
-    profile: options.at("profile", default: "scratch"),
+    profile: profile,
   )
 
   // Try to extract texts, measure, and use measured widths

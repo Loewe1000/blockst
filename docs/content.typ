@@ -29,7 +29,7 @@ The current renderer uses a text-to-WASM pipeline: Typst passes Scratch text to 
 == Quick start
 
 #show-code(```typ
-#import "@preview/blockst:0.3.0": blockst, scratch, raw-scratch, sb3
+#import "@preview/blockst:0.4.0": blockst, scratch, raw-scratch, sb3
 
 #scratch("
 when green flag clicked
@@ -42,7 +42,7 @@ turn cw (15) degrees
 
 == Package information
 
-- *Version:* 0.3.0
+- *Version:* 0.4.0
 - *License:* MIT
 - *Repository:* #link("https://github.com/Loewe1000/blockst")[github.com/Loewe1000/blockst]
 - *Compiler requirement:* Typst 0.15.0+
@@ -262,6 +262,26 @@ Arabic (`"ar"`), Hebrew (`"he"`) and Persian (`"fa"`) render right-to-left. Noth
 
 Arabic short vowels are optional and their order is not canonical, so blocks match whether or not you type the harakat: `كرِّر` and `كرر` both find the repeat block.
 
+= Blockly and jwinf
+
+`blockly()` renders Blockly blocks from the notation `scratch()` uses, drawn with Blockly's shapes. A profile chooses look and vocabulary: `"blockly"` (the default, today's flat look), `"blockly-klassisch"` (before 2019), or `"jwinf"` — the Jugendwettbewerb Informatik's classic geometry, palette, and robot and turtle blocks.
+
+#show-code(```typst
+#blockly("
+Roboter-Programm
+wiederhole (4) mal:
+  gehe nach rechts
+  falls <auf Kiste>
+    hebe Murmel auf ::aktionen
+  ende
+ende
+", profile: "jwinf")
+```)
+
+On jwinf a block's text changes from task to task, so unknown labels are drawn as written and take their category from a `::kategorie` suffix. Known blocks — loops, conditions, variables, the world commands — need none. `ende` closes a C-block, `sonst` opens its else branch, and `<…>` equals `(…)`: Blockly has no hexagonal boolean.
+
+`raw-blockly()` renders ````blockly` and ````jwinf` fences; `blockly-parse()` returns the AST. `set-blockst(profile: …)` sets the default profile for `blockly()` only. Themes apply as for Scratch, with `grayscale` derived from the profile's palette.
+
 = Labels and Line Numbers
 
 blockst provides a label system for creating line-aware worksheets. Lines ending with `#label-name` are tagged and can be referenced later.
@@ -407,7 +427,7 @@ blockst includes an execution engine that runs Scratch programs visually — ide
 Import via the `scratch-run` module:
 
 #show-code(```typ
-#import "@preview/blockst:0.3.0": scratch-run, set-scratch-run
+#import "@preview/blockst:0.4.0": scratch-run, set-scratch-run
 
 #scratch-run.stage("...", scale: 2)
 #scratch-run.grid("...", grid: true)

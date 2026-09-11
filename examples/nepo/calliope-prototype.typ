@@ -1,8 +1,8 @@
 // NEPO prototype — the six blocks the evaluation is built on.
 //
-// Imported relatively rather than as `@preview/blockst:0.3.0`, because NEPO is
+// Imported relatively rather than as `@preview/blockst:0.4.0`, because NEPO is
 // not part of a released version yet.
-#import "../../lib.typ": nepo, set-blockst
+#import "@preview/blockst:0.4.0": nepo, set-blockst
 
 #set page(width: auto, height: auto, margin: 12pt, fill: white)
 #set text(font: "Helvetica Neue", fallback: true)

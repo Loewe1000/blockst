@@ -7,7 +7,7 @@
 // Compile on the teaching-machine (the references live in iCloud there):
 //   typst compile examples/nepo/fehler-comparison.typ fehler-comparison.pdf --root /
 
-#import "../../lib.typ": nepo, set-blockst
+#import "@preview/blockst:0.4.0": nepo, set-blockst
 
 #set page(width: 420mm, height: auto, margin: 12mm, fill: white)
 #set text(font: "Helvetica Neue", fallback: true)
