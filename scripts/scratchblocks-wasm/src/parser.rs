@@ -33,6 +33,9 @@ struct BlockDef {
     slots: Vec<String>,
     #[serde(default)]
     inline: Option<bool>,
+    /// Icon in the first row: "mutator" or "warning".
+    #[serde(default)]
+    icon: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -60,6 +63,8 @@ struct LocaleToml {
     slots: HashMap<String, String>,
     #[serde(default)]
     inline: HashMap<String, bool>,
+    #[serde(default)]
+    icons: HashMap<String, String>,
 }
 
 // Internal structures (same as before, loaded from TOML instead of JSON)
@@ -349,6 +354,7 @@ fn data() -> &'static ParserData {
                         .map(|list| list.split(',').map(|k| k.trim().to_string()).collect())
                         .unwrap_or_default(),
                     inline: locale.inline.get(block_id).copied(),
+                    icon: locale.icons.get(block_id).cloned(),
                 });
             }
             // A locale is right-to-left when it says so. Falling back to a
@@ -603,7 +609,19 @@ fn to_public_node(block: ParsedBlock) -> PublicNode {
 }
 
 fn to_render_block(block: ParsedBlock) -> BlockSpec {
+    to_render_block_in(block, false)
+}
+
+/// `in_loop`: the block sits in the mouth of a loop, where a loop-control
+/// block ("die Schleife abbrechen") is at home and gets no warning sign.
+fn to_render_block_in(block: ParsedBlock, in_loop: bool) -> BlockSpec {
     let has_else_body = block.has_else;
+    let is_loop = matches!(block.id.as_str(), "controls_repeat_ext" | "controls_repeat" | "controls_whileUntil" | "controls_for" | "controls_forEach");
+    let icon = data()
+        .commands_by_id
+        .get(&block.id)
+        .and_then(|def| def.icon.clone())
+        .filter(|icon| !(icon == "warning" && in_loop));
     let mut segments = Vec::new();
     let is_proc_def = block.id == "procedures_definition";
     let is_proc_call = block.id == "procedures_call";
@@ -700,9 +718,10 @@ fn to_render_block(block: ParsedBlock) -> BlockSpec {
         mouth: data().commands_by_id.get(&block.id).and_then(|def| def.mouth.clone()),
         slots: data().commands_by_id.get(&block.id).map(|def| def.slots.clone()).unwrap_or_default(),
         inline: data().commands_by_id.get(&block.id).and_then(|def| def.inline),
+        icon,
         segments,
-        body: block.body.into_iter().map(to_render_block).collect(),
-        else_body: block.else_body.into_iter().map(to_render_block).collect(),
+        body: block.body.into_iter().map(|b| to_render_block_in(b, in_loop || is_loop)).collect(),
+        else_body: block.else_body.into_iter().map(|b| to_render_block_in(b, in_loop || is_loop)).collect(),
         else_segments: else_segs,
     }
 }

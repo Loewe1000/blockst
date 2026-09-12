@@ -307,5 +307,13 @@
   },
   "colours_by_task": {
     "note": "Standard categories are coloured per task. The robot training tasks (e.g. /task/1848) use schleifen #2fb5bd, logik #81b31d, mathe #3950a5, sensoren #2b7ca5, aktionen #723ca5, start #4789cc, which is what the jwinf profile follows. The Freie Turtle-Umgebung (/task/1668) uses schleifen #47cccc, logik #73cc47, mathe #475dcc, schildkroete #7347cc instead; variablen #a5416b, farben #cc7347 and funktionen #9911a5 are the same in both."
+  },
+  "icons": {
+    "_source": "Read out of /task/1668 on 2026-09-12.",
+    "note": "Icons sit in the first row at translate(10,5), 16x16, group opacity 0.6, shape fill #00f stroke #fff, symbol #fff; the text after an icon starts at x=37 (10 + 16 + 1 + 10). controls_if: mutator gear. procedures_defnoreturn: mutator gear at 10 and a '?' comment icon (circle r8) at 37, the name field at 64. controls_flow_statements: warning sign when the block is not inside a loop (inside a wiederhole mouth it has none; inside a falls mouth it has one).",
+    "controls_if": "m 0,8 A 8,8 0 0,1 8,0 H 15 l 6,4 3,0 6,-4 H 94.0234375 v 5 tab v 4 H 94.0234375 notch … v 8 … H 94.0234375 v 10 H 29.5 …",
+    "controls_flow_statements": "m 0,8 A 8,8 0 0,1 8,0 H 15 l 6,4 3,0 6,-4 H 209.6484375 v 25 H 8 a 8,8 0 0,1 -8,-8 z — no bottom notch (a cap), dropdown at 37 after the warning icon",
+    "procedures_defnoreturn": "m 0,8 A 8,8 0 0,1 8,0 H 150.8515625 v 25 H 50 l -6,4 -3,0 -6,-4 h -7 a 8,8 0 0,0 -8,8 v 8 a 8,8 0 0,0 8,8 H 150.8515625 v 10 H 8 a 8,8 0 0,1 -8,-8 z — no notches, statement edge 20",
+    "comment_symbol": "circle r8 at (8,8); path m6.8,10h2c0.003,-0.617 0.271,-0.962 0.633,-1.266 2.875,-2.405 0.607,-5.534 -3.765,-3.874v1.7c3.12,-1.657 3.698,0.118 2.336,1.25 -1.201,0.998 -1.201,1.528 -1.204,2.19z; rect (6.8,10.78,2,2)"
   }
 }

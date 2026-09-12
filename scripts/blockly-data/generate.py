@@ -66,6 +66,23 @@ DOWNLOADS = {
 # Blocks that read identically to another block and draw identically too, so
 # a text matcher could only pick between them at random. Blockly itself calls
 # controls_repeat_ext "preferred as it is more flexible".
+# Icons Blockly draws in a block's first row: the mutator gear on blocks
+# whose shape the author can change, the warning sign on a loop-control
+# block that sits outside a loop. Read from Blockly's blocks/*.ts
+# (`this.setMutator(...)`) and blocks_loops.ts (`setWarningText`); the
+# renderer drops the warning inside a loop.
+ICONS = {
+    "controls_if": "mutator",
+    "controls_ifelse": "mutator",
+    "text_join": "mutator",
+    "lists_create_with": "mutator",
+    # Old Blockly also opens a "?" comment on a new procedure; today's
+    # doesn't, and the modern layout skips "comment".
+    "procedures_defnoreturn": "mutator,comment",
+    "procedures_defreturn": "mutator,comment",
+    "controls_flow_statements": "warning",
+}
+
 SKIP_BLOCKS = {
     "controls_repeat",
     # Same text as controls_if ("falls %1"); whether an else branch is drawn
@@ -77,6 +94,10 @@ SKIP_BLOCKS = {
     "controls_if_else",
     "controls_if_elseif",
     "controls_if_if",
+    # Same text as procedures_defnoreturn ("um %1"); its return row is not
+    # modelled, and matching it instead of the plain definition put "gib
+    # zurück" on the mouth.
+    "procedures_defreturn",
 }
 
 # Blockly's msg/messages.js declares some keys as synonyms of others rather
@@ -633,6 +654,12 @@ def write_locale(
         lines += ["", "# Label drawn next to the mouth of a C-block.", "[mouths]"]
         for block_id in sorted(mouths):
             lines.append(f'{block_id} = "{escape(mouths[block_id])}"')
+
+    icons = {k: ICONS[k] for k in sorted(specs) if k in ICONS}
+    if icons:
+        lines += ["", "# Icon in the first row: the mutator gear, or the warning sign a loop-control block gets outside a loop.", "[icons]"]
+        for block_id in sorted(icons):
+            lines.append(f'{block_id} = "{icons[block_id]}"')
 
     if aliases:
         lines += ["", "[aliases]"]

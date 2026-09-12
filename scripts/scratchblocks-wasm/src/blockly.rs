@@ -38,9 +38,13 @@ const EMPTY_SOCKET_W: f32 = 14.5;
 /// Narrowest arm beside a mouth (no label).
 const STATEMENT_EDGE_MIN: f32 = 20.0;
 pub(crate) const DROPDOWN_ARROW: &str = " ▾";
+/// Blockly's icons are 16px squares.
+pub(crate) const ICON_W: f32 = 16.0;
 
 pub(crate) enum Item {
     Label(String),
+    /// A 16px icon in the first row: "mutator", "warning" or "comment".
+    Icon(String),
     Field { text: String, dropdown: bool },
     /// A value input. `None` is an empty hole; `Some` is the block plugged in.
     Socket(Option<BlockSpec>),
@@ -102,11 +106,22 @@ fn shadow(value: &str, kind: &str) -> BlockSpec {
         mouth: None,
         slots: vec!["field".to_string()],
         inline: None,
+        icon: None,
     }
 }
 
 pub(crate) fn plan(block: &BlockSpec) -> Plan {
     let mut items = Vec::new();
+    // Icons come first in the first row. Today's Blockly no longer opens
+    // a comment on a new procedure, so the modern layout skips that one.
+    if let Some(icons) = &block.icon {
+        for name in icons.split(',').map(str::trim).filter(|n| !n.is_empty()) {
+            if name == "comment" && geometry().spacer_rows {
+                continue;
+            }
+            items.push(Item::Icon(name.to_string()));
+        }
+    }
     let mut slot = 0usize;
     for segment in &block.segments {
         match segment {
@@ -322,6 +337,8 @@ fn row_size(row: &Row, g: &Geometry, last: bool, before_mouth: bool, _is_value: 
         cursor += SEP_X;
         match item {
             Item::Label(text) => cursor += text_width(text),
+            // 16 wide, and the old renderer adds a pixel after it.
+            Item::Icon(_) => cursor += ICON_W + 1.0,
             Item::Field { text, dropdown } => {
                 has_field = true;
                 cursor += field_advance(text, *dropdown);
@@ -621,6 +638,10 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
                     content.push_str(&label(&colors, text, cursor, baseline, theme));
                     cursor += text_width(text);
                 }
+                Item::Icon(kind) => {
+                    content.push_str(&icon_svg(kind, cursor, top + FIELD_Y, theme));
+                    cursor += ICON_W + 1.0;
+                }
                 Item::Field { text, dropdown } => {
                     let shown = if *dropdown { format!("{text}{DROPDOWN_ARROW}") } else { text.clone() };
                     let advance = field_advance(text, *dropdown);
@@ -765,6 +786,32 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
 pub(crate) fn notch(g: &Geometry, dir: f32) -> String {
     let ramp = (g.notch_end - g.notch_start - g.notch_inner) / 2.0;
     format!("l {},{} {},0 {},-{}", dir * ramp, g.notch_depth, dir * g.notch_inner, dir * ramp, g.notch_depth)
+}
+
+/// One of Blockly's icons, drawn as the editor draws it: blue shape with a
+/// white symbol, at 60% opacity because that is how an unhovered icon
+/// looks. Markup copied from the editor's DOM.
+pub(crate) fn icon_svg(kind: &str, x: f32, y: f32, theme: &str) -> String {
+    let (shape, symbol) = if theme == "grayscale" || theme == "print" { ("#555555", "#ffffff") } else { ("#0000ff", "#ffffff") };
+    let inner = match kind {
+        "mutator" => format!(
+            "<rect rx=\"4\" ry=\"4\" height=\"16\" width=\"16\" fill=\"{shape}\" stroke=\"#ffffff\"/>\
+             <path fill=\"{symbol}\" d=\"m4.203,7.296 0,1.368 -0.92,0.677 -0.11,0.41 0.9,1.559 0.41,0.11 1.043,-0.457 1.187,0.683 0.127,1.134 0.3,0.3 1.8,0 0.3,-0.299 0.127,-1.138 1.185,-0.682 1.046,0.458 0.409,-0.11 0.9,-1.559 -0.11,-0.41 -0.92,-0.677 0,-1.366 0.92,-0.677 0.11,-0.41 -0.9,-1.559 -0.409,-0.109 -1.046,0.458 -1.185,-0.682 -0.127,-1.138 -0.3,-0.299 -1.8,0 -0.3,0.3 -0.126,1.135 -1.187,0.682 -1.043,-0.457 -0.41,0.11 -0.899,1.559 0.108,0.409z\"/>\
+             <circle r=\"2.7\" cx=\"8\" cy=\"8\" fill=\"{shape}\" stroke=\"#ffffff\"/>"
+        ),
+        "warning" => format!(
+            "<path fill=\"{shape}\" stroke=\"#ffffff\" d=\"M2,15Q-1,15 0.5,12L6.5,1.7Q8,-1 9.5,1.7L15.5,12Q17,15 14,15z\"/>\
+             <path fill=\"{symbol}\" d=\"m7,4.8v3.16l0.27,2.27h1.46l0.27,-2.27v-3.16z\"/>\
+             <rect fill=\"{symbol}\" x=\"7\" y=\"11\" height=\"2\" width=\"2\"/>"
+        ),
+        "comment" => format!(
+            "<circle r=\"8\" cx=\"8\" cy=\"8\" fill=\"{shape}\" stroke=\"#ffffff\"/>\
+             <path fill=\"{symbol}\" d=\"m6.8,10h2c0.003,-0.617 0.271,-0.962 0.633,-1.266 2.875,-2.405 0.607,-5.534 -3.765,-3.874v1.7c3.12,-1.657 3.698,0.118 2.336,1.25 -1.201,0.998 -1.201,1.528 -1.204,2.19z\"/>\
+             <rect fill=\"{symbol}\" x=\"6.8\" y=\"10.78\" height=\"2\" width=\"2\"/>"
+        ),
+        _ => return String::new(),
+    };
+    format!("<g transform=\"translate({x} {y})\" opacity=\"0.6\">{inner}</g>")
 }
 
 pub(crate) fn label(colors: &CategoryColors, text: &str, x: f32, baseline: f32, theme: &str) -> String {

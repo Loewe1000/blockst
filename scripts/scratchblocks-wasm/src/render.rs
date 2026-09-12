@@ -308,6 +308,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
         mouth: None,
         slots: Vec::new(),
         inline: None,
+        icon: None,
         };
         let (tw, _) = block_size(&temp);
         tw
@@ -354,6 +355,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
         mouth: None,
         slots: Vec::new(),
         inline: None,
+        icon: None,
         };
         svg.push_str(&render_segments(&temp, &temp.segments, theme, &colors.text, 0.0, 40.0, 5.0));
     }
@@ -1008,6 +1010,7 @@ mod tests {
                 mouth: None,
                 slots: Vec::new(),
                 inline: None,
+                icon: None,
                 }
             ],
             else_body: vec![
@@ -1022,12 +1025,14 @@ mod tests {
                 mouth: None,
                 slots: Vec::new(),
                 inline: None,
+                icon: None,
                 }
             ],
             else_segments: vec![SegmentSpec::Text { value: "sonst".to_string() }],
             mouth: None,
             slots: Vec::new(),
             inline: None,
+            icon: None,
         };
         let (svg, width, height) = render_c_block(&block, "normal", false);
         // Check that the else segment appears in SVG
@@ -1074,6 +1079,7 @@ mod tests {
                 mouth: None,
                 slots: Vec::new(),
                 inline: None,
+                icon: None,
                 }],
             }],
         };
@@ -1110,6 +1116,7 @@ mod tests {
                     mouth: None,
                     slots: Vec::new(),
                     inline: None,
+                    icon: None,
                     },
                     BlockSpec {
                         shape: "stack".to_string(),
@@ -1130,6 +1137,7 @@ mod tests {
                     mouth: None,
                     slots: Vec::new(),
                     inline: None,
+                    icon: None,
                     },
                 ],
             }],

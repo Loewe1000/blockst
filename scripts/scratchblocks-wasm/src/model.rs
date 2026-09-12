@@ -83,6 +83,11 @@ pub struct BlockSpec {
     /// Blockly's `inputsInline`, when the block declares it.
     #[serde(default)]
     pub inline: Option<bool>,
+    /// Icon Blockly draws in the first row: "mutator" (the gear on blocks
+    /// whose shape the author can change) or "warning" (the sign on a
+    /// loop-control block outside a loop).
+    #[serde(default)]
+    pub icon: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

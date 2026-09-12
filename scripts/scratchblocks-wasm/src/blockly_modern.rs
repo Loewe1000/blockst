@@ -16,7 +16,7 @@
 //! Every number here was read out of Blockly 12.3.1's RenderInfo with the
 //! thrasos renderer (`tests/fixtures/blockly-modern-reference.json`).
 
-use crate::blockly::{field_advance, label, notch, plan, unwrapped, Item, Mouth, Plan, Row, DROPDOWN_ARROW};
+use crate::blockly::{field_advance, icon_svg, label, notch, plan, unwrapped, Item, Mouth, Plan, Row, DROPDOWN_ARROW, ICON_W};
 use crate::geometry::geometry;
 use crate::measure::text_width;
 use crate::model::BlockSpec;
@@ -49,6 +49,7 @@ const BASELINE_BELOW_CENTRE: f32 = 4.5;
 #[derive(Clone, Copy, PartialEq)]
 enum Kind {
     Label,
+    Icon,
     Editable,
     Inline,
     External,
@@ -63,6 +64,9 @@ fn spacing(prev: Option<Kind>, next: Option<Kind>) -> f32 {
         (None, Some(Inline)) => 8.0,
         (None, Some(Statement)) => STATEMENT_PAD_LEFT,
         (None, _) => 10.0,
+        // an icon-only row gets extra room so the block shape stays clear
+        (Some(Icon), None) => 21.0,
+        (Some(Icon), _) => 10.0,
         (Some(Editable), None | Some(Statement)) => 5.0,
         (Some(Label), None | Some(Statement)) => 10.0,
         (Some(Inline), None) => 10.0,
@@ -79,6 +83,7 @@ fn spacing(prev: Option<Kind>, next: Option<Kind>) -> f32 {
 fn kind(item: &Item) -> Kind {
     match item {
         Item::Label(_) => Kind::Label,
+        Item::Icon(_) => Kind::Icon,
         Item::Field { .. } => Kind::Editable,
         Item::Socket(_) => Kind::Inline,
     }
@@ -87,6 +92,8 @@ fn kind(item: &Item) -> Kind {
 fn item_size(item: &Item) -> (f32, f32) {
     match item {
         Item::Label(text) => (text_width(text), TEXT_H),
+        // measured as 17 by 17 in RenderInfo, drawn 16 wide
+        Item::Icon(_) => (ICON_W + 1.0, ICON_W + 1.0),
         Item::Field { text, dropdown } => (field_advance(text, *dropdown) + 10.0, TEXT_H),
         Item::Socket(None) => (EMPTY_INLINE_W + TAB_W, EMPTY_INLINE_H),
         Item::Socket(Some(child)) => {
@@ -330,6 +337,7 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
             };
             match item {
                 Item::Label(text) => content.push_str(&label(&colors, text, placed.x, centre + BASELINE_BELOW_CENTRE, theme)),
+                Item::Icon(kind) => content.push_str(&icon_svg(kind, placed.x, centre - placed.h / 2.0, theme)),
                 Item::Field { text, dropdown } => {
                     let shown = if *dropdown { format!("{text}{DROPDOWN_ARROW}") } else { text.clone() };
                     content.push_str(&format!(
