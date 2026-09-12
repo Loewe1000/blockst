@@ -467,3 +467,15 @@ pub fn c_block_size(block: &BlockSpec) -> (f32, f32) {
         (width, height)
     }
 }
+
+/// `textLength`/`lengthAdjust` for a `<text>`: the width the layout used.
+/// A viewer whose font differs from the measured one — a browser without
+/// Helvetica Neue, or a manual built where Typst had to fall back — then fits
+/// the label into its block instead of running past it.
+pub fn fit(text: &str) -> String {
+    let w = text_width(text);
+    if text.trim().is_empty() || w <= 0.0 {
+        return String::new();
+    }
+    format!(" textLength=\"{}\" lengthAdjust=\"spacingAndGlyphs\"", w)
+}

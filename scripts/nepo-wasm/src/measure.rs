@@ -587,3 +587,13 @@ pub fn collect_texts(blocks: &[BlockSpec], out: &mut std::collections::BTreeSet<
         }
     }
 }
+
+/// `textLength`/`lengthAdjust` for a `<text>`: the width the layout used, so a
+/// viewer whose font differs from the measured one still fits the label.
+pub fn fit(text: &str, monospace: bool) -> String {
+    let w = text_width(text, monospace);
+    if text.trim().is_empty() || w <= 0.0 {
+        return String::new();
+    }
+    format!(" textLength=\"{}\" lengthAdjust=\"spacingAndGlyphs\"", crate::svg::fmt(w))
+}
