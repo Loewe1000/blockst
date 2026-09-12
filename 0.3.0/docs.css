@@ -334,7 +334,8 @@ thead th, tr:first-child th { background: var(--flaeche); font-weight: 620; }
    das überschrieben werden. Der helle Grund bleibt auch im dunklen Modus,
    weil die Zeichnungen schwarze Linien mitbringen. */
 main svg {
-  max-width: 100% !important;
+  box-sizing: content-box;
+  max-width: calc(100% - 1.8rem - 2px) !important;
   height: auto !important;
   background: #ffffff;
   border: 1px solid var(--flaeche-rand);
