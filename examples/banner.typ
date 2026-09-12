@@ -10,7 +10,7 @@
   #set-blockst(scale: 78%)
 
   #grid(columns: 2, column-gutter: 4mm, align: horizon,
-    image("logo.svg", height: 13mm),
+    image("logo.svg", height: 11mm),
     text(40pt)[*_blockst_*],
   )
   #v(1mm)
