@@ -11,6 +11,15 @@
 
 #let _blockst-label-store = state("blockst-label-store", (:))
 
+/// Apply per-call overrides for the duration of `body`.
+///
+/// Both state updates are pure functions of the previous value: the entry
+/// merges the overrides into whatever is current and pushes the old options
+/// onto a stack kept inside the state, the exit pops that stack. Nothing read
+/// through introspection is written back, so a document with any number of
+/// calls converges in two passes. (Restoring a captured copy of the options
+/// instead made each call depend on the previous pass, and two `blockly()`
+/// calls after `set-blockst(profile: …)` never settled.)
 #let _with-local-options(
   theme: auto,
   scale: auto,
@@ -24,29 +33,42 @@
   language: auto,
   colors: auto,
   body,
-) = context {
-  if theme == auto and scale == auto and font == auto and line-numbering == auto and line-numbers == auto and line-number-start == auto and line-number-first-block == auto and line-number-gutter == auto and inset-scale == auto and language == auto and colors == auto {
+) = {
+  let local = (:)
+  if theme != auto { local.insert("theme", theme) }
+  if scale != auto { local.insert("scale", scale) }
+  if font != auto { local.insert("font", font) }
+  if line-numbering != auto { local.insert("line-numbering", line-numbering) }
+  if line-numbers != auto { local.insert("line-numbers", line-numbers) }
+  if line-number-start != auto { local.insert("line-number-start", line-number-start) }
+  if line-number-first-block != auto { local.insert("line-number-first-block", line-number-first-block) }
+  if line-number-gutter != auto { local.insert("line-number-gutter", line-number-gutter) }
+  if inset-scale != auto { local.insert("inset-scale", inset-scale) }
+  if language != auto { local.insert("language", language) }
+  if colors != auto { local.insert("colors", colors) }
+  if local.len() == 0 {
     return body
   }
-
-  let previous-opts = get-options()
-  let resolved-opts = previous-opts
-  resolved-opts.theme = if theme == auto { previous-opts.at("theme", default: "normal") } else { theme }
-  resolved-opts.scale = if scale == auto { previous-opts.at("scale", default: 100%) } else { scale }
-  resolved-opts.insert("font", if font == auto { previous-opts.at("font", default: "Helvetica Neue") } else { font })
-  resolved-opts.insert("line-numbering", if line-numbering == auto { previous-opts.at("line-numbering", default: none) } else { line-numbering })
-  resolved-opts.insert("line-numbers", if line-numbers == auto { previous-opts.at("line-numbers", default: false) } else { line-numbers })
-  resolved-opts.insert("line-number-start", if line-number-start == auto { previous-opts.at("line-number-start", default: 1) } else { line-number-start })
-  resolved-opts.insert("line-number-first-block", if line-number-first-block == auto { previous-opts.at("line-number-first-block", default: 1) } else { line-number-first-block })
-  resolved-opts.insert("line-number-gutter", if line-number-gutter == auto { previous-opts.at("line-number-gutter", default: 24) } else { line-number-gutter })
-  resolved-opts.insert("inset-scale", if inset-scale == auto { previous-opts.at("inset-scale", default: 1.0) } else { inset-scale })
-  resolved-opts.insert("language", if language == auto { previous-opts.at("language", default: "en") } else { language })
-  // Local colours are laid over the global ones, category by category.
-  resolved-opts.insert("colors", if colors == auto { previous-opts.at("colors", default: (:)) } else { previous-opts.at("colors", default: (:)) + colors })
   [
-    #hide(scratch-block-options.update(_ => resolved-opts))
+    #hide(scratch-block-options.update(old => {
+      let saved = old
+      let _ = saved.remove("_saved", default: none)
+      let new = old + local
+      // Local colours are laid over the global ones, category by category.
+      if "colors" in local {
+        new.insert("colors", old.at("colors", default: (:)) + local.colors)
+      }
+      new.insert("_saved", old.at("_saved", default: ()) + (saved,))
+      new
+    }))
     #body
-    #hide(scratch-block-options.update(_ => previous-opts))
+    #hide(scratch-block-options.update(old => {
+      let stack = old.at("_saved", default: ())
+      if stack.len() == 0 { return old }
+      let restored = stack.last()
+      if stack.len() > 1 { restored.insert("_saved", stack.slice(0, -1)) }
+      restored
+    }))
   ]
 }
 
