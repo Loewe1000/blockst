@@ -837,7 +837,7 @@ fn render_block_in(block: &BlockSpec, theme: &str, _first: bool, _last: bool, pa
                             content.push_str(&format!("<text class=\"sb-input-text\" x=\"{}\" y=\"{}\" style=\"fill:#000000;font-size:10px\">\"</text>", e.x - 1.0, centre + 1.0));
                             content.push_str(&format!("<text class=\"sb-input-text\" x=\"{}\" y=\"{}\" style=\"fill:#000000;font-size:10px\">\"</text>", e.x + e.w - QUOTE_W - 1.0, centre + 1.0));
                         }
-                        content.push_str(&format!("<text class=\"sb-input-text\" x=\"{tx}\" y=\"{}\" style=\"fill:#000000\">{}</text>", centre + BASELINE_BELOW_CENTRE, escape_text(&text)));
+                        content.push_str(&format!("<text class=\"sb-input-text\" x=\"{tx}\" y=\"{}\" style=\"fill:#000000\"{}>{}</text>", centre + BASELINE_BELOW_CENTRE, crate::measure::fit(&text), escape_text(&text)));
                     } else {
                         content.push_str(&format!(
                             "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{FIELD_RECT_H}\" rx=\"{r}\" ry=\"{r}\" fill=\"transparent\" stroke=\"{stroke_colour}\"/>",

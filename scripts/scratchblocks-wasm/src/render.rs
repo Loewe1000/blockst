@@ -330,8 +330,8 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
         (10.0, 8.0 + define_text_width + define_gap)
     };
 
-    svg.push_str(&format!("<text class=\"sb-label\" x=\"0\" y=\"13\" {} transform=\"translate({} {})\">{}</text>",
-        label_fill(theme, &colors.text), keyword_x, define_y, define_label));
+    svg.push_str(&format!("<text class=\"sb-label\" x=\"0\" y=\"13\" {} transform=\"translate({} {})\"{}>{}</text>",
+        label_fill(theme, &colors.text), keyword_x, define_y, crate::measure::fit(&define_label), define_label));
 
     // Inner outline starts after "define" label + gap
     svg.push_str(&format!("<g transform=\"translate({} 20)\">", inner_x));
@@ -484,8 +484,8 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
         let label_x = if is_rtl() { mirror_span(outer_w, pad, label_w) } else { pad };
         let label_y = body_y + (geometry().row_height - 12.0) / 2.0;
         svg.push_str(&format!(
-            "<text class=\"sb-label\" x=\"0\" y=\"13\" {} transform=\"translate({} {})\">{}</text>",
-            label_fill(theme, &colors.text), label_x, label_y, escape_text(label)
+            "<text class=\"sb-label\" x=\"0\" y=\"13\" {} transform=\"translate({} {})\"{}>{}</text>",
+            label_fill(theme, &colors.text), label_x, label_y, crate::measure::fit(label), escape_text(label)
         ));
     }
 
@@ -607,7 +607,7 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
         match segment {
             SegmentSpec::Text { value } => {
                 let child_y = child_offset(block, segment, line_height, index == 0, line_y, index, segments.len());
-                svg.push_str(&format!("<text class=\"sb-label\" x=\"{}\" y=\"13\" {} transform=\"translate({} {})\">{}</text>", 0, label_fill(theme, text_fill), place(x, text_width(value)), child_y, escape_text(value)));
+                svg.push_str(&format!("<text class=\"sb-label\" x=\"{}\" y=\"13\" {} transform=\"translate({} {})\"{}>{}</text>", 0, label_fill(theme, text_fill), place(x, text_width(value)), child_y, crate::measure::fit(value), escape_text(value)));
                 x += text_width(value);
             }
             SegmentSpec::Icon { name } => {
@@ -716,8 +716,8 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
                         // Keep default baseline at h=32, but scale around center for other heights.
                         let text_y = child_y + (input_h / 2.0) + 5.0;
                         let anchor = if rtl { " text-anchor=\"end\"" } else { "" };
-                        svg.push_str(&format!("<text class=\"sb-input-text\" style=\"fill:{}\" x=\"{}\" y=\"{}\"{}>{}</text>",
-                            text_fill, text_x, text_y, anchor, escape_text(value)));
+                        svg.push_str(&format!("<text class=\"sb-input-text\" style=\"fill:{}\" x=\"{}\" y=\"{}\"{}{}>{}</text>",
+                            text_fill, text_x, text_y, anchor, crate::measure::fit(value), escape_text(value)));
                         let arrow_w = 12.0;
                         let arrow_right = inset(12.0, 8.0);
                         let arrow_x = if rtl {
@@ -754,9 +754,9 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
                             let text_y = child_y + (input_h / 2.0) + 6.0;
                             if custom_fill {
                                 // Pink background → white text
-                                svg.push_str(&format!("<text class=\"sb-input-text\" style=\"fill:#ffffff\" text-anchor=\"middle\" x=\"{}\" y=\"{}\">{}</text>", text_cx, text_y, escape_text(value)));
+                                svg.push_str(&format!("<text class=\"sb-input-text\" style=\"fill:#ffffff\" text-anchor=\"middle\" x=\"{}\" y=\"{}\"{}>{}</text>", text_cx, text_y, crate::measure::fit(value), escape_text(value)));
                             } else {
-                                svg.push_str(&format!("<text class=\"sb-input-text\" text-anchor=\"middle\" x=\"{}\" y=\"{}\">{}</text>", text_cx, text_y, escape_text(value)));
+                                svg.push_str(&format!("<text class=\"sb-input-text\" text-anchor=\"middle\" x=\"{}\" y=\"{}\"{}>{}</text>", text_cx, text_y, crate::measure::fit(value), escape_text(value)));
                             }
                         }
                     }

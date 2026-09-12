@@ -346,7 +346,7 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
                         centre - TEXT_H / 2.0,
                         placed.w
                     ));
-                    content.push_str(&format!("<text class=\"sb-input-text\" x=\"{}\" y=\"{}\" style=\"fill:#000000\">{}</text>", placed.x + 5.0, centre + BASELINE_BELOW_CENTRE, escape_text(text)));
+                    content.push_str(&format!("<text class=\"sb-input-text\" x=\"{}\" y=\"{}\" style=\"fill:#000000\"{}>{}</text>", placed.x + 5.0, centre + BASELINE_BELOW_CENTRE, crate::measure::fit(text), escape_text(text)));
                 }
                 Item::Field { text, dropdown } => {
                     let shown = if *dropdown { format!("{text}{DROPDOWN_ARROW}") } else { text.clone() };

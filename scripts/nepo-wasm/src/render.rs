@@ -358,10 +358,11 @@ fn render_field(
 
     match segment {
         SegmentSpec::Text { .. } => format!(
-            "<text class=\"nepo-label{}\" x=\"{}\" y=\"{}\">{}</text>",
+            "<text class=\"nepo-label{}\" x=\"{}\" y=\"{}\"{}>{}</text>",
             if mono { " mono" } else { "" },
             fmt(x),
             fmt(baseline),
+            measure::fit(&measure::display_text(segment), mono),
             escape_text(&measure::display_text(segment))
         ),
         SegmentSpec::ColourField { colour } => format!(
@@ -385,9 +386,10 @@ fn render_field(
             );
             if !value.is_empty() {
                 svg.push_str(&format!(
-                    "<text class=\"nepo-field-text mono\" x=\"{}\" y=\"{}\">{}</text>",
+                    "<text class=\"nepo-field-text mono\" x=\"{}\" y=\"{}\"{}>{}</text>",
                     fmt(x),
                     fmt(baseline),
+                    measure::fit(value, true),
                     escape_text(value)
                 ));
             }
@@ -415,7 +417,7 @@ fn render_field(
             )
         }
         SegmentSpec::Input { .. } => format!(
-            "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" rx=\"{r}\" ry=\"{r}\" fill=\"{}\" fill-opacity=\"{}\"/><text class=\"nepo-field-text\" x=\"{}\" y=\"{}\">{}</text>",
+            "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" rx=\"{r}\" ry=\"{r}\" fill=\"{}\" fill-opacity=\"{}\"/><text class=\"nepo-field-text\" x=\"{}\" y=\"{}\"{}>{}</text>",
             fmt(x + FIELD_BOX_X),
             fmt(y),
             fmt(width + FIELD_BOX_PAD),
@@ -424,6 +426,7 @@ fn render_field(
             colours.field_fill_opacity,
             fmt(x),
             fmt(baseline),
+            measure::fit(&measure::display_text(segment), false),
             escape_text(&measure::display_text(segment)),
             r = fmt(FIELD_BOX_RADIUS),
         ),

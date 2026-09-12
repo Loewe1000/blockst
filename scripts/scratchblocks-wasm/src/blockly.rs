@@ -692,7 +692,7 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
                         field_y,
                         advance + 10.0
                     ));
-                    content.push_str(&format!("<text class=\"sb-input-text\" x=\"{cursor}\" y=\"{baseline}\" style=\"fill:#000000\">{}</text>", escape_text(text)));
+                    content.push_str(&format!("<text class=\"sb-input-text\" x=\"{cursor}\" y=\"{baseline}\" style=\"fill:#000000\"{}>{}</text>", crate::measure::fit(text), escape_text(text)));
                     cursor += advance;
                 }
                 Item::Field { text, dropdown } => {
@@ -869,5 +869,5 @@ pub(crate) fn icon_svg(kind: &str, x: f32, y: f32, theme: &str) -> String {
 
 pub(crate) fn label(colors: &CategoryColors, text: &str, x: f32, baseline: f32, theme: &str) -> String {
     let fill = if theme == "grayscale" { format!("style=\"fill:{}\"", colors.text) } else { format!("fill=\"{}\"", colors.text) };
-    format!("<text class=\"sb-label\" x=\"{x}\" y=\"{baseline}\" {fill}>{}</text>", escape_text(text))
+    format!("<text class=\"sb-label\" x=\"{x}\" y=\"{baseline}\" {fill}{}>{}</text>", crate::measure::fit(text), escape_text(text))
 }
