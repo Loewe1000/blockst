@@ -34,6 +34,9 @@
   ],
   links: ((name: "GitHub", url: "https://github.com/Loewe1000/blockst"),),
   notices: ([Part of the Schule Typst ecosystem],),
+  // Ein Kapitel je Seite; die Kataloge allein rendern mehrere hundert Blöcke.
+  split: true,
+  toc-depth: 2,
 )
 
 #include "content.typ"
