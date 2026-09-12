@@ -1,8 +1,8 @@
-#import "@schule/schuldocs:0.2.0": doc-target, info, show-code, show-example, show-module, tip, warning
-#import "../lib.typ": scratch
+#import "@schule/schuldocs:0.3.0": doc-target, info, show-code, show-example, show-module, tip, warning
+#import "../lib.typ": scratch, nepo
 
-// Gesetzte Scratch-Blöcke brauchen im HTML-Export einen Rahmen: ohne ihn
-// verwirft Typst den Zustand, den `scratch()` über `hide` mitführt, und warnt
+// Gesetzte Blöcke brauchen im HTML-Export einen Rahmen: ohne ihn verwirft
+// Typst den Zustand, den die Renderer über `hide` mitführen, und warnt
 // („hide was ignored during HTML export"). Im Handbuch bleibt alles, wie es ist.
 #let framed(body) = context if doc-target() == "web" { html.frame(body) } else { body }
 
@@ -10,17 +10,21 @@
 
 == About blockst
 
-*blockst* renders programming blocks directly in Typst documents — Scratch, Blockly (with a profile for jwinf.de), MakeCode (micro:bit and Calliope mini) and Open Roberta NEPO, each drawn the way its editor draws it. It is designed for worksheets, tutorials, teaching material, and visual programming explanations — anything where block code needs to appear in print or online documentation.
+*blockst* renders block-based programs in Typst documents, each drawn the way its editor draws it:
 
-The current renderer uses a text-to-WASM pipeline: Typst passes Scratch text to a bundled WASM plugin, the plugin parses and renders SVG, and Typst embeds the SVG output in the document.
+- *Scratch 3* — `scratch()`, the Scratch look in 26 languages, including right-to-left scripts, with an execution engine for turtle graphics and helpers for importing `.sb3` project files.
+- *Blockly* — `blockly()`, today's flat Blockly and the pre-2019 look, with profiles for the Jugendwettbewerb Informatik (jwinf.de) and its robot and turtle blocks.
+- *MakeCode* — `makecode()`, the micro:bit and Calliope mini editors' blocks in all 36 of their languages.
+- *NEPO (Open Roberta)* — `nepo()`, the Calliope mini and micro:bit blocks of Open Roberta Lab.
+
+All four share one text notation: a block per line, `(…)` for a value, `[… v]` for a dropdown, `<…>` for a condition, indentation and an end marker for the body of a loop. Typst hands the text to a bundled WASM plugin, the plugin parses it and returns SVG, Typst embeds the SVG. Nothing has to be installed beyond the package.
 
 #info(title: "Core Design")[
-  - Fully text-based: write Scratch blocks as plain text, get rendered blocks.
-  - _26 languages_ supported via built-in WASM locale data, including right-to-left scripts.
-  - _Localized_ block rendering follows official Scratch translations.
-  - _Blockly_ and _MakeCode_ blocks from the same notation: `blockly()` and `makecode()`, with the editors' own block texts.
-  - _Turtle graphics_ execution engine for demonstrating program flow visually.
-  - _SB3 import_ helpers for reading real Scratch project files.
+  - Fully text-based: write blocks as plain text, get rendered blocks. The same notation for every editor.
+  - Each editor's own geometry, palette and vocabulary — jwinf's classic Blockly measured on jwinf.de, MakeCode's zelos renderer as the editors run it.
+  - Localized: Scratch's official translations, Blockly's message files, the MakeCode editors' own strings.
+  - Themes for print (`print`, `grayscale`, `high-contrast`) and the document's own category colours over any palette.
+  - Line numbers and line labels for worksheets that talk about single lines.
 ]
 
 #warning(title: "Breaking Change since 0.2.0")[
@@ -30,7 +34,7 @@ The current renderer uses a text-to-WASM pipeline: Typst passes Scratch text to 
 == Quick start
 
 #show-code(```typ
-#import "@preview/blockst:0.4.0": blockst, scratch, raw-scratch, sb3
+#import "@preview/blockst:0.4.0": scratch, blockly, makecode, nepo
 
 #scratch("
 when green flag clicked
@@ -41,19 +45,191 @@ turn cw (15) degrees
 
 #image("../examples/example-quickstart.svg")
 
+The same document can hold the other editors' blocks. A jwinf task:
+
+#show-code(```typ
+#blockly("
+Roboter-Programm
+wiederhole (4) mal:
+  gehe nach rechts
+  falls <auf Kiste>
+    hebe Murmel auf ::aktionen
+  ende
+ende
+", profile: "jwinf")
+```)
+
+A micro:bit program:
+
+#show-code(```typ
+#makecode("
+beim Start
+  zeige Symbol [Herz v]
+ende
+wenn Knopf [A v] geklickt
+  zeige Zahl ((1) + (2))
+  pausiere (ms) (100)
+ende
+")
+```)
+
+== Which function for which editor
+
+#table(
+  columns: (auto, auto, auto, auto, auto),
+  align: left + top,
+  table.header([*Editor*], [*Function*], [*Profiles*], [*Default language*], [*Code fences*]),
+  [Scratch 3], [`scratch()`], [—], [`"en"`, 26 languages], [`scratch` via `raw-scratch()`],
+  [Blockly, jwinf], [`blockly()`], [`blockly` (default), `blockly-klassisch`, `jwinf`, `jwinf-turtle`], [`"de"`, 24 languages], [`blockly`, `jwinf`, `jwinf-turtle` via `raw-blockly()`],
+  [MakeCode], [`makecode()`], [`makecode` (micro:bit, default), `makecode-calliope`], [`"de"`, 36 languages], [`makecode`, `microbit`, `calliope` via `raw-makecode()`],
+  [Open Roberta], [`nepo()`], [platforms `calliope` (default), `calliopev3`, `microbit`], [`"de"`], [`nepo` via `raw-nepo()`],
+)
+
+Every function takes the same rendering options — theme, scale, font, line numbers, colours — and all of them read the defaults set with `set-blockst()`. The chapters #link("#scratch")[Scratch], #link("#blockly-and-jwinf")[Blockly and jwinf], #link("#makecode")[MakeCode] and #link("#nepo-open-roberta")[NEPO] describe what is particular to each editor.
+
 == Package information
 
 - *Version:* 0.4.0
 - *License:* MIT
 - *Repository:* #link("https://github.com/Loewe1000/blockst")[github.com/Loewe1000/blockst]
 - *Compiler requirement:* Typst 0.15.0+
-- *Font requirement:* Designed for Helvetica Neue (Scratch look). On Linux/Windows install a compatible font (e.g. Nimbus Sans) or override via #link("#set-blockst-global-defaults")[set-blockst]. MakeCode blocks use a monospace face (Menlo, Consolas or DejaVu Sans Mono, whichever is installed).
+- *Font requirement:* Scratch and Blockly labels are designed for Helvetica Neue. On Linux/Windows install a compatible font (e.g. Nimbus Sans) or set another one with `set-blockst(font: …)`. MakeCode labels use a monospace face — Menlo, Consolas or DejaVu Sans Mono, whichever is installed.
 
-= Core Rendering API
+= The notation
+
+Blocks are written one per line, the way they read in the editor. Inputs are marked by their brackets, a body is indented and closed by an end marker. The vocabulary is the editor's own in the chosen language — the parser matches against Scratch's translations, Blockly's message files or the MakeCode editors' strings, and a line it does not recognise is drawn as written in a neutral grey (or in the colour of a category you name, see below).
+
+#table(
+  columns: (auto, auto, auto),
+  align: (left, left, left),
+  table.header([*Pattern*], [*Example*], [*Description*]),
+  [Stack block], [`move (10) steps`], [A command; blocks on consecutive lines snap together],
+  [Hat block], [`when green flag clicked`], [An event; starts a new script],
+  [Reporter], [`(x position)`], [A value with round ends],
+  [Boolean], [`<mouse down?>`], [A condition with pointed ends],
+  [Input: number], [`(10)`], [Numeric input field],
+  [Input: string], [`[hello]`], [String input field],
+  [Input: dropdown], [`[random position v]`], [Dropdown selector — the `v` marks it],
+  [Empty input], [`()`, `[]`, `<>`], [An empty slot],
+  [C-block], [`repeat (4)` … `end`], [A block with a body: indent the body, close it with the end marker],
+  [C-block with else], [`if <…> then` … `else` … `end`], [A second body after the else marker],
+  [Icon], [`@greenFlag`, `@turnRight`, `@turnLeft`], [The flag and the turn arrows],
+  [Line label], [`move (10) steps #step`], [Names the line, see #link("#labels-and-line-numbers")[Labels and line numbers]],
+)
+
+What differs between the editors is small and follows the editor:
+
+- *End and else markers* follow the language: `end`/`else` in English, `ende`/`sonst` in German Blockly, `ende`/`ansonsten` in German MakeCode, `fin`/`sinon` in French. `end`, `ende` and `else` are understood in every Blockly and MakeCode language.
+- *Booleans.* Scratch and MakeCode draw a condition as a hexagon, so `<…>` and `(…)` are different shapes. Blockly has no hexagonal boolean: there `<…>` equals `(…)`.
+- *Unknown labels.* Scratch names a category with a prefix, `@motion free text` (see #link("#category-quick-color-defaults")[\@category]). Blockly and MakeCode use a suffix, `hebe Murmel auf ::aktionen` — on jwinf the normal case, because the same block reads differently from task to task.
+- *Units.* MakeCode shows some units in parentheses; they are typed like a value and drawn as the label: `pausiere (ms) (100)`, `Temperatur (°C)`.
+- *Editors.* MakeCode's LED matrix and melody editor have a notation of their own, see #link("#makecode")[MakeCode].
+
+= Options for every editor
+
+`scratch()`, `blockly()`, `makecode()` and `nepo()` accept the same rendering options. Given on the call, they apply to that block group; set with `set-blockst()`, they become the document's defaults; wrapped in `blockst[…]`, they apply to everything inside.
+
+== set-blockst() — Global Defaults
+
+#show-code(```typ
+#set-blockst(
+  theme: none,            // "normal", "high-contrast", "print", "grayscale"
+  profile: none,          // default profile for blockly() and makecode()
+  colors: none,           // (category: colour, …) over any palette
+  scale: none,            // 80%, 0.8 — overall size
+  inset-scale: none,      // 60% thin, 125% thick blocks; text size unchanged
+  stroke-width: none,
+  font: none,             // "Nimbus Sans"
+  language: none,         // default language for every editor
+  line-numbers: none,
+  line-number-start: none,
+  line-number-first-block: none,
+  line-number-gutter: none,
+)
+```)
+
+All parameters are optional. Only provided values override the current defaults; a later `set-blockst()` changes only what it names.
+
+== blockst() — Group Override Container
+
+#show-code(```typ
+#blockst(theme: "high-contrast", scale: 80%)[
+  #scratch("when green flag clicked\nmove (10) steps")
+  #blockly("wiederhole (4) mal:\n  gehe nach rechts\nende", profile: "jwinf")
+]
+```)
+
+All parameters match `set-blockst()` but apply only within the body; `spacing` (default `1.5em`) sets the gap between the blocks inside.
+
+== Themes
+
+#table(
+  columns: (auto, auto),
+  align: left + top,
+  table.header([*Theme*], [*Description*]),
+  [`"normal"`], [Default — the editor's full colours.],
+  [`"high-contrast"`], [Lighter, high-contrast variant for accessibility.],
+  [`"print"`], [Every block white with a black outline. The lightest on ink, but all categories look alike.],
+  [`"grayscale"`], [One distinct grey per category, so a control block still reads differently from an operator on a monochrome page.],
+)
+
+The derived themes are computed from the palette in use, so `grayscale` on a jwinf profile is jwinf's categories in grey, and a colour set with `colors` carries its own bevel, stroke, high-contrast and grey shades.
+
+#show-code(```typ
+#let script = "when green flag clicked
+go to (random position v)
+turn cw (30) degrees"
+
+#blockst(inset-scale: 50%)[#scratch(script)]
+#blockst(theme: "high-contrast")[#scratch(script)]
+#blockst(theme: "print")[#scratch(script)]
+```)
+
+#image("../examples/example-theme.svg")
+
+== Colours
+
+`colors` lays the document's own category colours over any palette — for the document with `set-blockst()`, for a single block or group on the rendering function or on `blockst()`. A hex string or a Typst colour per category; the category names are the ones the editor uses (`motion`, `looks`, … for Scratch, `aktionen`, `schleifen`, `logik`, … for jwinf, `basic`, `input`, `loops`, … for MakeCode).
+
+#show-code(```typ
+#set-blockst(colors: (logik: "#73cc47"))
+#blockly(programm, profile: "jwinf", colors: (aktionen: "#cc7347", schleifen: rgb("#5ba55b")))
+```)
+
+jwinf colours its categories per task family; `colors` is the way to match a task that deviates from both jwinf profiles.
+
+== Fonts
+
+#show-code(```typ
+#set-blockst(font: "Nimbus Sans")
+```)
+
+Scratch and Blockly labels default to Helvetica Neue, MakeCode labels to Menlo, Consolas or DejaVu Sans Mono. Set the font here rather than with `set text(font: …)`: the renderer measures each label and writes the font into the SVG, so a document-level `set text` changes what is drawn but not what was measured, and the labels overlap.
+
+== Scale and inset scale
+
+`scale` multiplies the whole drawing (`80%`, `0.8`). `inset-scale` changes the thickness of the blocks without touching the text: `60%` gives compact, `125%` generous blocks.
+
+#show-code(```typ
+#set-blockst(scale: 80%)
+#set-blockst(inset-scale: 60%)   // compact blocks
+```)
+
+== Line numbers
+
+#show-code(```typ
+#set-blockst(line-numbers: true, line-number-start: 1, line-number-gutter: 24)
+```)
+
+`line-number-start` is the first number, `line-number-gutter` the width of the gutter in points. Numbering continues from one block group to the next; `line-number-first-block` says with which group it starts. The three can also be given as one dictionary, `line-numbering: (enabled: true, start: 1, first-block: 1)`.
+
+#image("../examples/example-labels.svg")
+
+= Scratch
 
 == scratch() — Render Scratch Blocks
 
-The primary function for rendering Scratch blocks. It parses Scratch-like text and produces visual blocks.
+Parses Scratch text and renders the blocks the way Scratch 3 draws them.
 
 #show-example(
   rendered: context scratch("when green flag clicked\nmove (10) steps"),
@@ -63,14 +239,14 @@ The primary function for rendering Scratch blocks. It parses Scratch-like text a
   side-by-side: true,
 )
 
-=== Signature
-
 #show-code(```typ
 #scratch(
   text,
   language: "en",
   theme: auto,
   scale: auto,
+  font: auto,
+  colors: auto,
   line-numbers: auto,
   line-number-start: auto,
   line-number-gutter: auto,
@@ -78,134 +254,29 @@ The primary function for rendering Scratch blocks. It parses Scratch-like text a
 )
 ```)
 
-=== Parameters
+`text` is the Scratch block text in the chosen language; the other parameters are the #link("#options-for-every-editor")[options every editor shares], `auto` meaning the document's default. The parser knows the full Scratch 3 vocabulary in all 26 locales, including the pen extension.
 
-#table(
-  columns: (auto, auto, auto),
-  align: left + top,
-  table.header([*Name*], [*Default*], [*Description*]),
-  [`text`], [`—` (required)], [Scratch block text. Supports blocks, reporters, booleans, inputs, dropdowns, and nested control structures.],
-  [`language`], [`"en"`], [Locale for block text. See #link("#languages")[Languages] for available options.],
-  [`theme`], [`auto`], [Visual theme: `"normal"`, `"high-contrast"`, `"print"`, `"grayscale"`, or `auto` (global default).],
-  [`scale`], [`auto`], [Overall size multiplier (e.g. `80%`, `0.8`, `50%`).],
-  [`font`], [`auto`], [Font for block labels. Set it here rather than with `#set text(font: ...)`: the renderer measures each label and writes the font into the SVG, so a document-level `set text` changes what is drawn but not what was measured, and the labels overlap.],
-  [`line-numbers`], [`auto`], [Show line numbers (`true` or `false`).],
-  [`line-number-start`], [`auto`], [Starting line number (integer, default `1`).],
-  [`line-number-gutter`], [`auto`], [Width of line number gutter (pt, default `24`).],
-  [`inset-scale`], [`auto`], [Proportional block geometry scaling. `100%` = default, `60%` = thin blocks, `125%` = thick blocks. Does not affect text size.],
-)
+== raw-scratch — Code fences
 
-=== Supported block syntax
-
-The text parser supports the full Scratch 3 block vocabulary in all 26 locales. Key syntax patterns:
-
-#table(
-  columns: (auto, auto, auto),
-  align: (left, left, left),
-  table.header([*Pattern*], [*Example*], [*Description*]),
-  [Stack block], [`move (10) steps`], [Standard command block],
-  [Hat block], [`when green flag clicked`], [Event trigger],
-  [Reporter], [`(x position)`], [Value reporter (round ends)],
-  [Boolean], [`<mouse down?>`], [Predicate (pointy ends)],
-  [Input: number], [`(10)`], [Numeric input field],
-  [Input: string], [`[hello]`], [String input field],
-  [Input: dropdown], [`[random position v]`], [Dropdown selector],
-  [C-block], [`repeat (4)\n...\nend`], [Block with body],
-  [C-block + else], [`if <...> then\n...\nelse\n...\nend`], [Conditional with else],
-  [Line labels], [`move (10) steps #step`], [Named label (see #link("#labels-and-line-numbers")[Labels])],
-  [Category prefix], [`@motion free text`], [Force category color (see #link("#category-quick-color-defaults")[category])],
-  [Category prefix (render)], [`#text("@category")` + text], [Matches real block when text fits],
-)
-
-== set-blockst() — Global Defaults
-
-Sets global rendering options for all subsequent `scratch()` and SB3 render calls.
+The `raw-scratch()` show rule renders `scratch` code fences as blocks:
 
 #show-code(```typ
-#set-blockst(
-  theme: none,
-  scale: none,
-  stroke-width: none,
-  font: none,
-  line-numbers: none,
-  line-number-start: none,
-  line-number-gutter: none,
-  inset-scale: none,
-)
+#show: raw-scratch(language: "en")
 ```)
 
-All parameters are optional. Only provided values override the current defaults.
-
-=== Themes
-
-#table(
-  columns: (auto, auto),
-  align: left + top,
-  table.header([*Theme*], [*Description*]),
-  [`"normal"`], [Default — full color Scratch style.],
-  [`"high-contrast"`], [Lighter, high-contrast variant for accessibility.],
-  [`"print"`], [Every block white with a black outline. The lightest on ink, but all categories look alike.],
-  [`"grayscale"`], [One distinct grey per category, so a control block still reads differently from an operator on a monochrome page.],
-)
-
-#show-code(```typ
-#set-blockst(theme: "print", scale: 70%)
-#scratch("when green flag clicked\nmove (10) steps")
+#show-code(```scratch
+when green flag clicked
+repeat (4)
+  move (30) steps
+  turn cw (90) degrees
+end
 ```)
 
-=== Fonts
+#image("../examples/example-raw-scratch.svg")
 
-#show-code(```typ
-#set-blockst(font: "Nimbus Sans")
-```)
+== Languages
 
-The default font is Helvetica Neue. On systems without it, set an alternative.
-
-=== Line numbers
-
-#show-code(```typ
-#set-blockst(line-numbers: true, line-number-start: 1, line-number-gutter: 24)
-```)
-
-#image("../examples/example-labels.svg")
-
-=== Inset scale
-
-Controls the visual thickness/slimness of blocks without changing text size.
-
-#show-code(```typ
-#set-blockst(inset-scale: 60%)   // compact blocks
-#set-blockst(inset-scale: 125%)  // generous blocks
-```)
-
-== blockst() — Group Override Container
-
-Optional wrapper for grouped blocks that differ from global settings.
-
-#show-code(```typ
-#blockst(
-  theme: auto,
-  scale: auto,
-  line-numbers: auto,
-  line-number-start: auto,
-  line-number-gutter: auto,
-  inset-scale: auto,
-  spacing: 1.5em,
-  body,
-)
-```)
-
-All parameters match `scratch()` but apply only within the body. Use when a specific group of blocks needs different scaling or theme.
-
-#show-code(```typ
-#blockst(theme: "high-contrast")[
-  #scratch("when green flag clicked\nmove (10) steps")
-]
-```)
-
-= Languages
-
-blockst supports *26 languages* via built-in WASM locale data. Set via `scratch(..., language: "de")` or `set-blockst(...)`.
+Scratch blocks come in *26 languages*, from Scratch's official translations. Set the language on the call or with `set-blockst(language: …)`; block text must match the chosen locale's vocabulary.
 
 #table(
   columns: (auto, auto, auto, auto),
@@ -239,9 +310,7 @@ end
 
 #image("../examples/example-de.svg")
 
-Block text must match the chosen locale's vocabulary — the parser matches against official Scratch translations.
-
-== Right-to-left languages
+=== Right-to-left languages
 
 Arabic (`"ar"`), Hebrew (`"he"`) and Persian (`"fa"`) render right-to-left. Nothing has to be switched on: each locale declares its own direction, and the renderer mirrors the layout — the notch, the hat dome, the C-block mouth, the loop arrow, the pen badge, the `define` hat and the order of the labels all move to the reading edge.
 
@@ -263,101 +332,14 @@ Arabic (`"ar"`), Hebrew (`"he"`) and Persian (`"fa"`) render right-to-left. Noth
 
 Arabic short vowels are optional and their order is not canonical, so blocks match whether or not you type the harakat: `كرِّر` and `كرر` both find the repeat block.
 
-= Blockly and jwinf
+== `@category` — Quick Color Defaults
 
-`blockly()` renders Blockly blocks from the notation `scratch()` uses, drawn with Blockly's shapes. A profile chooses look and vocabulary: `"blockly"` (the default, today's flat look), `"blockly-klassisch"` (before 2019), `"jwinf"` — the Jugendwettbewerb Informatik's classic geometry, the palette of its robot training tasks, and its robot and turtle blocks — or `"jwinf-turtle"`, the same with the colours of the Freie Turtle-Umgebung.
-
-The standard blocks come in 24 languages, from Blockly's own message files: `language: "de"` (the default), `"en"`, `"fr"` (`répéter (10) fois`), `"ja"` (`(10) 回繰り返す`), and ar, ca, cs, el, es, fa, he, hi, hr, hu, id, it, nb, nl, pl, pt, ro, ru, sl, tr. The jwinf world blocks exist in German only. Each language closes a C-block with the marker its Scratch locale uses (`ende`, `end`, `fin`, …) and opens the else branch with Blockly's word (`sonst`, `else`, `sinon`, …); `ende`, `end` and `else` work in every language.
-
-#show-code(```typst
-#blockly("
-Roboter-Programm
-wiederhole (4) mal:
-  gehe nach rechts
-  falls <auf Kiste>
-    hebe Murmel auf ::aktionen
-  ende
-ende
-", profile: "jwinf")
-```)
-
-On jwinf a block's text changes from task to task, so unknown labels are drawn as written and take their category from a `::kategorie` suffix. Known blocks — loops, conditions, variables, the world commands — need none. `ende` closes a C-block, `sonst` opens its else branch, and `<…>` equals `(…)`: Blockly has no hexagonal boolean.
-
-`raw-blockly()` renders ```` ```blockly ```` and ```` ```jwinf ```` fences; `blockly-parse()` returns the AST. `set-blockst(profile: …)` sets the default profile for `blockly()` only. Themes apply as for Scratch, with `grayscale` derived from the profile's palette.
-
-jwinf colours its categories per task family. Where a task deviates from both profiles, `colors` lays the document's own category colours over the palette — `set-blockst(colors: (logik: "#73cc47"))` for the document, or `colors:` on `blockly()`, `scratch()` and `blockst()` for a single block or group. A hex string or a Typst colour per category; the derived shades (bevel, stroke, `high-contrast`, `grayscale`) follow the new fill.
-
-= MakeCode
-
-`makecode()` renders the blocks of the MakeCode editors for the micro:bit (`profile: "makecode"`, the default) and the Calliope mini (`"makecode-calliope"`), from the notation `scratch()` uses. The look is Blockly's zelos renderer as the editors run it — pills, hexagons, white literal pills, MakeCode's monospace label — and the block texts are the editors' own, in every language the editors offer: German (`language: "de"`, the default) and English read off the running editors, the other 34 — `"fr"`, `"es"`, `"ja"`, `"zh-cn"`, … — from the translation service the editors load at run time (approved strings only; an untranslated block keeps its English text, as in the editor). A bare code picks the regional variant the editor ships (`"es"` → es-ES). The end and else markers follow the language (`fin`/`sinon`, `終わり`/`でなければ`, …); `ende`, `end` and `else` work everywhere.
-
-#show-code(```typst
-#makecode("
-beim Start
-  zeige Symbol [Herz v]
-ende
-wenn Knopf [A v] geklickt
-  zeige Zahl ((1) + (2))
-  pausiere (ms) (100)
-ende
-")
-```)
-
-A unit the editor shows in parentheses is typed like a value and drawn as the label (`pausiere (ms) (100)`). The LED matrix takes 25 cells, `#` lit and `.` dark (`zeige LEDs [#...#|.#.#.|..#..|.#.#.|#...#]`), the melody editor eight notes or rests (`spiele (Melodie [C D E F - - - -] mit Tempo (120) (bpm)) [bis zum Ende v]`). `ende` closes a C-block, `ansonsten` opens the else branch with the editor's − and + buttons. `raw-makecode()` renders ```` ```makecode ````, ```` ```microbit ```` and ```` ```calliope ```` fences; `makecode-parse()` returns the AST. `set-blockst(profile: "makecode-calliope")` sets the default profile for `makecode()`, `colors:` overrides single categories, and the themes (`grayscale`, `high-contrast`, `print`) and line numbers work as for Scratch. Unknown labels are drawn as written with the category from a `::kategorie` suffix (`basic`, `input`, `music`, `led`, `radio`, `loops`, `logic`, `variables`, `math`, `functions`, `arrays`, `text`, `game`, `images`, `pins`, `serial`, `control`).
-
-#image("../examples/example-makecode.svg")
-
-= Labels and Line Numbers
-
-blockst provides a label system for creating line-aware worksheets. Lines ending with `#label-name` are tagged and can be referenced later.
-
-== scratch-labels() — Extract Labels
-
-Parses Scratch text and returns a dictionary mapping label names to line numbers.
-
-#show-code(```typ
-#let labels = scratch-labels("
-repeat (4) #loop
-  move (20) steps #step
-  turn cw (90) degrees
-end
-")
-// labels = ("loop": 1, "step": 2)
-```)
-
-== blockst-labels() — Query Labels
-
-Queries globally collected labels from all rendered `scratch()` calls.
-
-#show-code(```typ
-#blockst-labels("loop")   // → line number or "NaN"
-#blockst-labels()         // → full label → line dictionary
-```)
-
-== blockst-register-labels() — Pre-register Labels
-
-Register labels globally without rendering blocks. Useful when labels are needed before the first block output.
-
-#show-code(```typ
-#blockst-register-labels("
-repeat (4) #loop
-  move (20) steps #step
-end
-")
-```)
-
-#image("../examples/example-labels.svg")
-
-= `@category` — Quick Color Defaults
-
-Use `@category` prefix to force a block's category color, even without matching full localized syntax.
+A `@category` prefix forces a block's category colour, even without matching the full localized syntax.
 
 #show-code(```typ
 @motion         // → default motion block
 @motion free text  // → unrecognized block in motion color
 ```)
-
-Available categories:
 
 #table(
   columns: (auto, auto, auto),
@@ -377,79 +359,237 @@ Available categories:
   [`@operator`], [operators], [(alias for `operators`)],
 )
 
-When `@category` is followed by text that matches a known block in that category, the actual block is rendered:
+When `@category` is followed by text that matches a known block in that category, the actual block is rendered; otherwise the fallback is an `unrecognized` block in the forced colour.
 
 #show-code(```typ
 @list add (12) to [my list v]    // → DATA_ADDTOLIST
 @variable change [score v] by (1) // → DATA_CHANGEVARIABLEBY
 ```)
 
-If the text does not match any known block, the fallback is an `unrecognized` block in the forced category color.
-
-= Parsing API
-
 == scratch-parse() — Parse to AST
 
-Parses Scratch text to an abstract syntax tree for programmatic use.
+Parses Scratch text to an abstract syntax tree for programmatic use — a nested structure of blocks, inputs and bodies.
 
 #show-code(```typ
-#scratch-parse(
-  text,              // Scratch block text
-  language: "en",    // locale for parsing
+#scratch-parse(text, language: "en")
+```)
+
+The complete list of Scratch blocks, rendered live, is the #link("#scratch-block-catalog")[Scratch block catalog] at the end of this manual. Running Scratch programs as turtle graphics and importing `.sb3` files have chapters of their own.
+
+= Blockly and jwinf
+
+== blockly() — Render Blockly Blocks
+
+`blockly()` renders Blockly blocks from the shared notation, drawn with Blockly's shapes — notch, puzzle tab, boxed fields, the mutator gear on an if block, the warning sign on a loop-control block outside a loop.
+
+#show-code(```typ
+#blockly(
+  text,
+  profile: auto,      // "blockly", "blockly-klassisch", "jwinf", "jwinf-turtle"
+  language: auto,     // "de" by default
+  theme: auto,
+  scale: auto,
+  font: auto,
+  colors: auto,
+  line-numbers: auto,
+  line-number-start: auto,
+  line-number-gutter: auto,
+  inset-scale: auto,
 )
 ```)
 
-Returns a nested structure representing blocks, inputs, and bodies.
+== Profiles
 
-= Markdown Code Blocks with raw-scratch
+A profile chooses look and vocabulary. `set-blockst(profile: …)` sets the default for `blockly()`.
 
-The `raw-scratch()` show rule converts scratch code fences into rendered blocks automatically.
+#table(
+  columns: (auto, auto, auto),
+  align: left + top,
+  table.header([*Profile*], [*Look*], [*Vocabulary*]),
+  [`"blockly"` (default)], [today's flat Blockly (thrasos)], [Blockly's standard blocks],
+  [`"blockly-klassisch"`], [Blockly before 2019, with the bevel highlight], [same],
+  [`"jwinf"`], [jwinf.de — the classic geometry measured on the site, the palette of the robot training tasks], [robot and turtle world blocks, plus the standard blocks in the old wording],
+  [`"jwinf-turtle"`], [the same, with the colours of the Freie Turtle-Umgebung], [same],
+)
 
 #show-code(```typ
-#show: raw-scratch(language: "en")   // locale for block text
+#blockly("
+Roboter-Programm
+wiederhole (4) mal:
+  gehe nach rechts
+  falls <auf Kiste>
+    hebe Murmel auf ::aktionen
+  ende
+ende
+", profile: "jwinf")
 ```)
 
-Then use scratch code fences in your document:
+#image("../examples/example-blockly.svg")
 
-#show-code(```scratch
-when green flag clicked
-repeat (4)
-  move (30) steps
+== Writing jwinf tasks
+
+On jwinf the same block reads differently from task to task — „hebe Murmel auf", „nimm Fisch", „Holzstapel einsammeln" — so there is no fixed vocabulary to match against. Write the label as it appears and name the category with a `::` suffix: `aktionen`, `schildkroete`, `sensoren`, `schleifen`, `logik`, `mathe`, `variablen`, `funktionen`, `text`, `listen`, `ausgeben`, `einlesen`. Blocks the profile knows — loops, conditions, variables, the robot and turtle commands — are recognised without a suffix.
+
+`ende` closes a C-block, `sonst` opens its else branch, and `<…>` equals `(…)`: Blockly has no hexagonal boolean. Where a task's colours deviate from both profiles, `colors` lays the document's own over the palette (see #link("#colours")[Colours]).
+
+== Languages
+
+The standard blocks come in 24 languages, from Blockly's own message files: `language: "de"` (the default), `"en"`, `"fr"` (`répéter (10) fois`), `"ja"` (`(10) 回繰り返す`), and ar, ca, cs, el, es, fa, he, hi, hr, hu, id, it, nb, nl, pl, pt, ro, ru, sl, tr. The jwinf world blocks exist in German only. Each language closes a C-block with the marker its Scratch locale uses (`ende`, `end`, `fin`, …) and opens the else branch with Blockly's word (`sonst`, `else`, `sinon`, …); `ende`, `end` and `else` work in every language.
+
+== Code fences and parsing
+
+`raw-blockly()` renders `blockly` fences with the default profile, `jwinf` fences with the jwinf profile and `jwinf-turtle` fences with the turtle colours, whatever the arguments say. `blockly-parse()` returns the AST.
+
+#show-code(```typ
+#show: raw-blockly()
+#blockly-parse(text, language: "de", profile: "blockly")
+```)
+
+Themes apply as for Scratch, with `grayscale` derived from the profile's palette.
+
+= MakeCode
+
+== makecode() — Render MakeCode Blocks
+
+`makecode()` renders the blocks of the MakeCode editors for the micro:bit and the Calliope mini. The look is Blockly's zelos renderer as the editors run it — pills and hexagons as tall as their block, white literal pills, the − and + buttons of an if block, MakeCode's monospace labels — and the block texts are the editors' own.
+
+#show-code(```typ
+#makecode(
+  text,
+  profile: auto,      // "makecode" (micro:bit), "makecode-calliope"
+  language: auto,     // "de" by default
+  theme: auto,
+  scale: auto,
+  font: auto,
+  colors: auto,
+  line-numbers: auto,
+  line-number-start: auto,
+  line-number-gutter: auto,
+  inset-scale: auto,
+)
+```)
+
+#show-code(```typ
+#makecode("
+beim Start
+  zeige Symbol [Herz v]
+ende
+wenn Knopf [A v] geklickt
+  zeige Zahl ((1) + (2))
+  pausiere (ms) (100)
+ende
+")
+```)
+
+#image("../examples/example-makecode.svg")
+
+== Profiles
+
+`"makecode"` (the default) is the micro:bit editor, `"makecode-calliope"` the Calliope mini's: the same blocks plus the Calliope's own (motors, the RGB LED), in the Calliope palette. `set-blockst(profile: "makecode-calliope")` sets the default for `makecode()`; `colors:` overrides single categories.
+
+== Writing MakeCode programs
+
+- *Units.* A unit the editor shows in parentheses is typed like a value and drawn as the label: `pausiere (ms) (100)`, `Temperatur (°C)`.
+- *Operators* take the editor's glyph or a spelling: `×` or `*`, `÷` or `/`, `≥` or `>=`, `≤` or `<=`, `≠` or `!=`.
+- *LED matrix.* 25 cells, `#` lit and `.` dark, in any grouping: `zeige LEDs [#...#|.#.#.|..#..|.#.#.|#...#]`.
+- *Melody editor.* Eight notes or rests: `spiele (Melodie [C D E F - - - -] mit Tempo (120) (bpm)) [bis zum Ende v]`.
+- *Else.* `ansonsten`/`else` opens the else branch, which gets the editor's − and + buttons.
+- *Unknown labels* are drawn as written with the category from a `::kategorie` suffix: `basic`, `input`, `music`, `led`, `radio`, `loops`, `logic`, `variables`, `math`, `functions`, `arrays`, `text`, `game`, `images`, `pins`, `serial`, `control`.
+
+== Languages
+
+The block texts are the editors' own in every language the editors offer: German (`language: "de"`, the default) and English read off the running editors, the other 34 — `"fr"`, `"es"`, `"ja"`, `"zh-cn"`, … — from the translation service the editors load at run time (approved strings only; an untranslated block keeps its English text, as in the editor). A bare code picks the regional variant the editor ships (`"es"` → es-ES, `"pt"` → pt-BR). The end and else markers follow the language (`fin`/`sinon`, `終わり`/`でなければ`, …); `ende`, `end` and `else` work everywhere.
+
+== Code fences and parsing
+
+`raw-makecode()` renders `makecode` and `microbit` fences with the micro:bit profile and `calliope` fences with the Calliope mini profile. `makecode-parse()` returns the AST.
+
+#show-code(```typ
+#show: raw-makecode()
+#makecode-parse(text, language: "de", profile: "makecode")
+```)
+
+= NEPO (Open Roberta)
+
+`nepo()` renders the blocks of Open Roberta Lab for the Calliope mini and the micro:bit — a renderer of its own, contributed by #link("https://github.com/lkoehl")[lkoehl]. Block text prints in Open Roberta's own wording even when the source used a colloquial alias.
+
+#show-code(```typ
+#nepo(
+  code,
+  language: "de",
+  platform: "calliope",   // "calliope", "calliopev3", "microbit"
+  theme: auto,
+  scale: auto,
+  font: auto,
+)
+```)
+
+#show-example(
+  rendered: context framed(nepo("
+Start
+  Zeige Text \"Hallo\"
+  Wiederhole unendlich oft
+    Schalte RGB LED an (#ff0000)
+  Ende
+")),
+  source: ```typ
+#nepo("
+Start
+  Zeige Text \"Hallo\"
+  Wiederhole unendlich oft
+    Schalte RGB LED an (#ff0000)
+  Ende
+")
+```,
+  side-by-side: true,
+)
+
+`raw-nepo()` renders `nepo` fences, `nepo-parse()` returns the block tree. The renderer is a prototype: the set of blocks is the beginner set of the three platforms, and `examples/nepo` in the repository holds the programme collection and the comparison sheet against Open Roberta's own drawings.
+
+= Labels and line numbers
+
+A line that ends in `#name` is labelled. Labels are collected from every rendered block group — Scratch, Blockly, MakeCode — and can be queried later, so a worksheet can say "the loop in line 3" and be right after the program changes.
+
+== blockst-labels() — Query Labels
+
+#show-code(```typ
+#blockst-labels("loop")   // → line number or "NaN"
+#blockst-labels()         // → full label → line dictionary
+```)
+
+== scratch-labels() — Extract Labels
+
+Parses Scratch text and returns a dictionary mapping label names to line numbers, without rendering.
+
+#show-code(```typ
+#let labels = scratch-labels("
+repeat (4) #loop
+  move (20) steps #step
   turn cw (90) degrees
 end
+")
+// labels = ("loop": 1, "step": 2)
 ```)
 
-#image("../examples/example-raw-scratch.svg")
+== blockst-register-labels() — Pre-register Labels
 
-Optionally pass language: raw-scratch(language: "de") in the show rule.
-
-= Theme and Styling Examples
+Registers labels globally without rendering blocks — for labels that are needed before the first block output.
 
 #show-code(```typ
-#let script = "when green flag clicked
-go to (random position v)
-turn cw (30) degrees"
-
-#blockst(inset-scale: 50%)[#scratch(script)]
-
-#v(5mm)
-
-#blockst(theme: "high-contrast")[#scratch(script)]
-
-#v(5mm)
-
-#blockst(theme: "print")[#scratch(script)]
+#blockst-register-labels("
+repeat (4) #loop
+  move (20) steps #step
+end
+")
 ```)
 
-#image("../examples/example-theme.svg")
+#image("../examples/example-labels.svg")
 
-= Turtle Graphics / Executable Scratch
+= Running Scratch programs
 
-blockst includes an execution engine that runs Scratch programs visually — ideal for demonstrating program flow and pen drawing.
+blockst includes an execution engine that runs Scratch programs visually — for demonstrating program flow and pen drawing. It runs Scratch text only.
 
 == scratch-run Module
-
-Import via the `scratch-run` module:
 
 #show-code(```typ
 #import "@preview/blockst:0.4.0": scratch-run, set-scratch-run
@@ -558,7 +698,7 @@ end"
 )
 ```)
 
-= SB3 Import API
+= Importing Scratch projects (SB3)
 
 blockst can read real Scratch 3 project files (`.sb3`) and extract scripts, variables, lists, images, and screen previews.
 
@@ -700,9 +840,9 @@ Renders a static Scratch stage preview with sprites, backdrop, and monitors.
 )
 ```)
 
-= Catalog
+= Scratch block catalog
 
-The catalog shows every block in each Scratch 3 category, rendered live.
+Every block of each Scratch 3 category, rendered live, next to the text that produces it. Blockly's and MakeCode's vocabularies are the editors' own and too large to list here; the generator reports in the repository (`scripts/scratchblocks-wasm/data/dialects/REPORT.md`) hold them per language.
 
 #let _catalog-table(blocks) = table(
   columns: (auto, auto),
