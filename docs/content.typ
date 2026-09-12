@@ -1026,8 +1026,8 @@ not <>
 #let _titled(name) = upper(name.first()) + name.slice(1)
 // Every block of a dialect locale, a table per category. `skip` leaves out
 // the mutator containers, which are no blocks of their own.
-#let _dialect-catalog(file, render, skip: (), order: (), level: 3) = {
-  let groups = catalog-entries(toml(_locales + file))
+#let _dialect-catalog(file, render, skip: (), order: (), level: 3, end: "end") = {
+  let groups = catalog-entries(toml(_locales + file), end: end)
   // In the order of the editor's palette; what the palette does not name
   // follows in the order of the file.
   let names = order.filter(n => n in groups) + groups.keys().filter(n => n not in order)
@@ -1043,37 +1043,37 @@ not <>
 
 = Blockly block catalog
 
-Every block the Blockly dialect knows, in the German wording the renderer ships, built from the locale files the parser reads (`scripts/scratchblocks-wasm/data/dialects/locales/`). Empty slots stand for a value `()` or a dropdown `[ v]`; write the content in your own document.
+Every block the Blockly dialect knows, built from the locale files the parser reads (`scripts/scratchblocks-wasm/data/dialects/locales/`). Empty slots stand for a value `()` or a dropdown `[ v]`; write the content in your own document. The standard blocks are shown in English (`language: "en"`); the same blocks exist in 24 languages, German being the default, see the languages of #goto("blockly-and-jwinf")[Blockly and jwinf].
 
 == Standard blocks
 
-The `blockly` profile: Blockly's standard blocks in today's wording. The same blocks exist in 24 languages, see the languages of #goto("blockly-and-jwinf")[Blockly and jwinf].
+The `blockly` profile: Blockly's standard blocks in today's wording.
 
 #let _blockly-order = ("schleifen", "logik", "mathe", "text", "listen", "variablen", "funktionen")
-#_dialect-catalog("blockly-de.toml", blockly, skip: ("text_create_join_container", "text_join"), order: _blockly-order)
+#_dialect-catalog("blockly-en.toml", blockly.with(language: "en"), skip: ("text_create_join_container", "text_join"), order: _blockly-order)
 
 == jwinf
 
-The `jwinf` profile: the robot and turtle world blocks of jwinf.de, plus the standard blocks whose wording differs there.
+The `jwinf` profile: the robot and turtle world blocks of jwinf.de, plus the standard blocks whose wording differs there. jwinf is a German competition, its world blocks exist in German only.
 
-#_dialect-catalog("jwinf-de.toml", blockly.with(profile: "jwinf"), skip: ("text_create_join_container", "colourRGB"), order: ("start", "aktionen", "schildkroete", "turtleInput", "sensoren") + _blockly-order)
+#_dialect-catalog("jwinf-de.toml", blockly.with(profile: "jwinf"), skip: ("text_create_join_container", "colourRGB"), order: ("start", "aktionen", "schildkroete", "turtleInput", "sensoren") + _blockly-order, end: "ende")
 
 = MakeCode block catalog
 
-Every block of the MakeCode editors, in their German wording, built from the locale files the parser reads. The same blocks exist in all 36 editor languages, see the languages of #goto("makecode")[MakeCode].
+Every block of the MakeCode editors, built from the locale files the parser reads, shown in English (`language: "en"`). The same blocks exist in all 36 editor languages, German being the default, see the languages of #goto("makecode")[MakeCode].
 
 == micro:bit
 
 The `makecode` profile: the blocks of makecode.microbit.org.
 
 #let _makecode-order = ("basic", "input", "music", "led", "radio", "loops", "logic", "variables", "math", "functions", "arrays", "text", "game", "images", "pins", "serial", "control", "motors")
-#_dialect-catalog("makecode-de.toml", makecode, order: _makecode-order)
+#_dialect-catalog("makecode-en.toml", makecode.with(language: "en"), order: _makecode-order)
 
 == Calliope mini
 
 The `makecode-calliope` profile adds the Calliope mini's own blocks and recolours the shared ones; listed here are only the blocks the Calliope editor adds or words differently.
 
-#_dialect-catalog("makecode-calliope-de.toml", makecode.with(profile: "makecode-calliope"), order: _makecode-order)
+#_dialect-catalog("makecode-calliope-en.toml", makecode.with(profile: "makecode-calliope", language: "en"), order: _makecode-order)
 
 = Contributing
 
