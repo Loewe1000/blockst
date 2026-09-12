@@ -1,0 +1,71 @@
+<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>blockst 0.4.0 — Dokumentation</title><meta name="description" content="Render Scratch, Blockly, MakeCode and Open Roberta blocks for educational documents."><meta name="author" content="Loewe1000"><meta name="generator" content="schuldocs 0.3.0"><meta name="color-scheme" content="light dark"><link rel="stylesheet" href="docs.css"></head><body><!-- handbuch-versionen --><style>.handbuch-versionen{display:flex;flex-wrap:wrap;gap:.4rem 1rem;align-items:center;padding:.45rem 1.25rem;font-family:var(--sans,sans-serif);font-size:.85rem;background:var(--flaeche,#f4f6f8);border-bottom:1px solid var(--linie,#d5dbe1);color:var(--muted,#5b6670)}.handbuch-versionen select{font:inherit;color:var(--ink,#16191d);background:var(--grund,#fff);border:1px solid var(--linie,#d5dbe1);border-radius:.3rem;padding:.1rem .4rem}.handbuch-versionen a{color:var(--accent,#14537f)}.handbuch-versionen .hv-hinweis{margin-left:auto}</style><div class="handbuch-versionen"><label>Handbuch-Version <select onchange="location.href=this.value" aria-label="Version wählen"><option value="../0.4.0/" selected>0.4.0 (aktuell)</option><option value="../0.3.0/">0.3.0</option></select></label><a href="blockst.pdf">PDF</a></div><!-- /handbuch-versionen --><header class="kopf"><div class="kopf-inhalt"><h1 class="mit-zeichen"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0xIC0xIDY2IDcwIiB3aWR0aD0iNjYiIGhlaWdodD0iNzAiPgogIDwhLS0gYmxvY2tzdCBsb2dvOiBhIGhhdCBibG9jayBvbiBhIHN0YWNrIGJsb2NrLCBTY3JhdGNoJ3Mgbm90Y2ggZ2VvbWV0cnksIGFib3V0IHNxdWFyZS4gLS0+CiAgPHBhdGggZD0iTSA0IDM0IEggOCBjIDIgMCAzIDEgNCAyIGwgNCA0IGMgMSAxIDIgMiA0IDIgaCAxMiBjIDIgMCAzIC0xIDQgLTIgbCA0IC00IGMgMSAtMSAyIC0yIDQgLTIgSCA2MCBhIDQgNCAwIDAgMSA0IDQgViA1NiBhIDQgNCAwIDAgMSAtNCA0IEggNDQgYyAtMiAwIC0zIDEgLTQgMiBsIC00IDQgYyAtMSAxIC0yIDIgLTQgMiBoIC0xMiBjIC0yIDAgLTMgLTEgLTQgLTIgbCAtNCAtNCBjIC0xIC0xIC0yIC0yIC00IC0yIEggNCBhIDQgNCAwIDAgMSAtNCAtNCBWIDM4IGEgNCA0IDAgMCAxIDQgLTQgWiIgZmlsbD0iIzRjOTdmZiIgc3Ryb2tlPSIjMzM3M2NjIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8cGF0aCBkPSJNIDAgMTIgYyAxNyAtMTIgNDcgLTEyIDY0IDAgViAzMCBhIDQgNCAwIDAgMSAtNCA0IEggNDQgYyAtMiAwIC0zIDEgLTQgMiBsIC00IDQgYyAtMSAxIC0yIDIgLTQgMiBoIC0xMiBjIC0yIDAgLTMgLTEgLTQgLTIgbCAtNCAtNCBjIC0xIC0xIC0yIC0yIC00IC0yIEggNCBhIDQgNCAwIDAgMSAtNCAtNCBaIiBmaWxsPSIjZmZiZjAwIiBzdHJva2U9IiNjYzk5MDAiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4K" alt="blockst" width="66" height="70" style="height: 1.35em">blockst<span class="version">0.4.0</span></h1><p class="beschreibung">Render Scratch, Blockly, MakeCode and Open Roberta blocks for educational documents.</p><ul class="hinweise"><li>Part of the Schule Typst ecosystem</li></ul><nav class="verweise" aria-label="Verweise"><a href="https://github.com/Loewe1000/blockst">GitHub</a></nav></div></header><div class="rahmen"><nav class="inhalt" aria-label="Inhaltsverzeichnis"><h2 class="inhalt-titel">Inhalt</h2><ul><li><a href="index.html#introduction">Introduction</a></li><li><a href="the-notation.html#the-notation">The notation</a></li><li><a href="options-for-every-editor.html#options-for-every-editor">Options for every editor</a></li><li><a href="scratch.html#scratch">Scratch</a></li><li><a href="blockly-and-jwinf.html#blockly-and-jwinf">Blockly and jwinf</a></li><li><a href="makecode.html#makecode">MakeCode</a></li><li><a href="nepo-open-roberta.html#nepo-open-roberta">NEPO (Open Roberta)</a></li><li><a href="labels-and-line-numbers.html#labels-and-line-numbers">Labels and line numbers</a></li><li><a href="running-scratch-programs.html#running-scratch-programs">Running Scratch programs</a></li><li><a href="importing-scratch-projects-sb3.html#importing-scratch-projects-sb3">Importing Scratch projects (SB3)</a></li><li><a href="scratch-block-catalog.html#scratch-block-catalog">Scratch block catalog</a></li><li><a href="blockly-block-catalog.html#blockly-block-catalog">Blockly block catalog</a></li><li><a href="makecode-block-catalog.html#makecode-block-catalog">MakeCode block catalog</a></li><li><a href="contributing.html#contributing">Contributing</a></li><li><a href="api-reference.html#api-reference">API Reference</a></li></ul></nav><main><h2 id="nepo-open-roberta">NEPO (Open Roberta)<a class="anker" href="#nepo-open-roberta" aria-label="Verweis auf diesen Abschnitt">#</a></h2><p><code>nepo()</code> renders the blocks of Open Roberta Lab for the Calliope mini and the micro:bit — a renderer of its own, contributed by <a href="https://github.com/lkoehl">lkoehl</a>. Block text prints in Open Roberta’s own wording even when the source used a colloquial alias.</p><div class="sd-code"><pre><code data-lang="typ"><span style="color: #4b69c6">#</span><span style="color: #4b69c6">nepo</span>(
+  code,
+  language: <span style="color: #198810">"de"</span>,
+  platform: <span style="color: #198810">"calliope"</span>,   <span style="color: #74747c">// "calliope", "calliopev3", "microbit"</span>
+  theme: <span style="color: #d73948">auto</span>,
+  scale: <span style="color: #d73948">auto</span>,
+  font: <span style="color: #d73948">auto</span>,
+)</code></pre></div><div class="sd-example sd-example--split"><div class="sd-example-code"><pre><code data-lang="typ"><span style="color: #4b69c6">#</span><span style="color: #4b69c6">nepo</span>(<span style="color: #198810">"</span>
+<span style="color: #198810">Start</span>
+<span style="color: #198810">  Zeige Text \"Hallo\"</span>
+<span style="color: #198810">  Wiederhole unendlich oft</span>
+<span style="color: #198810">    Schalte RGB LED an (#ff0000)</span>
+<span style="color: #198810">  Ende</span>
+<span style="color: #198810">"</span>)</code></pre></div><div class="sd-example-render"><svg style="overflow: visible; width: 18.038654259em; height: 7.858043821em; display: block" viewBox="0 0 198.42519685 86.43848203" width="198.42519685pt" height="86.43848203pt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:h5="http://www.w3.org/1999/xhtml"><g><image xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjI4MC4wNTkiIGhlaWdodD0iMTIyIiB2aWV3Qm94PSIwIDAgMjgwLjA1OSAxMjIiPjxzdHlsZT4ubmVwby1sYWJlbHtmb250LWZhbWlseToiSGVsdmV0aWNhIE5ldWUiLCBzYW5zLXNlcmlmO2ZvbnQtc2l6ZToxNC42NjdweDtmaWxsOiNmZmZ9Lm5lcG8tbGFiZWwubW9ub3tmb250LWZhbWlseToiQ291cmllciBOZXciLENvdXJpZXIsbW9ub3NwYWNlfS5uZXBvLWZpZWxkLXRleHR7Zm9udC1mYW1pbHk6IkhlbHZldGljYSBOZXVlIiwgc2Fucy1zZXJpZjtmb250LXNpemU6MTQuNjY3cHg7ZmlsbDojMDAwfS5uZXBvLWZpZWxkLXRleHQubW9ub3tmb250LWZhbWlseToiQ291cmllciBOZXciLENvdXJpZXIsbW9ub3NwYWNlfTwvc3R5bGU+PGcgdHJhbnNmb3JtPSJzY2FsZSgxKSI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAwKSI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAwKSI+PHBhdGggZD0ibSAwLDIgQSAyLDIgMCAwLDEgMiwwIEggOTIuODc1IHYgMjUgSCAzMCBoIC0zLjVsIC00LCA0IC00LCAtNCBoIC0zLjUgSCAwIHogIiBmaWxsPSIjRTIwMDFBIiAvPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEwIDUpIj48cmVjdCB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGwtb3BhY2l0eT0iMCIvPjxwYXRoIGQ9Ik0xOCAxMGgtNHYtNGMwLTEuMTA0LS44OTYtMi0yLTJzLTIgLjg5Ni0yIDJsLjA3MSA0aC00LjA3MWMtMS4xMDQgMC0yIC44OTYtMiAycy44OTYgMiAyIDJsNC4wNzEtLjA3MS0uMDcxIDQuMDcxYzAgMS4xMDQuODk2IDIgMiAyczItLjg5NiAyLTJ2LTQuMDcxbDQgLjA3MWMxLjEwNCAwIDItLjg5NiAyLTJzLS44OTYtMi0yLTJ6IiB0cmFuc2Zvcm09InNjYWxlKC42NykiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjYiLz48L2c+PHRleHQgY2xhc3M9Im5lcG8tbGFiZWwiIHg9IjM3IiB5PSIxNy41IiB0ZXh0TGVuZ3RoPSIyOC41NDEiIGxlbmd0aEFkanVzdD0ic3BhY2luZ0FuZEdseXBocyI+U3RhcnQ8L3RleHQ+PHRleHQgY2xhc3M9Im5lcG8tbGFiZWwiIHg9Ijc1LjU0MSIgeT0iMTcuNSI+wqDCoDwvdGV4dD48L2c+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAyNikiPjxwYXRoIGQ9Im0gMCwwIEggMTUgaCAyLjVsIDUsIDUgNSwgLTUgaCAyLjUgSCAxMDguNDE0IHYgNC4xIGwtNS4xNTQgLTAuNDY5YzAgMCAtMS4wOTYgMy4xMjUgLTEuMzMgNC42NTZzLTAuMjUgMy43MDMgMC40MDYgNS4wNzhzIDEuOTg0IDIuNjg4IDMuNDg0IDIuOTUzczIuMzc1IDAuMjAzIDIuNTk0IDAuMjE5IHYgMy41IHYgNSBIIDMwIGggLTMuNWwgLTQsIDQgLTQsIC00IGggLTMuNSBIIDAgeiAiIGZpbGw9IiNGMjk0MDAiIC8+PHRleHQgY2xhc3M9Im5lcG8tbGFiZWwiIHg9IjEwIiB5PSIxNy41IiB0ZXh0TGVuZ3RoPSIzMy4yNzkiIGxlbmd0aEFkanVzdD0ic3BhY2luZ0FuZEdseXBocyI+WmVpZ2U8L3RleHQ+PHJlY3QgeD0iNDguMjc5IiB5PSI1IiB3aWR0aD0iNDcuMTM1IiBoZWlnaHQ9IjE2IiByeD0iMiIgcnk9IjIiIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC42Ii8+PHRleHQgY2xhc3M9Im5lcG8tZmllbGQtdGV4dCIgeD0iNTMuMjc5IiB5PSIxNy41Ij5UZXh0PHRzcGFuIGZpbGw9IiNGMjk0MDAiPiDilr48L3RzcGFuPjwvdGV4dD48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMDkuNDE0IDApIj48cGF0aCBkPSJtIDAsMCBIIDk2LjU0NSB2IDI1IEggMCBWIDIwIHogIiBmaWxsPSIjQkFDQzFFIiAvPjxwYXRoIGQ9Ik0gMCwyMCB2IC01IGMtNC4yMTcgMC4wOTcgLTQuNDcxIC0wLjU0IC01LjI4MSAtMS42MDljLTEuMTA5IC0xLjQ2IC0xLjE1OSAtMy44MiAtMC4xNTkgLTcuMTJsMC4zMyAtMS4wNjFsNS4xMSAwLjQ0IHYgLTUuMiB6IiBmaWxsPSIjQkFDQzFFIi8+PHRleHQgY2xhc3M9Im5lcG8tZmllbGQtdGV4dCIgeD0iMTAiIHk9IjE4LjUiIGZvbnQtc2l6ZT0iMTYiPuKAnDwvdGV4dD48cmVjdCB4PSIyNyIgeT0iNSIgd2lkdGg9IjQyLjU0NSIgaGVpZ2h0PSIxNiIgcng9IjIiIHJ5PSIyIiBmaWxsPSIjZmZmZmZmIiBmaWxsLW9wYWNpdHk9IjAuNiIvPjx0ZXh0IGNsYXNzPSJuZXBvLWZpZWxkLXRleHQiIHg9IjMyIiB5PSIxNy41IiB0ZXh0TGVuZ3RoPSIzMi41NDUiIGxlbmd0aEFkanVzdD0ic3BhY2luZ0FuZEdseXBocyI+SGFsbG88L3RleHQ+PHRleHQgY2xhc3M9Im5lcG8tZmllbGQtdGV4dCIgeD0iNzQuNTQ1IiB5PSIxOC41IiBmb250LXNpemU9IjE2Ij7igJ08L3RleHQ+PC9nPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwIDUyKSI+PHBhdGggZD0ibSAwLDAgSCAxNSBoIDIuNWwgNSwgNSA1LCAtNSBoIDIuNSBIIDE3Mi44NzEgdiAyNSBIIDkwLjAxMyBoIC0zLjVsIC00LCA0IC00LCAtNCBoIC0zLjUgaCAtMTQgYSAyLDIgMCAwLDAgLTIsMiB2IDI1IGEgMiwyIDAgMCwwIDIsMiBIIDE3Mi44NzEgdiAxMCBIIDMwIGggLTMuNWwgLTQsIDQgLTQsIC00IGggLTMuNSBIIDIgYSAyLDIgMCAwLDEgLTIsLTIgeiAiIGZpbGw9IiNFQjZBMEEiIC8+PHRleHQgY2xhc3M9Im5lcG8tbGFiZWwiIHg9IjEwIiB5PSIxNy41IiB0ZXh0TGVuZ3RoPSIxNTIuODcxIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPldpZWRlcmhvbGXCoHVuZW5kbGljaMKgb2Z0PC90ZXh0Pjx0ZXh0IGNsYXNzPSJuZXBvLWxhYmVsIiB4PSIxMCIgeT0iNDIuNSIgdGV4dExlbmd0aD0iMzkuMDEzIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPm1hY2hlPC90ZXh0PjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDYwLjAxMyAyNikiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMCkiPjxwYXRoIGQ9Im0gMCwyIEEgMiwyIDAgMCwxIDIsMCBIIDE1IGggMi41bCA1LCA1IDUsIC01IGggMi41IEggMTg3LjA0NSB2IDQuMSBsLTUuMTU0IC0wLjQ2OWMwIDAgLTEuMDk2IDMuMTI1IC0xLjMzIDQuNjU2cy0wLjI1IDMuNzAzIDAuNDA2IDUuMDc4cyAxLjk4NCAyLjY4OCAzLjQ4NCAyLjk1M3MyLjM3NSAwLjIwMyAyLjU5NCAwLjIxOSB2IDMuNSB2IDUgSCAzMCBoIC0zLjVsIC00LCA0IC00LCAtNCBoIC0zLjUgSCAyIGEgMiwyIDAgMCwxIC0yLC0yIHogIiBmaWxsPSIjRjI5NDAwIiAvPjx0ZXh0IGNsYXNzPSJuZXBvLWxhYmVsIiB4PSIxMCIgeT0iMTcuNSIgdGV4dExlbmd0aD0iMTU5LjA0NSIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5TY2hhbHRlwqBSR0LCoExFRMKgYW7CoEZhcmJlPC90ZXh0PjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE4OC4wNDUgMCkiPjxwYXRoIGQ9Im0gMCwwIEggMzIgdiAyNSBIIDAgViAyMCB6ICIgZmlsbD0iI0VCQzMwMCIgLz48cGF0aCBkPSJNIDAsMjAgdiAtNSBjLTQuMjE3IDAuMDk3IC00LjQ3MSAtMC41NCAtNS4yODEgLTEuNjA5Yy0xLjEwOSAtMS40NiAtMS4xNTkgLTMuODIgLTAuMTU5IC03LjEybDAuMzMgLTEuMDYxbDUuMTEgMC40NCB2IC01LjIgeiIgZmlsbD0iI0VCQzMwMCIvPjxyZWN0IHg9IjUiIHk9IjUiIHdpZHRoPSIyMiIgaGVpZ2h0PSIxNiIgcng9IjIiIHJ5PSIyIiBmaWxsPSIjZmYwMDAwIiBmaWxsLW9wYWNpdHk9IjEiLz48L2c+PC9nPjwvZz48L2c+PC9nPjwvZz48L3N2Zz4=" width="198.42519685" height="86.43848203" preserveAspectRatio="none"/></g></svg></div></div><p><code>raw-nepo()</code> renders <code>nepo</code> fences, <code>nepo-parse()</code> returns the block tree. The renderer is a prototype: the set of blocks is the beginner set of the three platforms, and <code>examples/nepo</code> in the repository holds the programme collection and the comparison sheet against Open Roberta’s own drawings.</p></main></div><nav class="blaettern" aria-label="Kapitel"><a class="zurueck" rel="prev" href="makecode.html">← MakeCode</a><a class="weiter" rel="next" href="labels-and-line-numbers.html">Labels and line numbers →</a></nav><footer><p>blockst 0.4.0 · MIT · Mit Typst gesetzt</p></footer><script>(function () {
+  var nav = document.querySelector("nav.inhalt");
+  if (!nav) return;
+  var zuId = {};
+  nav.querySelectorAll("a[href]").forEach(function (a) {
+    var i = a.getAttribute("href").indexOf("#");
+    if (i >= 0) zuId[a.getAttribute("href").slice(i + 1)] = a;
+  });
+  // Nur Marken, die auch in der Liste stehen. `main [id]` faengt sonst auch
+  // Anker, die dort nichts zu suchen haben.
+  var marken = [].slice.call(document.querySelectorAll("main [id]"))
+    .filter(function (e) { return zuId[e.id]; });
+  if (!marken.length) return;
+
+  var jetzt = null;
+  function stellen() {
+    // Die oberste Ueberschrift, die noch ueber der Grenze steht. Nicht die
+    // naechste darunter: beim Lesen steht der Abschnitt, in dem man ist,
+    // gerade *oberhalb* des Blickfelds.
+    var grenze = 120, treffer = marken[0];
+    for (var i = 0; i < marken.length; i++) {
+      if (marken[i].getBoundingClientRect().top <= grenze) treffer = marken[i];
+      else break;
+    }
+    var a = zuId[treffer.id];
+    if (a === jetzt) return;
+    if (jetzt) jetzt.removeAttribute("aria-current");
+    a.setAttribute("aria-current", "true");
+    jetzt = a;
+    // Mitziehen, aber nur wenn der Eintrag aus dem Sichtfeld der Liste
+    // gelaufen ist. Eine Liste, die bei jedem Rollen selbst mitspringt, ist
+    // unruhiger als eine, die stehen bleibt.
+    var nr = nav.getBoundingClientRect(), ar = a.getBoundingClientRect();
+    if (ar.top < nr.top + 8 || ar.bottom > nr.bottom - 8) {
+      nav.scrollTop += ar.top - nr.top - nr.height / 3;
+    }
+  }
+  addEventListener("scroll", stellen, { passive: true });
+  addEventListener("resize", stellen);
+  stellen();
+})();</script><script>(function () {
+  function messen() {
+    document.querySelectorAll("main svg[viewBox]").forEach(function (s) {
+      var vb = s.viewBox.baseVal;
+      if (!vb || !vb.width) return;
+      // Nicht clientWidth: das ist bei SVG-Elementen immer 0.
+      var st = getComputedStyle(s);
+      var breite = s.getBoundingClientRect().width
+        - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight)
+        - parseFloat(st.borderLeftWidth) - parseFloat(st.borderRightWidth);
+      if (breite > 0) s.style.setProperty("height", (breite * vb.height / vb.width) + "px", "important");
+    });
+  }
+  messen();
+  addEventListener("load", messen);
+  addEventListener("resize", messen);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(messen);
+})();</script></body></html>
