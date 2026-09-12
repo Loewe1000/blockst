@@ -32,6 +32,10 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
   tasks (`jwinf`) or of the turtle sandbox (`jwinf-turtle`)
 - **`colors`** on `set-blockst()`, `blockst()`, `blockly()` and `scratch()`:
   the document's own category colours over any profile's palette
+- **MakeCode** as a third block language: `makecode()` draws the micro:bit
+  and Calliope mini editors' blocks — Blockly's zelos look, MakeCode's
+  monospace labels, the editors' own block texts in German and English.
+  See [MakeCode](#makecode)
 - **NEPO (Open Roberta)** for the Calliope mini and micro:bit, contributed by
   @lkoehl as a renderer of its own — see [examples/nepo](examples/nepo/README.md)
 - Arabic: the common assignment wordings `مساوية لـ` / `مساويًا لـ` now resolve (#13)
@@ -597,6 +601,59 @@ Block texts and colours are generated from the published sources — Blockly
 (Apache-2.0) and France-IOI's bebras-modules (MIT) — by
 [scripts/blockly-data](scripts/blockly-data/README.md), which also reports
 the gaps in the upstream translations.
+
+## MakeCode
+
+`makecode()` draws the blocks of the MakeCode editors for the micro:bit and
+the Calliope mini, from the same notation `scratch()` uses. The look is
+Blockly's zelos renderer as the editors run it: 4px corners, a 36px notch,
+pills for values, hexagons for booleans, literals as white pills, a 12pt
+semibold monospace label. Event blocks (`beim Start`, `wenn Knopf [A v]
+geklickt`) have no hat and no notch, exactly as in the editor.
+
+| Profile | Target | Colours |
+| --- | --- | --- |
+| `"makecode"` (default) | makecode.microbit.org | the micro:bit palette |
+| `"makecode-calliope"` | makecode.calliope.cc | the Calliope mini palette, plus its motor and RGB-LED blocks |
+
+```typst
+#makecode("
+beim Start
+  zeige Symbol [Herz v]
+ende
+wenn Knopf [A v] geklickt
+  zeige Zahl ((1) + (2))
+  wenn <(Lichtstärke) > (100)> dann
+    zeige Text [hell]
+  ansonsten
+    pausiere (ms) (100)
+  ende
+ende
+", language: "de")
+```
+
+![MakeCode example](examples/example-makecode.svg)
+
+The block texts are the editors' own — read off makecode.microbit.org and
+makecode.calliope.cc in German and English by
+[scripts/makecode-data](scripts/makecode-data/README.md), because MakeCode
+loads its translations at run time and publishes no per-block string files.
+`language: "de"` (the default) or `"en"`. A unit the editor shows in
+parentheses is typed like a value and drawn as the label: `pausiere (ms)
+(100)`, `Temperatur (°C)`. `ende`/`end` closes a C-block, `ansonsten`/`else`
+opens the else branch, which gets the editor's − and + buttons. Operators
+take the editor's glyph or a spelling: `×` or `*`, `÷` or `/`, `≥`, `≤`, `≠`
+(`>=` cannot be typed inside `<…>`, the `>` would close the boolean). Unknown labels are
+drawn as written with the category from a `::kategorie` suffix (`basic`,
+`input`, `music`, `led`, `radio`, `loops`, `logic`, `variables`, `math`,
+`functions`, `arrays`, `text`, `game`, `images`, `pins`, `serial`,
+`control`).
+
+In raw blocks, `#show: raw-makecode()` renders ````makecode` and
+````microbit` fences with the micro:bit profile and ````calliope` fences
+with the Calliope mini profile. MakeCode's labels are measured and drawn in
+a monospace face (Menlo, Consolas or DejaVu Sans Mono, whichever is
+installed); `set-blockst(font: …)` picks another.
 
 ## Catalog
 

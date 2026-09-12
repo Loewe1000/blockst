@@ -284,6 +284,24 @@ On jwinf a block's text changes from task to task, so unknown labels are drawn a
 
 jwinf colours its categories per task family. Where a task deviates from both profiles, `colors` lays the document's own category colours over the palette — `set-blockst(colors: (logik: "#73cc47"))` for the document, or `colors:` on `blockly()`, `scratch()` and `blockst()` for a single block or group. A hex string or a Typst colour per category; the derived shades (bevel, stroke, `high-contrast`, `grayscale`) follow the new fill.
 
+= MakeCode
+
+`makecode()` renders the blocks of the MakeCode editors for the micro:bit (`profile: "makecode"`, the default) and the Calliope mini (`"makecode-calliope"`), from the notation `scratch()` uses. The look is Blockly's zelos renderer as the editors run it — pills, hexagons, white literal pills, MakeCode's monospace label — and the block texts are the editors' own, in German (`language: "de"`, the default) or English.
+
+#show-code(```typst
+#makecode("
+beim Start
+  zeige Symbol [Herz v]
+ende
+wenn Knopf [A v] geklickt
+  zeige Zahl ((1) + (2))
+  pausiere (ms) (100)
+ende
+")
+```)
+
+A unit the editor shows in parentheses is typed like a value and drawn as the label (`pausiere (ms) (100)`). `ende` closes a C-block, `ansonsten` opens the else branch with the editor's − and + buttons. `raw-makecode()` renders ````makecode`, ````microbit` and ````calliope` fences; `makecode-parse()` returns the AST.
+
 = Labels and Line Numbers
 
 blockst provides a label system for creating line-aware worksheets. Lines ending with `#label-name` are tagged and can be referenced later.

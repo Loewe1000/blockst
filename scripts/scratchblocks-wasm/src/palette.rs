@@ -23,7 +23,7 @@ pub struct CategoryColors {
 }
 
 impl CategoryColors {
-    fn new(fill: &str, stroke: &str, text: &str, alt: &str) -> Self {
+    pub(crate) fn new(fill: &str, stroke: &str, text: &str, alt: &str) -> Self {
         Self {
             fill: fill.to_string(),
             stroke: stroke.to_string(),

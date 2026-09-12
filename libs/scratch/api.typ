@@ -317,6 +317,81 @@
   }
 )
 
+/// Render MakeCode blocks from text — the micro:bit and Calliope mini
+/// editors' look: Blockly's zelos renderer with MakeCode's monospace labels.
+/// Same notation as `scratch()`; `(…)` is a value, `[… v]` a dropdown,
+/// `<…>` a boolean, `ende`/`end` closes a C-block and `sonst`/`else` opens
+/// the else branch. The profile picks the target: `"makecode"` (micro:bit,
+/// the default) or `"makecode-calliope"`; the language is `"de"` or `"en"`.
+///
+///   #makecode("beim Start\n  zeige Zahl (0)\nende")
+#let makecode(
+  text,
+  profile: auto,
+  language: auto,
+  theme: auto,
+  scale: auto,
+  font: auto,
+  line-numbering: auto,
+  line-numbers: auto,
+  line-number-start: auto,
+  line-number-first-block: auto,
+  line-number-gutter: auto,
+  inset-scale: auto,
+  colors: auto,
+) = context {
+  let opts = get-options()
+  let prof = if profile != auto { profile } else {
+    let p = opts.at("profile", default: "makecode")
+    if p.starts-with("makecode") { p } else { "makecode" }
+  }
+  let lang = if language != auto { language } else { opts.at("language", default: "de") }
+  let lang = if lang == "en" { "en" } else { "de" }
+  let source = _normalize-source(text)
+  let labels = _collect-labels-from-nodes(_generic-parse(source, language: lang, profile: prof))
+  _with-local-options(
+    theme: theme,
+    scale: scale,
+    font: font,
+    line-numbering: line-numbering,
+    line-numbers: line-numbers,
+    line-number-start: line-number-start,
+    line-number-first-block: line-number-first-block,
+    line-number-gutter: line-number-gutter,
+    inset-scale: inset-scale,
+    language: lang,
+    colors: colors,
+    [
+      #hide(_merge-labels(labels))
+      #_generic-render(source, language: lang, profile: prof)
+    ],
+  )
+}
+
+/// Parse MakeCode text to AST (for programmatic use).
+#let makecode-parse(text, language: "de", profile: "makecode") = {
+  _generic-parse(_normalize-source(text), language: language, profile: profile)
+}
+
+/// Enable MakeCode code blocks in raw text:
+///   #show: raw-makecode()
+///   ```makecode
+///   beim Start
+///     zeige Zahl (0)
+///   ende
+///   ```
+/// A ```calliope fence uses the Calliope mini profile whatever the arguments say.
+#let raw-makecode(..args) = (
+  body => {
+    let calliope-args = args.named()
+    calliope-args.insert("profile", "makecode-calliope")
+    show raw.where(block: true, lang: "makecode"): makecode.with(..args)
+    show raw.where(block: true, lang: "microbit"): makecode.with(..args)
+    show raw.where(block: true, lang: "calliope"): makecode.with(..calliope-args)
+    body
+  }
+)
+
 /// Parse scratch text to AST (for programmatic use).
 #let scratch-parse(text, language: "en") = {
   let text = _normalize-source(text)

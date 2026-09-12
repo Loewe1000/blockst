@@ -18,7 +18,7 @@ struct BlocksToml {
     defaults: HashMap<String, String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 struct BlockDef {
     #[serde(default)]
     shape: String,
@@ -80,6 +80,10 @@ struct LanguageRuntime {
     rtl: bool,
     /// Base locale to consult after this one, for dialects.
     inherits: Option<String>,
+    /// The dialect's own block definitions. Blockly and MakeCode share ids
+    /// (`controls_if`, `logic_negate`, …) with different mouths, slots and
+    /// icons, so a definition is looked up in the block's locale first.
+    defs: HashMap<String, BlockDef>,
 }
 
 #[derive(Debug)]
@@ -211,6 +215,8 @@ fn locale_key(profile: Option<&str>, language: &str) -> String {
     match profile {
         Some(p) if p.starts_with("jwinf") => format!("jwinf-{language}"),
         Some(p) if p.starts_with("blockly") => format!("blockly-{language}"),
+        Some("makecode-calliope") => format!("makecode-calliope-{language}"),
+        Some(p) if p.starts_with("makecode") => format!("makecode-{language}"),
         _ => language.to_string(),
     }
 }
@@ -302,7 +308,7 @@ fn collect_texts(blocks: &[ParsedBlock], texts: &mut std::collections::BTreeSet<
                 _ => {}
             }
         }
-        if let Some(label) = data().commands_by_id.get(&block.id).and_then(|def| def.mouth.clone()) {
+        if let Some(label) = data().block_def(&block.language, &block.id).and_then(|def| def.mouth.clone()) {
             texts.insert(label);
         }
         // Blockly draws a run of words as one label, so its width has to be
@@ -342,8 +348,9 @@ fn data() -> &'static ParserData {
             // A dialect locale brings its own catalog. Its ids never collide
             // with the Scratch ones (checked when the data is generated), and
             // an id that already exists keeps its Scratch definition.
+            let mut defs: HashMap<String, BlockDef> = HashMap::new();
             for (block_id, shape) in &locale.shapes {
-                commands_by_id.entry(block_id.clone()).or_insert_with(|| BlockDef {
+                let def = BlockDef {
                     shape: shape.clone(),
                     category: locale.categories.get(block_id).cloned().unwrap_or_default(),
                     inputs: Vec::new(),
@@ -355,7 +362,9 @@ fn data() -> &'static ParserData {
                         .unwrap_or_default(),
                     inline: locale.inline.get(block_id).copied(),
                     icon: locale.icons.get(block_id).cloned(),
-                });
+                };
+                defs.insert(block_id.clone(), def.clone());
+                commands_by_id.entry(block_id.clone()).or_insert(def);
             }
             // A locale is right-to-left when it says so. Falling back to a
             // hard-coded list of language codes would mean editing the engine
@@ -441,12 +450,28 @@ fn data() -> &'static ParserData {
                     call_spec,
                     rtl: is_rtl,
                     inherits: locale.inherits.clone(),
+                    defs,
                 },
             );
         }
 
         ParserData { commands_by_id, languages, default_blocks }
     })
+}
+
+impl ParserData {
+    /// A block's definition as its locale sees it: the dialect's own first,
+    /// then the locales it inherits from, then the shared Scratch catalog.
+    fn block_def(&self, locale: &str, id: &str) -> Option<&BlockDef> {
+        let mut current = self.languages.get(locale);
+        while let Some(runtime) = current {
+            if let Some(def) = runtime.defs.get(id) {
+                return Some(def);
+            }
+            current = runtime.inherits.as_deref().and_then(|base| self.languages.get(base));
+        }
+        self.commands_by_id.get(id)
+    }
 }
 
 fn parse_code(code: &str, language: &str, inline: bool) -> Result<Vec<PublicNode>, String> {
@@ -618,8 +643,7 @@ fn to_render_block_in(block: ParsedBlock, in_loop: bool) -> BlockSpec {
     let has_else_body = block.has_else;
     let is_loop = matches!(block.id.as_str(), "controls_repeat_ext" | "controls_repeat" | "controls_whileUntil" | "controls_for" | "controls_forEach");
     let icon = data()
-        .commands_by_id
-        .get(&block.id)
+        .block_def(&block.language, &block.id)
         .and_then(|def| def.icon.clone())
         .filter(|icon| !(icon == "warning" && in_loop));
     let mut segments = Vec::new();
@@ -715,9 +739,9 @@ fn to_render_block_in(block: ParsedBlock, in_loop: bool) -> BlockSpec {
         shape: normalize_shape(&block.shape).to_string(),
         category: normalize_category(&block.category).to_string(),
         line_number: block.line_number,
-        mouth: data().commands_by_id.get(&block.id).and_then(|def| def.mouth.clone()),
-        slots: data().commands_by_id.get(&block.id).map(|def| def.slots.clone()).unwrap_or_default(),
-        inline: data().commands_by_id.get(&block.id).and_then(|def| def.inline),
+        mouth: data().block_def(&block.language, &block.id).and_then(|def| def.mouth.clone()),
+        slots: data().block_def(&block.language, &block.id).map(|def| def.slots.clone()).unwrap_or_default(),
+        inline: data().block_def(&block.language, &block.id).and_then(|def| def.inline),
         icon,
         segments,
         body: block.body.into_iter().map(|b| to_render_block_in(b, in_loop || is_loop)).collect(),
@@ -730,6 +754,8 @@ fn normalize_shape(shape: &str) -> &str {
     match shape {
         "c-block" | "c-block e-block" => "c-block",
         "c-block cap" => "c-block cap",
+        // MakeCode's event blocks: a mouth, no notch above or below.
+        "c-block hat" => "c-block hat",
         "hat" => "hat",
         "define-hat" => "define-hat",
         "cap" => "cap",
@@ -849,7 +875,7 @@ impl<'a> Parser<'a> {
             let candidate_ids: Vec<String> = ids
                 .iter()
                 .filter(|id| {
-                    let Some(block_def) = data().commands_by_id.get(*id) else {
+                    let Some(block_def) = data().block_def(&language.code, id) else {
                         return false;
                     };
                     if let Some(category) = forced_category {
@@ -871,7 +897,7 @@ impl<'a> Parser<'a> {
 
             let mut best: Option<&str> = None;
             for id in &candidate_ids {
-                if let Some(block_def) = data().commands_by_id.get(id) {
+                if let Some(block_def) = data().block_def(&language.code, id) {
                     // In ambiguous locales (e.g. FR "ajouter ... à ..."), default to variables;
                     // list can still be forced explicitly via ::list.
                     if has_dropdown_input && block_def.category == "variables" {
@@ -880,8 +906,7 @@ impl<'a> Parser<'a> {
                     }
                     if let Some(current_best) = best {
                         let current_rank = data()
-                            .commands_by_id
-                            .get(current_best)
+                            .block_def(&language.code, current_best)
                             .map(|b| category_rank(&b.category))
                             .unwrap_or(0);
                         if category_rank(&block_def.category) > current_rank {
@@ -1070,11 +1095,10 @@ impl<'a> Parser<'a> {
             return Err(format!("scratchblocks-wasm: unknown category '{normalized}' in ::category suffix"));
         };
 
-        let block_def = data()
-            .commands_by_id
-            .get(default_id)
-            .ok_or_else(|| format!("scratchblocks-wasm: unknown default block id '{default_id}' for category '{normalized}'"))?;
         let language = self.languages[0];
+        let block_def = data()
+            .block_def(&language.code, default_id)
+            .ok_or_else(|| format!("scratchblocks-wasm: unknown default block id '{default_id}' for category '{normalized}'"))?;
         let spec = language
             .native_specs
             .get(default_id)
@@ -1102,8 +1126,8 @@ impl<'a> Parser<'a> {
         }
 
         if let Some((matched_id, lang_idx)) = self.match_block_candidate(&content_children, Some(normalized)) {
-            let block_def = &data().commands_by_id[&matched_id];
             let language = self.languages[lang_idx];
+            let block_def = data().block_def(&language.code, &matched_id).expect("matched block has a definition");
             let spec = language
                 .native_specs
                 .get(&matched_id)
@@ -1317,8 +1341,8 @@ impl<'a> Parser<'a> {
 
     fn paint_block(&self, fallback_shape: &str, children: Vec<Child>) -> Result<ParsedBlock, String> {
         if let Some((matched_id, lang_idx)) = self.match_block_candidate(&children, None) {
-            let block_def = &data().commands_by_id[&matched_id];
             let language = self.languages[lang_idx];
+            let block_def = data().block_def(&language.code, &matched_id).expect("matched block has a definition");
             let spec = language.native_specs.get(&matched_id).map(|s| s.as_str()).unwrap_or("");
             return Ok(ParsedBlock {
                 id: matched_id,
@@ -1487,7 +1511,11 @@ fn canonical_children(spec: &str, _has_loop_arrow: bool, parsed_children: Vec<Ch
     let mut children = Vec::new();
 
     for token in tokenize_spec(spec).iter() {
-        if token.starts_with('%') && token.len() > 1 {
+        if is_literal_paren(token) {
+            // the typed `(ms)` stands in for the unit label
+            let _ = parsed_inputs.next();
+            children.push(Child::Label(token.to_string()));
+        } else if token.starts_with('%') && token.len() > 1 {
             let mut input = parsed_inputs.next().unwrap_or_else(|| InputNode {
                 shape: placeholder_shape(token).to_string(),
                 value: String::new(),
@@ -1594,11 +1622,19 @@ fn build_typed_hash(spec: &str, inputs: &[String]) -> String {
     minify_hash(&out)
 }
 
+/// A spec token that is a parenthesised unit — MakeCode's "pausiere (ms)
+/// %1", "Temperatur (°C)". The notation has no way to type a literal
+/// parenthesis, so the author writes `(ms)` as if it were a value; it
+/// matches like one and is drawn as the label the block shows.
+fn is_literal_paren(token: &str) -> bool {
+    token.len() > 2 && token.starts_with('(') && token.ends_with(')') && !token[1..token.len() - 1].contains(['(', ')'])
+}
+
 fn hash_spec(spec: &str) -> String {
     let mut out = String::new();
     let tokens = tokenize_spec(spec);
     for token in tokens {
-        if token.starts_with('%') && token.len() > 1 {
+        if (token.starts_with('%') && token.len() > 1) || is_literal_paren(&token) {
             out.push_str(" _ ");
         } else if !matches!(token.as_str(), "," | "?" | ":" | ".") {
             out.push_str(&token);

@@ -1,0 +1,67 @@
+{
+  "_source": "Read out of the running editors on 2026-09-12 via pxt.blocks.requireBlockly(): makecode.microbit.org (target 9.0.12, pxt 13.0.9) and makecode.calliope.cc (target 8.1.15, pxt 13.1.8), both Blockly 13.1.1 with the 'pxt' renderer, a zelos subclass. Paths are each block's svgPath_ d attribute, rows from makeRenderInfo_(block).measure(), positions relative to the parent block. Text widths are the editor's own (16px 600 Consolas/Monaco/Menlo) and only explain the numbers.",
+  "constants": {
+    "GRID_UNIT": 4, "CORNER_RADIUS": 4, "NOTCH_WIDTH": 36, "NOTCH_HEIGHT": 8, "NOTCH_OFFSET_LEFT": 12,
+    "NOTCH_LEFT": "c 2,0 3,1 4,2 l 4,4 c 1,1 2,2 4,2 h 12 c 2,0 3,-1 4,-2 l 4,-4 c 1,-1 2,-2 4,-2",
+    "MIN_BLOCK_WIDTH": 8, "MIN_BLOCK_HEIGHT": 48, "EMPTY_STATEMENT_INPUT_HEIGHT": 24, "STATEMENT_INPUT_PADDING_LEFT": 16,
+    "STATEMENT_BOTTOM_SPACER": -8, "STATEMENT_INPUT_SPACER_MIN_WIDTH": 160, "TOP_ROW_MIN_HEIGHT": 4, "BOTTOM_ROW_MIN_HEIGHT": 4,
+    "BOTTOM_ROW_AFTER_STATEMENT_MIN_HEIGHT": 24, "EMPTY_INLINE_INPUT_HEIGHT": 32, "EMPTY_INLINE_INPUT_PADDING": 16,
+    "DUMMY_INPUT_MIN_HEIGHT": 32, "DUMMY_INPUT_SHADOW_MIN_HEIGHT": 24, "FIELD_TEXT_HEIGHT": 21, "FIELD_BORDER_RECT_HEIGHT": 34,
+    "FIELD_BORDER_RECT_X_PADDING": 8, "FIELD_DROPDOWN_SVG_ARROW_SIZE": 12, "FIELD_DROPDOWN_SVG_ARROW_PADDING": 8,
+    "SMALL_PADDING": 4, "MEDIUM_PADDING": 8, "MAX_DYNAMIC_CONNECTION_SHAPE_WIDTH": 48, "ADD_START_HATS": false,
+    "START_HAT": "c 25,-22 71,-22 96,0 (height 16.5, only on function definitions)",
+    "FIELD_TEXT_FONT": "600 12pt Consolas, Monaco, Menlo, Ubuntu Mono, source-code-pro, monospace",
+    "stroke": "colourTertiary = blend(#000, fill, 0.25), 1px; shadow pills are #fff with stroke #bfbfbf, or blend(#fff, parent tertiary, 0.3) when that is darker than luminance 0.15",
+    "SHAPE_IN_SHAPE_PADDING": {"hex": {"field": 20, "hex": 8, "round": 20}, "round": {"field": 12, "hex": 12, "round": 4}}
+  },
+  "blocks": {
+    "device_show_number": {
+      "text": "zeige Zahl (0)", "h": 56, "w": 158.41, "fill": "#1e90ff", "stroke": "#176cbf",
+      "d": "m 0,0 m 0,4 a 4 4 0 0,1 4,-4 h 8 c 2,0 3,1 4,2 l 4,4 c 1,1 2,2 4,2 h 12 c 2,0 3,-1 4,-2 l 4,-4 c 1,-1 2,-2 4,-2 h 106.4140625 a 4 4 0 0,1 4,4 v 8 V 40 V 44 V 44 a 4 4 0 0,1 -4,4 h -106.4140625 c -2,0 -3,1 -4,2 l -4,4 c -1,1 -2,2 -4,2 h -12 c -2,0 -3,-1 -4,-2 l -4,-4 c -1,-1 -2,-2 -4,-2 h -8 a 4 4 0 0,1 -4,-4 z",
+      "rows": "top 8 (notch) | input y8 h32: sp8 zeige(48) sp8 Zahl(38.4) sp8 socket(40x32 at 110.4) sp8 | spacer 4 | bottom y44 h12 (4 + notch 8)",
+      "children": "math_number shadow at (110.41, 8), 40x32, fill #fff stroke #bfbfbf: m 16,0 h 8 a 16 16 0 0,1 16,16 v 0 a 16 16 0 0,1 -16,16 V 32 h -8 a 16 16 0 0,1 -16,-16 v 0 a 16 16 0 0,1 16,-16 z; its field text at x 13 (clamped: 46 - 40 min width, 3 each side)",
+      "texts": "zeige at translate(8,13.5), Zahl at (64.0,13.5): text y=10.5 central, i.e. centreline 24"
+    },
+    "device_print_message": {"text": "zeige Text (\"Hello!\")", "h": 56, "w": 214, "child": "text shadow 95.6x32 at (110.41,8): m 16,0 h 63.6 a 16 16 …; quote glyphs at x=11 and the text at x+8 inside the field group translate(11,5.5); field width 73.6 = text 57.6 + 16"},
+    "pxt-on-start": {
+      "text": "beim Start", "h": 104, "w": 160, "fill": "#1e90ff",
+      "d": "m 0,0 m 0,4 a 4 4 0 0,1 4,-4 h 152 a 4 4 0 0,1 4,4 v 4 V 8 V 40 V 44 a 4 4 0 0,1 -4,4 H 64 c -2,0 -3,1 -4,2 l -4,4 c -1,1 -2,2 -4,2 h -12 c -2,0 -3,-1 -4,-2 l -4,-4 c -1,-1 -2,-2 -4,-2 h -8 a 4 4 0 0,0 -4,4 v 16 a 4 4 0 0,0 4,4 h 8 c 2,0 3,1 4,2 l 4,4 c 1,1 2,2 4,2 h 12 c 2,0 3,-1 4,-2 l 4,-4 c 1,-1 2,-2 4,-2 H 156 a 4 4 0 0,1 4,4 V 80 V 100 a 4 4 0 0,1 -4,4 h -152 a 4 4 0 0,1 -4,-4 z",
+      "rows": "top 4 (no notch, no hat) | spacer 4 | input y8 h32 | spacer 8 | statement y48 h24 (sp16 Kp(16,140)) | spacer 8 | bottom y80 h24",
+      "note": "no hat: MakeCode never sets ADD_START_HATS; 'dauerhaft' (device_forever) is the same shape. Width 160 = STATEMENT_INPUT_SPACER_MIN_WIDTH. Statement child at (16, 48)."
+    },
+    "device_button_event": {"text": "wenn Knopf [A v] geklickt", "h_with_while_child": 210, "rows": "top 4 | spacer 4 | input y8 h34 (dropdown rect 45.6x34 at (112,8): 8 + A 9.6 + 8 + arrow 12 + 8) | spacer 8 | statement y50 | spacer 8 | bottom 24", "fill": "#d400d4", "stroke": "#9f009f"},
+    "controls_if_nested": {
+      "text": "wenn <(1) = (2)> dann … (inside a stack, with a 42-high logic_compare)", "h": 266, "fill": "#00a4a6",
+      "d_head": "… h 240.4140625 a 4 4 0 0,1 4,4 v 8 V 46 a 4 4 0 0,1 -4,4 H 64 …",
+      "rows": "top 8 | spacer -4 | input y4 h42 (wenn, socket 183.6x42, dann) | spacer 4 | statement y50 h48 | spacer 4 | input y102 h24 (+ button 24x25) | spacer 0 | bottom y126 h12",
+      "note": "tight nesting: a non-shadow inline child >= 40 tall pulls the spacers above and below by 4; the trailing '+' row is a single image field, so its spacers lose 4 and the row loses 8 (32 -> 24)."
+    },
+    "controls_if_else": {
+      "text": "wenn <wahr> dann … ansonsten …", "h": 184, "w": 207.22,
+      "rows": "top 8 | input y8 h32 (wenn, hex socket 98.4, dann) | spacer 8 | statement y48 h24 | spacer 8 | input y80 h32 (ansonsten 86.4, spacer 80.8, '-' button 24x25) | spacer 8 | statement y120 h24 | spacer 4 | input y148 h24 ('+' button) | spacer 0 | bottom y172 h12",
+      "d": "m 0,0 m 0,4 a 4 4 0 0,1 4,-4 h 8 c 2,0 3,1 4,2 l 4,4 c 1,1 2,2 4,2 h 12 c 2,0 3,-1 4,-2 l 4,-4 c 1,-1 2,-2 4,-2 h 155.21875 a 4 4 0 0,1 4,4 v 8 V 40 V 44 a 4 4 0 0,1 -4,4 H 64 c -2,0 -3,1 -4,2 l -4,4 c -1,1 -2,2 -4,2 h -12 c -2,0 -3,-1 -4,-2 l -4,-4 c -1,-1 -2,-2 -4,-2 h -8 a 4 4 0 0,0 -4,4 v 16 a 4 4 0 0,0 4,4 h 8 c 2,0 3,1 4,2 l 4,4 c 1,1 2,2 4,2 h 12 c 2,0 3,-1 4,-2 l 4,-4 c 1,-1 2,-2 4,-2 H 203.21875 a 4 4 0 0,1 4,4 V 80 V 112 V 116 a 4 4 0 0,1 -4,4 H 64 … H 203.21875 a 4 4 0 0,1 4,4 V 148 V 172 V 172 a 4 4 0 0,1 -4,4 h -155.21875 c -2,0 … h -8 a 4 4 0 0,1 -4,-4 z"
+    },
+    "controls_repeat_ext": {
+      "text": "(4)-mal wiederholen mache …", "h": 136, "w": 257.63, "fill": "#00aa00", "stroke": "#008000",
+      "rows": "top 8 | input y8 h32: sp48 socket(40) sp8 '-mal wiederholen' sp8 — the socket is bumped to x=48 past the notch | spacer 8 | statement y48 h48: sp8 mache(48) sp8 Kp(64,…) | spacer 8 | bottom y104 h32 (24 + notch)",
+      "d_mouth": "… V 40 V 44 a 4 4 0 0,1 -4,4 H 112.0078125 c -2,0 … h -8 a 4 4 0 0,0 -4,4 v 40 a 4 4 0 0,0 4,4 h 8 c 2,0 … H 253.625 a 4 4 0 0,1 4,4 V 104 V 124 a 4 4 0 0,1 -4,4 h -205.625 c -2,0 … z",
+      "children": "math_whole_number shadow at (48, 8); device_show_number at (64.01, 48)"
+    },
+    "device_while": {"text": "während <falsch> mache …", "h": 136, "rows": "top 8 | input y8 h32 (während 67.2, hex shadow 117.6 at 83.2) | spacer 8 | statement y48 h48 (mache, Kp at 64) | spacer 8 | bottom 32"},
+    "math_number_shadow": {"d": "m 16,0 h 8 a 16 16 0 0,1 16,16 v 0 a 16 16 0 0,1 -16,16 V 32 h -8 a 16 16 0 0,1 -16,-16 v 0 a 16 16 0 0,1 16,-16 z", "rows": "top 4 | input y4 h24 (shadow min 24): sp(16,-3) field(13,14) sp(27,-3) | bottom 4", "note": "width 40 = MIN_BLOCK_WIDTH 8 + 2 x 16; negative spacing clamped to 3 each side"},
+    "device_get_light_level": {"text": "Lichtstärke", "h": 40, "w": 129.62, "d": "m 20,0 h 89.6171875 a 20 20 0 0,1 20,20 v 0 a 20 20 0 0,1 -20,20 V 40 h -89.6171875 a 20 20 0 0,1 -20,-20 v 0 a 20 20 0 0,1 20,-20 z", "rows": "top 4 | input y4 h32: sp(20,-8) label(12,105.6) sp(-8) | bottom 4", "note": "field in round: 20 - 12 = 8 negative, so the label starts at x=12"},
+    "math_arithmetic": {"text": "(1) + (2)", "h": 42, "w": 149.6, "fill": "#9400d3", "stroke": "#6f009e", "d": "m 21,0 h 107.6015625 a 21 21 0 0,1 21,21 v 0 a 21 21 0 0,1 -21,21 V 42 h -107.6015625 a 21 21 0 0,1 -21,-21 v 0 a 21 21 0 0,1 21,-21 z", "rows": "top 4 | input y4 h34: sp(21,-17) socket(4,40) sp8 dropdown(52,45.6x34) sp8 socket(105.6,40) sp(-17) | bottom 4", "children": "math_number shadows at (4,5) and (105.6,5), stroke #9a4dbb = blend(#fff, #6f009e, 0.3)"},
+    "logic_compare": {"text": "<(1) = (2)>", "h": 42, "w": 183.6, "d": "m 21,0 h 141.6015625 l 21,21 l -21,21 V 42 h -141.6015625 l -21,-21 l 21,-21 z", "rows": "sp(21,0) socket(21,40) sp8 dropdown(69,45.6) sp8 socket(122.6,40) sp(0)", "note": "round in hexagon: no negative spacing"},
+    "logic_operation": {"text": "<< > und < >>", "h": 42, "w": 192.8, "d": "m 21,0 h 150.8046875 l 21,21 l -21,21 V 42 h -150.8046875 l -21,-21 l 21,-21 z", "rows": "sp(21,-13) hole(8,48x32) sp8 dropdown(64,64.8) sp8 hole(136.8,48) sp(-13)", "note": "empty hexagon socket: 16 + 2 x 16 wide, 32 high, filled with the block's tertiary colour; hexagon in hexagon: 21 - 8 = 13 negative"},
+    "logic_negate": {"text": "<nicht < >>", "h": 40, "w": 182.41, "d": "m 20,0 h 142.4140625 l 20,20 l -20,20 V 40 h -142.4140625 l -20,-20 l 20,-20 z", "rows": "sp(20,0) nicht(20,48) sp8 hole(76,98.4x32)", "note": "field in hexagon: 20 - 20 = 0"},
+    "logic_boolean": {"text": "<wahr v>", "h": 42, "w": 114.41, "d": "m 21,0 h 72.40625 l 21,21 l -21,21 V 42 h -72.40625 l -21,-21 l 21,-21 z", "rows": "sp(21,-1) dropdown(20,74.4x34) sp(-1)", "as_shadow": "32 high, no frame: m 16,0 h 66.40625 l 16,16 l -16,16 V 32 h -66.40625 l -16,-16 l 16,-16 z, text at x=20"},
+    "variables_set": {"text": "setze [zähler v] auf (0)", "h": 58, "w": 250.4, "fill_calliope": "#a80000", "rows": "top 8 | input y8 h34: sp8 setze(48) sp8 dropdown(64,93.6x34) sp8 auf(165.6,28.8) sp8 socket(202.4,40) sp8 | spacer 4 | bottom 12", "note": "next block at y = 50 (body height without the notch)"},
+    "variables_get": {"text": "(zähler)", "h": 40, "w": 101.61, "d": "m 20,0 h 61.609375 a 20 20 0 0,1 20,20 v 0 a 20 20 0 0,1 -20,20 V 40 h -61.609375 a 20 20 0 0,1 -20,-20 v 0 a 20 20 0 0,1 20,-20 z"},
+    "function_definition": {"text": "Funktion [tuWas] …", "h": 146.5, "w": 262.44, "d_head": "m 0,16.5 h 0 c 25,-22 71,-22 96,0 h 96.8203125 a 4 4 0 0,1 4,4 v 4 V 24.5 V 58.5 V 62.5 a 4 4 0 0,1 -4,4 H 64 …", "rows": "top 20.5 (hat 16.5 + 4) | spacer 4 | input y24.5 h34 | spacer 8 | statement y66.5 h48 | spacer 8 | bottom y122.5 h24", "note": "the only hat in MakeCode"},
+    "text_join": {"text": "verbinde (\"Hallo\") (\"Welt\")", "h": 40, "w": 343.23, "fill_calliope": "#996600", "rows": "sp(20,-8) verbinde(12,76.8) sp8 socket(96.8,86) sp8 socket(190.8,76.4) sp8 button(275.2,24) sp8 button(307.2,24) sp(-8)"},
+    "colours": {
+      "microbit": {"basic": "#1e90ff", "input": "#d400d4", "music": "#e63022", "led": "#5c2d91", "radio": "#e3008c", "loops": "#00aa00", "logic": "#00a4a6", "variables": "#dc143c", "math": "#9400d3", "functions": "#3455db", "arrays": "#e65722", "text": "#b8860b", "game": "#007a4b", "images": "#7600a8", "pins": "#b22222", "serial": "#002050", "control": "#333333"},
+      "calliope": {"basic": "#54c9c9", "input": "#c90072", "music": "#df4600", "led": "#8169e6", "radio": "#e3008c", "loops": "#107c10", "logic": "#006970", "variables": "#a80000", "math": "#712672", "functions": "#005a9e", "arrays": "#e65722", "text": "#996600", "game": "#008272", "images": "#7600a8", "pins": "#a80000", "serial": "#002050", "control": "#42495f", "motors": "#008272"}
+    }
+  }
+}

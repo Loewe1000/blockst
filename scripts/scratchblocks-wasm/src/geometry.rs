@@ -73,6 +73,9 @@ pub struct Geometry {
     /// spacer rows between them (`blockly_modern.rs`); the pre-2019
     /// renderer packs everything into 25px rows (`blockly.rs`).
     pub spacer_rows: bool,
+    /// MakeCode's renderer: Blockly's zelos, rows on a grid of four with
+    /// pills and hexagons instead of puzzle tabs (`blockly_zelos.rs`).
+    pub zelos: bool,
     /// The label font. Scratch draws 12pt medium; Blockly 11pt regular, and
     /// the widths are measured with the same face, so this decides the
     /// layout as much as the look.
@@ -122,6 +125,7 @@ impl Geometry {
             bevel: false,
             square_right_corners: false,
             spacer_rows: false,
+            zelos: false,
             font_size_pt: 12.0,
             font_weight: 500,
             field_height: 32.0,
@@ -164,6 +168,7 @@ impl Geometry {
             bevel: false,
             square_right_corners: true,
             spacer_rows: true,
+            zelos: false,
             font_size_pt: 11.0,
             font_weight: 400,
             field_height: 16.0,
@@ -195,6 +200,32 @@ impl Geometry {
             bevel: true,
             square_right_corners: true,
             spacer_rows: false,
+            zelos: false,
+            ..Self::blockly_modern()
+        }
+    }
+
+    /// MakeCode (pxt): Blockly's zelos renderer with a 12pt semibold
+    /// monospace label. The zelos numbers live in `blockly_zelos.rs`; what
+    /// the shared code needs is the font and the flag.
+    pub fn makecode() -> Self {
+        Self {
+            row_height: 32.0,
+            row_height_min: 24.0,
+            corner_radius: 4.0,
+            notch_start: 12.0,
+            notch_end: 48.0,
+            notch_inner: 12.0,
+            notch_depth: 8.0,
+            bevel: false,
+            square_right_corners: false,
+            spacer_rows: false,
+            zelos: true,
+            font_size_pt: 12.0,
+            font_weight: 600,
+            field_height: 34.0,
+            field_height_min: 24.0,
+            field_radius: Some(4.0),
             ..Self::blockly_modern()
         }
     }
@@ -204,6 +235,7 @@ impl Geometry {
 /// than failing, so a document written against a newer version still renders.
 pub fn for_profile(name: Option<&str>) -> Geometry {
     match name.unwrap_or("scratch") {
+        "makecode" | "makecode-calliope" => Geometry::makecode(),
         "blockly" | "blockly-modern" => Geometry::blockly_modern(),
         "blockly-klassisch" | "blockly-classic" | "jwinf" | "jwinf-turtle" => Geometry::blockly_classic(),
         _ => Geometry::scratch(),
