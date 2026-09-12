@@ -5,7 +5,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen?style=flat" alt="License MIT" /></a>
 </p>
 
-![Blockst: Scratch, Blockly (jwinf), MakeCode and NEPO blocks](examples/banner.svg?v=2)
+![Blockst: Scratch, Blockly (jwinf), MakeCode and NEPO blocks](examples/blockst-banner.svg)
 
 Blockst renders block-based programs in Typst documents, each drawn the way
 its editor draws it — for worksheets, tutorials, teaching material and

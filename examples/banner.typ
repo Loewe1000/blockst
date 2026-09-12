@@ -1,5 +1,5 @@
 // README banner: the logo, the name, and the four block languages side by
-// side. Rendered to banner.svg (a new file name whenever the picture
+// side. Rendered to blockst-banner.svg (a new file name whenever the picture
 // changes, GitHub caches the old one otherwise).
 #import "@preview/blockst:0.4.0": blockst, scratch, blockly, makecode, nepo, set-blockst
 
