@@ -134,6 +134,47 @@ body {
   font-weight: 550;
 }
 
+/* ── Versionsleiste ──────────────────────────────────────────────────────── */
+
+/* Über dem Kopf: welche Version das ist, ein Menü aller Versionen, das
+   Handbuch als PDF, und auf einer älteren Version der Weg zur aktuellen. */
+nav.versionen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.1rem;
+  padding: 0.45rem 1.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--flaeche);
+  border-bottom: 1px solid var(--linie);
+}
+
+nav.versionen label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+nav.versionen select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--grund);
+  border: 1px solid var(--linie);
+  border-radius: 0.3rem;
+  padding: 0.1rem 0.4rem;
+}
+
+nav.versionen a {
+  color: var(--accent);
+  font-weight: 550;
+  text-decoration: none;
+}
+
+nav.versionen a:hover { text-decoration: underline; }
+
+nav.versionen .veraltet { margin-left: auto; }
+
 /* ── Gerüst ──────────────────────────────────────────────────────────────── */
 
 .rahmen {
@@ -364,8 +405,13 @@ thead th, tr:first-child th { background: var(--flaeche); font-weight: 620; }
 /* Typst legt Breite und Höhe als Inline-Stil fest; für schmale Fenster muss
    das überschrieben werden. Der helle Grund bleibt auch im dunklen Modus,
    weil die Zeichnungen schwarze Linien mitbringen. */
+/* Auch die Rahmen aus `html.frame` (Blöcke, Zeichnungen in Tabellen) landen
+   hier. Ihre Breite steht als Inline-Stil am Element; mit `border-box`
+   fräße der Innenabstand sie auf, und der Inhalt schrumpfte auf den Rest —
+   deshalb `content-box`, und der Höchstwert lässt Rand und Abstand Platz. */
 main svg {
-  max-width: 100% !important;
+  box-sizing: content-box;
+  max-width: calc(100% - 1.8rem - 2px) !important;
   height: auto !important;
   background: #ffffff;
   border: 1px solid var(--flaeche-rand);
