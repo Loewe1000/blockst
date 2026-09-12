@@ -1,0 +1,559 @@
+/* schuldocs — Stilvorlage der Website
+ *
+ * Wird vom Bündel-Export neben index.html gelegt und dort im <head>
+ * verlinkt. Hell und dunkel über prefers-color-scheme.
+ */
+
+:root {
+  --grund: #ffffff;
+  --grund-kopf: #f7f9fb;
+  --ink: #16191d;
+  --muted: #5b6670;
+  --accent: #14537f;
+  --accent-hell: #1a6ba8;
+  --linie: #d5dbe1;
+  --flaeche: #f4f6f8;
+  --flaeche-rand: #e3e8ed;
+  --hinweis: #eef4f9;
+  --sans: "Inter", "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "SFMono-Regular", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  --breite: 46rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --grund: #14171a;
+    --grund-kopf: #1a1e22;
+    --ink: #dfe4e8;
+    --muted: #9aa5af;
+    --accent: #7dd3fc;
+    --accent-hell: #a5e0ff;
+    --linie: #2c333a;
+    --flaeche: #1c2126;
+    --flaeche-rand: #2c333a;
+    --hinweis: #1b2530;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 1.5rem; }
+
+body {
+  margin: 0;
+  background: var(--grund);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ── Kopfbereich ─────────────────────────────────────────────────────────── */
+
+.kopf {
+  background: var(--grund-kopf);
+  border-bottom: 1px solid var(--linie);
+  padding: 2.6rem 1.5rem 2rem;
+}
+
+.kopf-inhalt {
+  max-width: 76rem;
+  margin: 0 auto;
+}
+
+.kopf h1 {
+  margin: 0;
+  font-size: 2.3rem;
+  line-height: 1.15;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--accent);
+}
+
+/* Ein Zeichen statt des Namens: die Überschrift wird zur Zeile, in der das
+   Bild und die Version nebeneinander auf einer Grundlinie sitzen. Die Höhe
+   bindet an die Schriftgröße der Überschrift, damit das Zeichen mitwächst,
+   wenn jemand die Schrift größer stellt. */
+.kopf h1.mit-zeichen {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.kopf h1.mit-zeichen :is(img, svg) {
+  height: 2.6em;
+  width: auto;
+  display: block;
+}
+
+.kopf h1 .version {
+  margin-left: 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--muted);
+  vertical-align: 0.55em;
+}
+
+.kopf h1 .version::before { content: "v"; }
+
+.kopf .beschreibung {
+  margin: 0.7rem 0 0;
+  max-width: 52rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.kopf .hinweise {
+  list-style: none;
+  margin: 1.1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.kopf .hinweise li {
+  background: var(--hinweis);
+  border: 1px solid var(--linie);
+  border-radius: 999px;
+  padding: 0.15rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.kopf .verweise {
+  margin-top: 1.1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.2rem;
+  font-size: 0.92rem;
+  font-weight: 550;
+}
+
+/* ── Gerüst ──────────────────────────────────────────────────────────────── */
+
+.rahmen {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 2.2rem 1.5rem 4rem;
+}
+
+@media (min-width: 62rem) {
+  .rahmen {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: 3rem;
+    align-items: start;
+  }
+}
+
+main {
+  max-width: var(--breite);
+  min-width: 0;
+}
+
+/* ── Inhaltsverzeichnis ──────────────────────────────────────────────────── */
+
+nav.inhalt {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 2.5rem;
+  border-left: 1px solid var(--linie);
+  padding-left: 1rem;
+}
+
+@media (min-width: 62rem) {
+  nav.inhalt {
+    position: sticky;
+    top: 1.5rem;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    margin-bottom: 0;
+    border-left: none;
+    border-right: 1px solid var(--linie);
+    padding-left: 0;
+    padding-right: 1rem;
+  }
+}
+
+nav.inhalt .inhalt-titel {
+  margin: 0 0 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+nav.inhalt ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+nav.inhalt ul ul {
+  padding-left: 0.85rem;
+  font-size: 0.95em;
+}
+
+nav.inhalt li { margin: 0.18rem 0; position: relative; }
+
+/* Wo man gerade steht. Gesetzt wird `aria-current` vom Skript am Fuß der
+   Seite; ohne JavaScript bleibt die Liste, wie sie war. Der Strich links
+   steht *neben* dem Text und nicht darunter, damit die Zeile nicht springt,
+   wenn die Markierung wandert. */
+nav.inhalt a[aria-current="true"] { color: var(--accent); font-weight: 600; }
+nav.inhalt a[aria-current="true"]::before {
+  content: "";
+  position: absolute;
+  left: -0.7rem;
+  top: 0.15em;
+  bottom: 0.15em;
+  border-left: 2px solid var(--accent);
+}
+
+nav.inhalt a {
+  color: var(--muted);
+  text-decoration: none;
+  display: block;
+  padding: 0.1rem 0;
+}
+
+nav.inhalt a:hover { color: var(--accent); }
+
+nav.inhalt > ul > li > a { color: var(--ink); font-weight: 550; }
+
+/* Funktionsnamen im Verzeichnis bleiben ruhig. */
+nav.inhalt code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.92em;
+}
+
+/* ── Fließtext ───────────────────────────────────────────────────────────── */
+
+main h2, main h3, main h4, main h5, main h6 {
+  color: var(--accent);
+  font-weight: 620;
+  line-height: 1.25;
+  scroll-margin-top: 1.5rem;
+}
+
+main h2 {
+  font-size: 1.65rem;
+  margin: 2.8rem 0 0.9rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--linie);
+  letter-spacing: -0.01em;
+}
+
+main > h2:first-child { margin-top: 0; }
+
+main h3 { font-size: 1.25rem; margin: 2.1rem 0 0.6rem; }
+main h4 { font-size: 1.05rem; margin: 1.6rem 0 0.5rem; color: var(--ink); }
+main h5, main h6 { font-size: 0.98rem; margin: 1.3rem 0 0.4rem; color: var(--ink); }
+
+main p { margin: 0 0 1rem; }
+
+main ul, main ol { margin: 0 0 1rem; padding-left: 1.4rem; }
+main li { margin: 0.25rem 0; }
+
+a { color: var(--accent); text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+a:hover { color: var(--accent-hell); }
+
+/* Sprungmarke an den Überschriften */
+.anker {
+  margin-left: 0.4rem;
+  color: var(--linie);
+  text-decoration: none;
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity 0.12s ease-in;
+}
+
+h2:hover .anker, h3:hover .anker, h4:hover .anker,
+h5:hover .anker, h6:hover .anker, .anker:focus { opacity: 1; }
+
+strong { font-weight: 640; }
+
+/* In Überschriften steht der Name für sich; kein Kästchen darum. */
+main :is(h2, h3, h4, h5, h6) code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.92em;
+}
+
+hr { border: none; border-top: 1px solid var(--linie); margin: 2rem 0; }
+
+blockquote {
+  margin: 1.2rem 0;
+  padding: 0.1rem 1rem;
+  border-left: 3px solid var(--linie);
+  color: var(--muted);
+}
+
+/* ── Quelltext ───────────────────────────────────────────────────────────── */
+
+code, kbd, samp {
+  font-family: var(--mono);
+  font-size: 0.88em;
+}
+
+:not(pre) > code {
+  background: var(--flaeche);
+  border: 1px solid var(--flaeche-rand);
+  border-radius: 4px;
+  padding: 0.1em 0.32em;
+}
+
+pre {
+  background: var(--flaeche);
+  border: 1px solid var(--flaeche-rand);
+  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  margin: 0 0 1.2rem;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.85rem;
+  white-space: pre;
+}
+
+/* Typst schreibt die Farben der Syntaxhervorhebung fest in den Quelltext.
+   Sie sind für hellen Grund gedacht und werden im dunklen Modus aufgehellt. */
+@media (prefers-color-scheme: dark) {
+  code span[style*="color"] {
+    filter: brightness(1.6) saturate(0.85);
+  }
+}
+
+/* ── Tabellen ────────────────────────────────────────────────────────────── */
+
+.tabelle-rahmen, .rahmen-breit { overflow-x: auto; }
+
+table {
+  border-collapse: collapse;
+  margin: 0 0 1.3rem;
+  font-size: 0.94rem;
+  display: block;
+  overflow-x: auto;
+}
+
+th, td {
+  border: 1px solid var(--linie);
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th, tr:first-child th { background: var(--flaeche); font-weight: 620; }
+
+/* ── Gesetzte Ausschnitte (html.frame) ───────────────────────────────────── */
+
+/* Typst legt Breite und Höhe als Inline-Stil fest; für schmale Fenster muss
+   das überschrieben werden. Der helle Grund bleibt auch im dunklen Modus,
+   weil die Zeichnungen schwarze Linien mitbringen. */
+main svg {
+  max-width: 100% !important;
+  height: auto !important;
+  background: #ffffff;
+  border: 1px solid var(--flaeche-rand);
+  border-radius: 6px;
+  padding: 0.9rem;
+  margin: 0 0 1.2rem;
+  display: block;
+}
+
+main img { max-width: 100%; height: auto; }
+
+figure { margin: 1.4rem 0; }
+figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 0.4rem; }
+
+/* ── Beispiele und Quelltext aus display.typ ─────────────────────────────── */
+
+/* Klassen, die `show-example()` und `show-code()` vergeben. */
+
+.sd-code {
+  margin: 0 0 1.2rem;
+}
+
+.sd-code pre {
+  margin: 0;
+}
+
+.sd-example {
+  margin: 0 0 1.4rem;
+  border: 1px solid var(--flaeche-rand);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sd-example pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.sd-example-render {
+  background: #ffffff;
+  padding: 0.9rem;
+}
+
+.sd-example-code + .sd-example-render {
+  border-top: 1px solid var(--flaeche-rand);
+}
+
+/* Im Beispiel trägt die Hülle den Rahmen, nicht die Zeichnung. */
+.sd-example-render svg {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+}
+
+@media (min-width: 48rem) {
+  .sd-example--split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+  }
+
+  .sd-example--split .sd-example-code + .sd-example-render {
+    border-top: none;
+    border-left: 1px solid var(--flaeche-rand);
+  }
+
+  .sd-example--split pre {
+    height: 100%;
+  }
+}
+
+/* ── API-Referenz aus api.typ ────────────────────────────────────────────── */
+
+/* Klassen, die `show-module()` vergibt. */
+
+.sd-api {
+  margin: 0 0 1rem;
+}
+
+.sd-index ul {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+}
+
+.sd-index li {
+  margin: 0;
+}
+
+.sd-index code {
+  font-size: 0.85rem;
+}
+
+.sd-fn, .sd-var {
+  margin: 1.8rem 0;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--linie);
+  scroll-margin-top: 1.5rem;
+}
+
+.sd-fn > :first-child, .sd-var > :first-child {
+  margin-top: 0;
+}
+
+.sd-sig {
+  margin: 0 0 1rem;
+}
+
+.sd-sig pre {
+  margin: 0;
+}
+
+table.sd-params {
+  font-size: 0.92rem;
+}
+
+table.sd-params td:first-child {
+  white-space: nowrap;
+}
+
+code.sd-type {
+  white-space: nowrap;
+}
+
+.sd-returns {
+  color: var(--muted);
+  font-size: 0.93rem;
+  margin: 0 0 1rem;
+}
+
+/* ── Fuß ─────────────────────────────────────────────────────────────────── */
+
+footer {
+  border-top: 1px solid var(--linie);
+  padding: 1.6rem 1.5rem 2.4rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+footer p { max-width: 76rem; margin: 0 auto; }
+
+/* ── Hinweiskästen ───────────────────────────────────────────────────────── */
+
+.sd-callout {
+  margin: 1.4rem 0;
+  padding: 0.9rem 1.1rem;
+  border-left: 3px solid var(--kasten-farbe, var(--accent));
+  border-radius: 0 4px 4px 0;
+  background: var(--kasten-grund, var(--hinweis));
+}
+
+.sd-callout-title {
+  margin-bottom: 0.35rem;
+  color: var(--kasten-farbe, var(--accent));
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sd-callout-body > :first-child { margin-top: 0; }
+.sd-callout-body > :last-child { margin-bottom: 0; }
+
+.sd-callout--tip     { --kasten-farbe: #0f7a5a; --kasten-grund: #edf7f3; }
+.sd-callout--info    { --kasten-farbe: #14537f; --kasten-grund: #eef4f9; }
+.sd-callout--warning { --kasten-farbe: #b45309; --kasten-grund: #fdf4e8; }
+.sd-callout--caution { --kasten-farbe: #a3232b; --kasten-grund: #fbeff0; }
+.sd-callout--note    { --kasten-farbe: #5b6670; --kasten-grund: #f4f6f8; }
+
+@media (prefers-color-scheme: dark) {
+  .sd-callout--tip     { --kasten-farbe: #4ade80; --kasten-grund: #16241d; }
+  .sd-callout--info    { --kasten-farbe: #7dd3fc; --kasten-grund: #16222c; }
+  .sd-callout--warning { --kasten-farbe: #fbbf24; --kasten-grund: #2a2015; }
+  .sd-callout--caution { --kasten-farbe: #fca5a5; --kasten-grund: #2a1a1b; }
+  .sd-callout--note    { --kasten-farbe: #9aa5af; --kasten-grund: #1c2126; }
+}
+
+/* ── Druck ───────────────────────────────────────────────────────────────── */
+
+@media print {
+  nav.inhalt, .kopf .verweise { display: none; }
+  .rahmen { display: block; }
+  body { font-size: 11pt; }
+  main svg { border: none; padding: 0; }
+}
