@@ -18,7 +18,7 @@ without anyone having to run the script.
 
 | Source | License | Used for |
 | --- | --- | --- |
-| [google/blockly](https://github.com/google/blockly) `blocks/*.ts`, `msg/json/de.json` | Apache-2.0 | standard blocks and their current German wording |
+| [google/blockly](https://github.com/google/blockly) `blocks/*.ts`, `msg/json/<lang>.json` | Apache-2.0 | standard blocks and their current wording, German plus the 23 other languages the Scratch locales cover (`LANGUAGES`; cy and gd have no Blockly file) |
 | [France-ioi/bebras-modules](https://github.com/France-ioi/bebras-modules) `ext/blockly/de.js` | Apache-2.0 (bundled Blockly) | the German wording jwinf actually shows |
 | [France-ioi/bebras-modules](https://github.com/France-ioi/bebras-modules) `pemFioi/blockly*_lib*.js` | MIT | robot and turtle world blocks |
 
@@ -33,6 +33,14 @@ Relative to `scripts/scratchblocks-wasm/data/dialects/`:
 
 - `locales/blockly-de.toml` — standard blocks, current wording, plus the
   `ende` / `sonst` keywords the text syntax needs
+- `locales/blockly-en.toml` — the same in English, the base the other
+  languages inherit from
+- `locales/blockly-<lang>.toml` — texts, markers and mouth labels of 22 more
+  languages, shapes and slots inherited from `blockly-en`; the end marker is
+  the one that language's Scratch locale uses, `ende`/`end`/`else` work
+  everywhere
+- `../../src/generated/blockly_locales.rs` — the `include_str!` list the
+  engine embeds
 - `locales/jwinf-de.toml` — world blocks and the standard blocks whose old
   wording differs from today's; inherits the rest from `blockly-de`
 - `profiles/*.toml` — geometry and palette per profile

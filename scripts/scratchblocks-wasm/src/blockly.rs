@@ -41,19 +41,26 @@ pub(crate) const DROPDOWN_ARROW: &str = " ▾";
 /// Blockly's icons are 16px squares.
 pub(crate) const ICON_W: f32 = 16.0;
 
+#[derive(Clone)]
 pub(crate) enum Item {
     Label(String),
     /// A 16px icon in the first row: "mutator", "warning" or "comment".
     Icon(String),
     Field { text: String, dropdown: bool },
+    /// One of MakeCode's editor fields: "matrix" (the 5x5 LED grid) or
+    /// "melody" (the 8-note grid), with the text the author typed for it.
+    Editor { kind: String, text: String },
     /// A value input. `None` is an empty hole; `Some` is the block plugged in.
-    Socket(Option<BlockSpec>),
+    /// `boolean` tells an empty hole's shape apart where the renderer cares.
+    Socket(Option<BlockSpec>, bool),
 }
 
 pub(crate) struct Row {
     pub(crate) items: Vec<Item>,
     /// A value input that ends the row and is cut into the block's right edge.
     pub(crate) external: Option<Option<BlockSpec>>,
+    /// Whether that external input is a boolean slot.
+    pub(crate) external_boolean: bool,
 }
 
 pub(crate) struct Mouth {
@@ -135,11 +142,14 @@ pub(crate) fn plan(block: &BlockSpec) -> Plan {
                 // `gehe (x) Schritte` — it is the text the author typed into
                 // the field; `((…))` is how a block gets plugged in instead.
                 let label_only = nested.category == "variables" && nested.segments.iter().all(|s| matches!(s, SegmentSpec::Text { .. }));
-                if kind == Some("field") && label_only {
+                if matches!(kind, Some("matrix" | "melody")) && label_only {
+                    let text = nested.segments.iter().filter_map(|s| match s { SegmentSpec::Text { value } => Some(value.as_str()), _ => None }).collect::<Vec<_>>().join(" ");
+                    items.push(Item::Editor { kind: kind.unwrap().to_string(), text });
+                } else if kind == Some("field") && label_only {
                     let text = nested.segments.iter().filter_map(|s| match s { SegmentSpec::Text { value } => Some(value.as_str()), _ => None }).collect::<Vec<_>>().join(" ");
                     items.push(Item::Field { text, dropdown: false });
                 } else {
-                    items.push(Item::Socket(Some(adopt((**nested).clone()))));
+                    items.push(Item::Socket(Some(adopt((**nested).clone())), false));
                 }
             }
             SegmentSpec::Input { input, value, nested, .. } => {
@@ -150,21 +160,27 @@ pub(crate) fn plan(block: &BlockSpec) -> Plan {
                     // is not a number into a nested reporter. In a field slot
                     // — `setze Farbe (#f00)` — that reporter is just the
                     // text the author typed, so it becomes the field.
-                    if kind == Some("field") && nested.category == "variables" && nested.segments.iter().all(|s| matches!(s, SegmentSpec::Text { .. })) {
+                    let label_only = nested.category == "variables" && nested.segments.iter().all(|s| matches!(s, SegmentSpec::Text { .. }));
+                    if matches!(kind, Some("matrix" | "melody")) && label_only {
+                        let text = nested.segments.iter().filter_map(|s| match s { SegmentSpec::Text { value } => Some(value.as_str()), _ => None }).collect::<Vec<_>>().join(" ");
+                        items.push(Item::Editor { kind: kind.unwrap().to_string(), text });
+                    } else if kind == Some("field") && label_only {
                         let text = nested.segments.iter().filter_map(|s| match s { SegmentSpec::Text { value } => Some(value.as_str()), _ => None }).collect::<Vec<_>>().join(" ");
                         items.push(Item::Field { text, dropdown: false });
                     } else {
-                        items.push(Item::Socket(Some(adopt((**nested).clone()))));
+                        items.push(Item::Socket(Some(adopt((**nested).clone())), false));
                     }
+                } else if matches!(kind, Some("matrix" | "melody")) {
+                    items.push(Item::Editor { kind: kind.unwrap().to_string(), text: value.clone() });
                 } else if input == "dropdown" || input == "dropdown-field" || kind == Some("dropdown") {
                     items.push(Item::Field { text: value.clone(), dropdown: true });
                 } else if input == "boolean" || kind == Some("value") {
                     // A value slot: a literal becomes a shadow block, nothing
                     // stays an empty hole.
                     if value.is_empty() {
-                        items.push(Item::Socket(None));
+                        items.push(Item::Socket(None, input == "boolean"));
                     } else {
-                        items.push(Item::Socket(Some(shadow(value, input))));
+                        items.push(Item::Socket(Some(shadow(value, input)), false));
                     }
                 } else {
                     items.push(Item::Field { text: value.clone(), dropdown: false });
@@ -192,7 +208,7 @@ pub(crate) fn plan(block: &BlockSpec) -> Plan {
     // `<p> und <q>` — is Blockly's dropdown in the middle of a compare,
     // arithmetic or logic block, and is drawn as one.
     for index in 1..items.len().saturating_sub(1) {
-        let between_sockets = matches!(items[index - 1], Item::Socket(_)) && matches!(items[index + 1], Item::Socket(_));
+        let between_sockets = matches!(items[index - 1], Item::Socket(..)) && matches!(items[index + 1], Item::Socket(..));
         if let Item::Label(text) = &items[index] {
             if between_sockets && is_operator(text) {
                 items[index] = Item::Field { text: text.clone(), dropdown: true };
@@ -207,8 +223,8 @@ pub(crate) fn plan(block: &BlockSpec) -> Plan {
         let mut label_after = false;
         for item in &items {
             match item {
-                Item::Socket(_) => seen_socket = true,
-                Item::Label(_) | Item::Field { .. } if seen_socket => label_after = true,
+                Item::Socket(..) => seen_socket = true,
+                Item::Label(_) | Item::Field { .. } | Item::Editor { .. } if seen_socket => label_after = true,
                 _ => {}
             }
         }
@@ -216,20 +232,27 @@ pub(crate) fn plan(block: &BlockSpec) -> Plan {
     });
 
     let mut rows = Vec::new();
-    if inline || !items.iter().any(|i| matches!(i, Item::Socket(_))) {
-        rows.push(Row { items, external: None });
+    if inline || !items.iter().any(|i| matches!(i, Item::Socket(..) | Item::Editor { .. })) {
+        rows.push(Row { items, external: None, external_boolean: false });
     } else {
         let mut current: Vec<Item> = Vec::new();
         for item in items {
             match item {
-                Item::Socket(child) => {
-                    rows.push(Row { items: std::mem::take(&mut current), external: Some(child) });
+                Item::Socket(child, boolean) => {
+                    rows.push(Row { items: std::mem::take(&mut current), external: Some(child), external_boolean: boolean });
+                }
+                // an editor field sits on an input of its own: a row of its own
+                editor @ Item::Editor { .. } => {
+                    if !current.is_empty() {
+                        rows.push(Row { items: std::mem::take(&mut current), external: None, external_boolean: false });
+                    }
+                    rows.push(Row { items: vec![editor], external: None, external_boolean: false });
                 }
                 other => current.push(other),
             }
         }
         if !current.is_empty() {
-            rows.push(Row { items: current, external: None });
+            rows.push(Row { items: current, external: None, external_boolean: false });
         }
     }
 
@@ -255,8 +278,8 @@ pub(crate) fn plan(block: &BlockSpec) -> Plan {
         rows,
         mouths,
         is_value,
-        top_notch: !is_value && block.shape != "hat" && block.shape != "define-hat",
-        bottom_notch: !is_value && block.shape != "cap" && block.shape != "c-block cap" && block.shape != "define-hat",
+        top_notch: !is_value && !block.shape.contains("hat"),
+        bottom_notch: !is_value && !block.shape.contains("cap") && block.shape != "define-hat" && block.shape != "c-block hat",
     }
 }
 
@@ -271,6 +294,9 @@ fn body_height(block: &BlockSpec) -> f32 {
 
 /// The block's own outline: width, and height without the bottom notch.
 pub fn size(block: &BlockSpec) -> (f32, f32) {
+    if geometry().zelos {
+        return crate::blockly_zelos::size(block);
+    }
     if geometry().spacer_rows {
         return crate::blockly_modern::size(block);
     }
@@ -343,7 +369,11 @@ fn row_size(row: &Row, g: &Geometry, last: bool, before_mouth: bool, _is_value: 
                 has_field = true;
                 cursor += field_advance(text, *dropdown);
             }
-            Item::Socket(child) => {
+            Item::Editor { text, .. } => {
+                has_field = true;
+                cursor += field_advance(text, false);
+            }
+            Item::Socket(child, _) => {
                 let (socket_w, socket_h) = socket_size(child.as_ref());
                 // The socket starts a tab's width past the gap, less the
                 // pixel the cut-out overlaps the child by.
@@ -382,6 +412,9 @@ fn socket_size(child: Option<&BlockSpec>) -> (f32, f32) {
 /// Size of a stack of blocks laid out one under the other, including
 /// whatever hangs off their right edges or sits in their mouths.
 pub fn stack_size(blocks: &[BlockSpec]) -> (f32, f32) {
+    if geometry().zelos {
+        return crate::blockly_zelos::stack_size(blocks);
+    }
     if geometry().spacer_rows {
         return crate::blockly_modern::stack_size(blocks);
     }
@@ -398,6 +431,9 @@ pub fn stack_size(blocks: &[BlockSpec]) -> (f32, f32) {
 /// The full footprint of a block: its outline plus external children and
 /// the blocks in its mouths.
 pub fn extent(block: &BlockSpec) -> (f32, f32) {
+    if geometry().zelos {
+        return crate::blockly_zelos::extent(block);
+    }
     if geometry().spacer_rows {
         return crate::blockly_modern::extent(block);
     }
@@ -412,7 +448,7 @@ pub fn extent(block: &BlockSpec) -> (f32, f32) {
             width = width.max(own_w + 1.0 + extent(child).0 + TAB_W);
         }
         for item in &row.items {
-            if let Item::Socket(Some(child)) = item {
+            if let Item::Socket(Some(child), _) = item {
                 // Inline children are inside the outline already.
                 let _ = child;
             }
@@ -455,6 +491,9 @@ fn lighten(hex: &str, amount: f32) -> String {
 /// attached above and below it, because that decides which left corners are
 /// rounded.
 pub fn render_stack(blocks: &[BlockSpec], theme: &str) -> (String, f32, f32) {
+    if geometry().zelos {
+        return crate::blockly_zelos::render_stack(blocks, theme);
+    }
     if geometry().spacer_rows {
         return crate::blockly_modern::render_stack(blocks, theme);
     }
@@ -479,7 +518,7 @@ pub fn render_stack(blocks: &[BlockSpec], theme: &str) -> (String, f32, f32) {
 /// category; a bare `(x)` on a jwinf sheet is a variable too, so it takes
 /// the profile's own name for that.
 fn adopt(mut block: BlockSpec) -> BlockSpec {
-    if block.category == "variables" {
+    if block.category == "variables" && !geometry().zelos {
         block.category = "variablen".to_string();
     }
     block
@@ -507,6 +546,9 @@ pub(crate) fn unwrapped(block: &BlockSpec) -> Option<BlockSpec> {
 }
 
 pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> (String, f32, f32) {
+    if geometry().zelos {
+        return crate::blockly_zelos::render_block(block, theme, first, last);
+    }
     if geometry().spacer_rows {
         return crate::blockly_modern::render_block(block, theme, first, last);
     }
@@ -642,6 +684,17 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
                     content.push_str(&icon_svg(kind, cursor, top + FIELD_Y, theme));
                     cursor += ICON_W + 1.0;
                 }
+                Item::Editor { text, .. } => {
+                    let advance = field_advance(text, false);
+                    content.push_str(&format!(
+                        "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{FIELD_H}\" rx=\"4\" ry=\"4\" fill=\"#ffffff\"/>",
+                        cursor - 5.0,
+                        field_y,
+                        advance + 10.0
+                    ));
+                    content.push_str(&format!("<text class=\"sb-input-text\" x=\"{cursor}\" y=\"{baseline}\" style=\"fill:#000000\">{}</text>", escape_text(text)));
+                    cursor += advance;
+                }
                 Item::Field { text, dropdown } => {
                     let shown = if *dropdown { format!("{text}{DROPDOWN_ARROW}") } else { text.clone() };
                     let advance = field_advance(text, *dropdown);
@@ -659,7 +712,7 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
                     ));
                     cursor += advance;
                 }
-                Item::Socket(child) => {
+                Item::Socket(child, _) => {
                     let (socket_w, socket_h) = socket_size(child.as_ref());
                     let left = cursor + TAB_W - 2.0;
                     let socket_top = top + FIELD_Y;

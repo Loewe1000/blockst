@@ -8,11 +8,13 @@
   toml: toml("../typst.toml"),
   authors: ("Loewe1000",),
   abstract: [
-    *blockst* renders Scratch-style programming blocks directly in Typst
-    documents — for worksheets, tutorials and teaching material. Scratch code is
-    written as plain text and rendered by a bundled WASM plugin, in 26 languages
-    including right-to-left scripts, with a turtle-graphics execution engine and
-    helpers for importing real `.sb3` project files.
+    *blockst* renders programming blocks directly in Typst documents — Scratch,
+    Blockly with a jwinf profile, MakeCode for the micro:bit and the Calliope
+    mini, and Open Roberta NEPO — for worksheets, tutorials and teaching
+    material. Block code is written as plain text and rendered by a bundled WASM
+    plugin, Scratch in 26 languages including right-to-left scripts, with a
+    turtle-graphics execution engine and helpers for importing real `.sb3`
+    project files.
   ],
   links: ((name: "GitHub", url: "https://github.com/Loewe1000/blockst"),),
   notices: ([Part of the Schule Typst ecosystem],),

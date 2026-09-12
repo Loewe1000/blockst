@@ -1,0 +1,23 @@
+{
+"Array._removeAtStatement|block": "%list| esborra valor a la posició %index",
+"empty array": "llista buida",
+"game.LedSprite.isTouchingEdge|block": "%sprite|està tocant la vora",
+"game.LedSprite.isTouching|block": "%sprite|està tocant %other",
+"images.createImage|block": "crea imatge",
+"input.runningTimeMicros|block": "temps d'execució (micros)",
+"input.soundLevel|block": "nivell de so",
+"led.enable|block": "habilita els leds %on",
+"led.toggle|block": "inverteix el led|x %x|y %y",
+"music.ringTone|block": "toca la nota seguidament (Hz)|%note=device_note",
+"music.setTempo|block": "estableix el tempo a (ppm)|%value",
+"parseFloat|block": "converteix a número %text",
+"pins._analogPin|block": "pin analògic $pin",
+"pins._digitalPin|block": "pin digital $pin",
+"pins.analogSetPitchPin|block": "configura el pin de senyal o so analògic %name",
+"pins.pulseIn|block": "pols en (µs)|pin %name|polsat %value",
+"pins.servoSetPulse|block": "escriu al servo del pin %value| un pols de (µs) %micros",
+"serial.redirectToUSB|block": "redirigeix el port sèrie a l'USB",
+"serial.setRxBufferSize|block": "port sèrie estableix tamany del buffer rx a $size",
+"serial.setTxBufferSize|block": "port sèrie estableix tamany del buffer tx a $size",
+"serial.writeNumbers|block": "escriu els números %values al port sèrie"
+}

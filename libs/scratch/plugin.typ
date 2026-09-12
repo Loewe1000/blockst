@@ -59,6 +59,11 @@
   let theme = get-theme(options)
   let scale = _to-scale-number(get-scale(options))
   let font-family = get-font(options)
+  // MakeCode draws its labels in a monospace face; unless the document
+  // chose a font, measure and draw with the editor's stack.
+  let font-family = if profile.starts-with("makecode") and font-family == "Helvetica Neue" {
+    ("Menlo", "Consolas", "DejaVu Sans Mono")
+  } else { font-family }
 
   // Build the base payload
   let payload = (
@@ -85,10 +90,12 @@
     // Step 2: Measure each text with Typst's actual font
     let widths = (:)
 
-    // Blockly labels are 11pt regular, Scratch's 12pt medium; the widths
-    // have to be measured the way the SVG will draw them.
+    // Blockly labels are 11pt regular, Scratch's 12pt medium, MakeCode's
+    // 12pt semibold in a monospace face; the widths have to be measured the
+    // way the SVG will draw them.
     let blockly = profile.starts-with("blockly") or profile.starts-with("jwinf")
-    let (label-size, label-weight) = if blockly { (11pt, 400) } else { (12pt, 500) }
+    let makecode = profile.starts-with("makecode")
+    let (label-size, label-weight) = if blockly { (11pt, 400) } else if makecode { (12pt, 600) } else { (12pt, 500) }
     for t in texts {
       let m = measure(text(font: font-family, size: label-size, weight: label-weight)[#t])
       // Convert Typst pt to SVG user units (CSS px at 96dpi: 1pt = 96/72 px)
@@ -98,7 +105,7 @@
     // Step 3: Render with measured widths and font
     let render-payload = payload
     render-payload.insert("widths", widths)
-    render-payload.insert("font", font-family)
+    render-payload.insert("font", if type(font-family) == array { font-family.map(f => "\"" + f + "\"").join(", ") + ", monospace" } else { font-family })
 
     // The SVG names the block font itself, but an unresolvable family falls
     // back to the ambient Typst font — monospace inside a raw block, which is

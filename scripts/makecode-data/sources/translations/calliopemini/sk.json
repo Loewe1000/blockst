@@ -1,0 +1,14 @@
+{
+"Array._removeAtStatement|block": "%list| odobrať hodnotu na indexe %index",
+"empty array": "prázdne pole",
+"images.createImage|block": "vytvoriť obrázok",
+"input.runningTimeMicros|block": "prevádzková doba (mikros)",
+"input.soundLevel|block": "úroveň zvuku",
+"led.enable|block": "zapnúť LED %on",
+"led.toggle|block": "prepnúť|x %x|y %y",
+"music.ringTone|block": "vyzváňací tón (Hz)|%note=device_note",
+"music.setTempo|block": "nastaviť tempo na (bpm)|%value",
+"pins.analogSetPitchPin|block": "analógové nastavenie výškového kolíka %name",
+"pins.servoSetPulse|block": "nastaviť pulz serva|kolík %value|na (µs) %mikros",
+"serial.redirectToUSB|block": "sériový|presmerovať do USB"
+}

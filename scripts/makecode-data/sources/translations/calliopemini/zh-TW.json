@@ -1,0 +1,22 @@
+{
+"Array._removeAtStatement|block": "移除在 %list 的項目 |索引值設為 %index",
+"basic.rgb|block": "紅 %red|綠 %green|藍 %blue",
+"empty array": "空陣列",
+"game.LedSprite.isTouchingEdge|block": "角色 %sprite|碰到邊緣？",
+"game.LedSprite.isTouching|block": "角色 %sprite|碰到 %other ？",
+"images.createImage|block": "創建圖像",
+"input.runningTimeMicros|block": "運行時間 (micros)",
+"input.soundLevel|block": "聲音響度",
+"led.enable|block": "啟用設為 %on",
+"led.toggle|block": "點的狀態切換|x %x|y %y",
+"music.ringTone|block": "演奏 音階|%note=device_note",
+"music.setTempo|block": "演奏 速度設為|%value bpm",
+"parseFloat|block": "字串剖析 文字 %text 轉成數字",
+"pins.analogSetPitchPin|block": "引腳 %name 設為播放類比音高",
+"pins.pulseIn|block": "引腳 %name|脈波 %value|持續時間（微秒）",
+"pins.servoSetPulse|block": "伺服設定脈衝|腳位 %value|至 (µs) %micros",
+"serial.redirectToUSB|block": "序列|重新導向至 USB",
+"serial.setRxBufferSize|block": "序列 rx 緩衝區大小設為 $size",
+"serial.setTxBufferSize|block": "序列 tx 緩衝區大小設為 $size",
+"serial.writeNumbers|block": "序列|寫入數字陣列 %values"
+}

@@ -32,6 +32,10 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
   tasks (`jwinf`) or of the turtle sandbox (`jwinf-turtle`)
 - **`colors`** on `set-blockst()`, `blockst()`, `blockly()` and `scratch()`:
   the document's own category colours over any profile's palette
+- **MakeCode** as a third block language: `makecode()` draws the micro:bit
+  and Calliope mini editors' blocks — Blockly's zelos look, MakeCode's
+  monospace labels, the editors' own block texts in all 36 of their
+  languages. See [MakeCode](#makecode)
 - **NEPO (Open Roberta)** for the Calliope mini and micro:bit, contributed by
   @lkoehl as a renderer of its own — see [examples/nepo](examples/nepo/README.md)
 - Arabic: the common assignment wordings `مساوية لـ` / `مساويًا لـ` now resolve (#13)
@@ -58,6 +62,7 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - [SB3 Import via Typst Plugin WASM](#sb3-import-via-typst-plugin-wasm)
 - [Right-to-Left Languages](#right-to-left-languages)
 - [Blockly and jwinf](#blockly-and-jwinf)
+- [MakeCode](#makecode)
 - [Catalog](#catalog)
 - [Contributing](#contributing)
 
@@ -69,7 +74,9 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - **Right-to-left languages** (Arabic, Hebrew, Persian): the block layout is
   mirrored automatically — notch, hat, C-block mouth, loop arrow and label
   order all follow the reading direction
-- **Blockly** and **Open Roberta (NEPO)** as further block languages, with a **jwinf** profile
+- **Blockly**, **MakeCode** (micro:bit, Calliope mini) and **Open Roberta
+  (NEPO)** as further block languages, each drawn the way its editor draws
+  it, with a **jwinf** profile for Blockly
 - Category suffixes via `::motion`, `::control`, ... (scratchblocks-style)
 - Optional line numbers and `#label` references for line-aware worksheets
 - Optional compact block geometry with `inset-scale` (text size unchanged, e.g. `60%`, `90%`, `125%`)
@@ -538,7 +545,7 @@ variants before comparing.
 
 | Profile | Look | Vocabulary |
 | --- | --- | --- |
-| `"blockly"` (default) | today's flat Blockly (thrasos) | Blockly's German standard blocks |
+| `"blockly"` (default) | today's flat Blockly (thrasos) | Blockly's standard blocks, German by default, 24 languages |
 | `"blockly-klassisch"` | Blockly before 2019 | same |
 | `"jwinf"` | jwinf.de — classic geometry, the palette of the robot training tasks | robot and turtle world blocks, plus the standard blocks in the old wording |
 | `"jwinf-turtle"` | the same, with the colours of the Freie Turtle-Umgebung | same |
@@ -564,6 +571,14 @@ category with a `::` suffix: `aktionen`, `schildkroete`, `sensoren`,
 `schleifen`, `logik`, `mathe`, `variablen`, `funktionen`, `text`, `listen`,
 `ausgeben`, `einlesen`. Blocks the profile knows — loops, conditions,
 variables, the robot and turtle commands — are recognised without a suffix.
+
+The standard blocks read Blockly's own message files: `language: "fr"`
+gives `répéter (10) fois`, `"ja"` gives `(10) 回繰り返す`, in ar, ca, cs, de,
+el, en, es, fa, fr, he, hi, hr, hu, id, it, ja, nb, nl, pl, pt, ro, ru, sl
+and tr. The jwinf world blocks exist in German only. Each language closes
+a C-block with the marker its Scratch locale uses (`ende`, `end`, `fin`, …)
+and opens the else branch with Blockly's word for it (`sonst`, `else`,
+`sinon`, …); `ende`, `end` and `else` work in every language.
 
 C-blocks close with `ende`; `sonst` opens the else branch. `<…>` and `(…)`
 are equivalent: Blockly draws no hexagon, a boolean plugs in with the same
@@ -597,6 +612,72 @@ Block texts and colours are generated from the published sources — Blockly
 (Apache-2.0) and France-IOI's bebras-modules (MIT) — by
 [scripts/blockly-data](scripts/blockly-data/README.md), which also reports
 the gaps in the upstream translations.
+
+## MakeCode
+
+`makecode()` draws the blocks of the MakeCode editors for the micro:bit and
+the Calliope mini, from the same notation `scratch()` uses. The look is
+Blockly's zelos renderer as the editors run it: 4px corners, a 36px notch,
+pills for values, hexagons for booleans, literals as white pills, a 12pt
+semibold monospace label. Event blocks (`beim Start`, `wenn Knopf [A v]
+geklickt`) have no hat and no notch, exactly as in the editor.
+
+| Profile | Target | Colours |
+| --- | --- | --- |
+| `"makecode"` (default) | makecode.microbit.org | the micro:bit palette |
+| `"makecode-calliope"` | makecode.calliope.cc | the Calliope mini palette, plus its motor and RGB-LED blocks |
+
+```typst
+#makecode("
+beim Start
+  zeige Symbol [Herz v]
+ende
+wenn Knopf [A v] geklickt
+  zeige Zahl ((1) + (2))
+  wenn <(Lichtstärke) > (100)> dann
+    zeige Text [hell]
+  ansonsten
+    pausiere (ms) (100)
+  ende
+ende
+", language: "de")
+```
+
+![MakeCode example](examples/example-makecode.svg)
+
+The block texts are the editors' own — read off makecode.microbit.org and
+makecode.calliope.cc in German and English by
+[scripts/makecode-data](scripts/makecode-data/README.md), and for the
+other 34 editor languages taken from the translation service the editors
+load at run time (cdn.makecode.com, approved strings only). `language:` is
+any language the editors offer: `"de"` (the default), `"en"`, `"fr"`,
+`"es"`, `"ja"`, `"zh-cn"`, … — a bare code picks the regional variant the
+editor ships (`"es"` → es-ES, `"pt"` → pt-BR). A block whose translation
+is not approved yet keeps its English text, as in the editor. The end
+marker follows the language (`fin`, `終わり`, …), the else marker is the
+editor's word (`sinon`, `でなければ`, …); `ende`, `end` and `else` work
+everywhere. A unit the editor shows in
+parentheses is typed like a value and drawn as the label: `pausiere (ms)
+(100)`, `Temperatur (°C)`. `ende`/`end` closes a C-block, `ansonsten`/`else`
+opens the else branch, which gets the editor's − and + buttons. Operators
+take the editor's glyph or a spelling: `×` or `*`, `÷` or `/`, `≥` or `>=`,
+`≤` or `<=`, `≠` or `!=`. Unknown labels are
+drawn as written with the category from a `::kategorie` suffix (`basic`,
+`input`, `music`, `led`, `radio`, `loops`, `logic`, `variables`, `math`,
+`functions`, `arrays`, `text`, `game`, `images`, `pins`, `serial`,
+`control`).
+
+Two of MakeCode's editor fields have a notation of their own. The LED
+matrix takes 25 cells, `#` lit and `.` dark, in any grouping:
+`zeige LEDs [#...#|.#.#.|..#..|.#.#.|#...#]`. The melody editor takes
+eight notes or rests: `spiele (Melodie [C D E F - - - -] mit Tempo (120)
+(bpm)) [bis zum Ende v]`.
+
+In raw blocks, `#show: raw-makecode()` renders ````makecode` and
+````microbit` fences with the micro:bit profile and ````calliope` fences
+with the Calliope mini profile. MakeCode's labels are measured and drawn in
+a monospace face (Menlo, Consolas or DejaVu Sans Mono, whichever is
+installed); `set-blockst(font: …)` picks another.
 
 ## Catalog
 

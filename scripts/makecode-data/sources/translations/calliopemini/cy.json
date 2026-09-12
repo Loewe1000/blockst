@@ -1,0 +1,15 @@
+{
+"empty array": "arae wag",
+"game.LedSprite.isTouchingEdge|block": "yn %sprite|yn cyffwrdd â'r ymyl",
+"game.LedSprite.isTouching|block": "yn %sprite|yn cyffwrdd â %other",
+"images.createImage|block": "creu delwedd",
+"input.runningTimeMicros|block": "amser rhedeg (microeiliadau)",
+"led.enable|block": "galluogi led %on",
+"led.toggle|block": "toglo|x %x|y %y",
+"music.ringTone|block": "tôn ffôn (Hz)|%note=device_note",
+"music.setTempo|block": "gosod tempo i (bpm)|%value",
+"pins.analogSetPitchPin|block": "analog gosod traw pin %name",
+"pins.servoSetPulse|block": "serfo gosod curiad|pin %value|i (µs) %micros",
+"serial.redirectToUSB|block": "cyfresol|ailgyfeirio i USB",
+"serial.writeNumbers|block": "cyfresol|ysgrifennu rhifau %values"
+}

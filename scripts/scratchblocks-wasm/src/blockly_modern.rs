@@ -84,8 +84,8 @@ fn kind(item: &Item) -> Kind {
     match item {
         Item::Label(_) => Kind::Label,
         Item::Icon(_) => Kind::Icon,
-        Item::Field { .. } => Kind::Editable,
-        Item::Socket(_) => Kind::Inline,
+        Item::Field { .. } | Item::Editor { .. } => Kind::Editable,
+        Item::Socket(..) => Kind::Inline,
     }
 }
 
@@ -95,8 +95,9 @@ fn item_size(item: &Item) -> (f32, f32) {
         // measured as 17 by 17 in RenderInfo, drawn 16 wide
         Item::Icon(_) => (ICON_W + 1.0, ICON_W + 1.0),
         Item::Field { text, dropdown } => (field_advance(text, *dropdown) + 10.0, TEXT_H),
-        Item::Socket(None) => (EMPTY_INLINE_W + TAB_W, EMPTY_INLINE_H),
-        Item::Socket(Some(child)) => {
+        Item::Editor { text, .. } => (field_advance(text, false) + 10.0, TEXT_H),
+        Item::Socket(None, _) => (EMPTY_INLINE_W + TAB_W, EMPTY_INLINE_H),
+        Item::Socket(Some(child), _) => {
             let (w, h) = size(child);
             (w + TAB_W, h)
         }
@@ -136,7 +137,7 @@ fn measure_row(row: &Row) -> RowLayout {
     let mut h: f32 = 0.0;
     let mut prev: Option<Kind> = None;
     let mut items = Vec::with_capacity(row.items.len());
-    let tall = row.items.iter().any(|i| matches!(i, Item::Socket(_)));
+    let tall = row.items.iter().any(|i| matches!(i, Item::Socket(..)));
     for item in &row.items {
         let k = kind(item);
         x += spacing(prev, Some(k));
@@ -295,7 +296,7 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
         // Stretching a row to the block's width puts the slack before an
         // external input, so items keep their natural positions.
         for (item, placed) in row.items.iter().zip(&row_l.items) {
-            if let Item::Socket(child) = item {
+            if let Item::Socket(child, _) = item {
                 let (ew, eh) = (placed.w, placed.h);
                 let top = row_l.y + ((row_l.h - eh) / 2.0).floor();
                 let _ = child;
@@ -338,6 +339,15 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
             match item {
                 Item::Label(text) => content.push_str(&label(&colors, text, placed.x, centre + BASELINE_BELOW_CENTRE, theme)),
                 Item::Icon(kind) => content.push_str(&icon_svg(kind, placed.x, centre - placed.h / 2.0, theme)),
+                Item::Editor { text, .. } => {
+                    content.push_str(&format!(
+                        "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{TEXT_H}\" rx=\"4\" ry=\"4\" fill=\"#ffffff\"/>",
+                        placed.x,
+                        centre - TEXT_H / 2.0,
+                        placed.w
+                    ));
+                    content.push_str(&format!("<text class=\"sb-input-text\" x=\"{}\" y=\"{}\" style=\"fill:#000000\">{}</text>", placed.x + 5.0, centre + BASELINE_BELOW_CENTRE, escape_text(text)));
+                }
                 Item::Field { text, dropdown } => {
                     let shown = if *dropdown { format!("{text}{DROPDOWN_ARROW}") } else { text.clone() };
                     content.push_str(&format!(
@@ -353,12 +363,12 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
                         escape_text(&shown)
                     ));
                 }
-                Item::Socket(Some(child)) => {
+                Item::Socket(Some(child), _) => {
                     let top = row_l.y + ((row_l.h - placed.h) / 2.0).floor();
                     let (child_svg, _, _) = render_block(child, theme, true, true);
                     content.push_str(&format!("<g transform=\"translate({} {top})\">{child_svg}</g>", placed.x + TAB_W));
                 }
-                Item::Socket(None) => {}
+                Item::Socket(None, _) => {}
             }
         }
         if let Some(Some(child)) = &row.external {

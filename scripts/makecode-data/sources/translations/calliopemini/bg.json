@@ -1,0 +1,11 @@
+{
+"empty array": "празен масив",
+"input.runningTimeMicros|block": "време на функциониране (micros)",
+"led.enable|block": "активиран led %on",
+"led.toggle|block": "превключване|x %x|y %y",
+"music.ringTone|block": "тон при позвъняване (Hz)|%note=device_note",
+"music.setTempo|block": "задаване темпо до (bpm)|%value",
+"pins.analogSetPitchPin|block": "пин на аналогова зададена настройка %name",
+"pins.servoSetPulse|block": "сервомеханизъм настройка на удар|пин %value|до (µs) %micros",
+"serial.redirectToUSB|block": "сериен номер|пренасочване към USB"
+}

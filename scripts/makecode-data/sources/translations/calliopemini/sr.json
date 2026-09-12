@@ -1,0 +1,21 @@
+{
+"Array._removeAtStatement|block": "%list| уклони вредност са позиције %index",
+"empty array": "празан низ",
+"game.LedSprite.isTouchingEdge|block": "да ли %sprite|додирује ивицу",
+"game.LedSprite.isTouching|block": "да ли %sprite|додирује %other",
+"images.createImage|block": "креирај слику",
+"input.runningTimeMicros|block": "време извршавања (микрос)",
+"input.soundLevel|block": "ниво звука",
+"led.enable|block": "лампица укључена %on",
+"led.toggle|block": "промени вредност диоде |x %x|y %y",
+"music.ringTone|block": "пусти тон (Hz)|%note=device_note",
+"music.setTempo|block": "постави темпо вредност (bpm)|%value",
+"parseFloat|block": "конвертуј у број %text",
+"pins.analogSetPitchPin|block": "аналогни постави висину пин %name",
+"pins.pulseIn|block": "пулсирање изражено у (µs)|пина %name|пулсирање за %value",
+"pins.servoSetPulse|block": "за серво постави |вредност пина %value|на (µs) %micros",
+"serial.redirectToUSB|block": "серијски порт|преусмери на USB",
+"serial.setRxBufferSize|block": "постави величину серијског rx бафера на $size",
+"serial.setTxBufferSize|block": "постави величину серијског tx бафера на $size",
+"serial.writeNumbers|block": "серијски порт|упиши бројеве %values"
+}

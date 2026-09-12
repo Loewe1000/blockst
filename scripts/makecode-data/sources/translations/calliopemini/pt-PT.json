@@ -1,0 +1,16 @@
+{
+"Array._removeAtStatement|block": "%list| remover valor em %index",
+"empty array": "array vazia",
+"game.LedSprite.isTouchingEdge|block": "está %sprite|a tocar na borda",
+"game.LedSprite.isTouching|block": "está %sprite|a tocar %other|",
+"images.createImage|block": "criar imagem",
+"input.runningTimeMicros|block": "tempo de execução (micros)",
+"led.enable|block": "ativar led %on",
+"led.toggle|block": "alternar|x %x|y %y",
+"music.ringTone|block": "ring tone (Hz)|%note=device_note",
+"music.setTempo|block": "definir o ritmo em (bpm)|%value",
+"pins.analogSetPitchPin|block": "pin de afinação de ajuste analógico %name",
+"pins.servoSetPulse|block": "conjunto de pulso servo|pin %value| para (µs) %micros",
+"serial.redirectToUSB|block": "serial|redirecionar para USB",
+"serial.writeNumbers|block": "porta série|escrever números %values"
+}

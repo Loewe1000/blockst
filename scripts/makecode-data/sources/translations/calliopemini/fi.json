@@ -1,0 +1,16 @@
+{
+"Array._removeAtStatement|block": "%list| poista arvo indeksillä %index",
+"empty array": "tyhjä taulukko",
+"game.LedSprite.isTouchingEdge|block": "%sprite|koskettaa reunaa",
+"game.LedSprite.isTouching|block": "%sprite|koskettaa kohdetta %other",
+"images.createImage|block": "luo kuva",
+"input.runningTimeMicros|block": "suoritusaika (mikrosekunneissa)",
+"led.enable|block": "LED käytössä %on",
+"led.toggle|block": "vaihda LEDin tila|x %x|y %y",
+"music.ringTone|block": "soita nuotti|%note=device_note",
+"music.setTempo|block": "aseta tempo (bpm) arvoon|%value",
+"pins.analogSetPitchPin|block": "analoginen määritä taajuus pinni %name",
+"pins.pulseIn|block": "pulssi (µs)|pinni %name|pulssi %value",
+"pins.servoSetPulse|block": "servo määritä pulssi|pinni %value|arvoon (µs) %micros",
+"serial.redirectToUSB|block": "serial|uudelleenohjaus USB:hen"
+}

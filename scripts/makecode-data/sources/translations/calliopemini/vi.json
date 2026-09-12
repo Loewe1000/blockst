@@ -1,0 +1,15 @@
+{
+"empty array": "mảng trống",
+"game.LedSprite.isTouchingEdge|block": "%sprite|đang chạm cạnh",
+"game.LedSprite.isTouching|block": "%sprite|đang chạm %other",
+"images.createImage|block": "tạo hình ảnh",
+"input.runningTimeMicros|block": "thời gian chạy (micros)",
+"led.enable|block": "bật đèn led %on",
+"led.toggle|block": "chuyển đổi|x %x|y %y",
+"music.ringTone|block": "chuông báo (Hz)|%note=device_note",
+"music.setTempo|block": "thiết lập nhịp độ thành (bpm)|%value",
+"pins.analogSetPitchPin|block": "analog thiết lập cao độ chân kết nối %name",
+"pins.servoSetPulse|block": "động cơ phụ thiết lập xung|chân kết nối %value|thành (µs) %micros",
+"serial.redirectToUSB|block": "cổng nối tiếp|chuyển hướng đến USB",
+"serial.writeNumbers|block": "cổng chuyển tiếp|ghi số %values"
+}

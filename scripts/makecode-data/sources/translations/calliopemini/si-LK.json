@@ -1,0 +1,8 @@
+{
+"led.enable|block": "led enable %on",
+"led.toggle|block": "toggle|x %x|y %y",
+"music.ringTone|block": "ring tone (Hz)|%note=device_note",
+"music.setTempo|block": "set tempo to (bpm)|%value",
+"pins.analogSetPitchPin|block": "analog set pitch pin %name",
+"pins.servoSetPulse|block": "servo set pulse|pin %value|to (µs) %micros"
+}
