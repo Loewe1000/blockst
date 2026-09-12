@@ -25,6 +25,11 @@ pub struct DocumentSpec {
     /// asks for by saying nothing.
     #[serde(default)]
     pub profile: Option<String>,
+    /// Category colours the document overrides, `category -> "#rrggbb"`.
+    /// Applied on top of the profile's palette; the other shades of each
+    /// theme are derived from the fill the same way as for a profile.
+    #[serde(default)]
+    pub colors: std::collections::BTreeMap<String, String>,
     pub scripts: Vec<ScriptSpec>,
 }
 

@@ -1,4 +1,4 @@
-#import "options.typ": get-options, get-theme, get-scale, get-font, get-line-numbers, get-line-number-start, get-line-number-first-block, get-line-number-gutter, get-inset-scale
+#import "options.typ": get-options, get-theme, get-scale, get-font, get-line-numbers, get-line-number-start, get-line-number-first-block, get-line-number-gutter, get-inset-scale, get-colors
 
 #let scratchblocks-renderer = plugin("plugins/scratchblocks_wasm.wasm")
 
@@ -73,6 +73,7 @@
     line_number_gutter: get-line-number-gutter(options),
     inset_scale: _to-inset-scale-number(get-inset-scale(options)),
     profile: profile,
+    colors: get-colors(options),
   )
 
   // Try to extract texts, measure, and use measured widths

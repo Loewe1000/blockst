@@ -27,8 +27,11 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - **Blockly** as a second block language: `blockly()` renders the same text
   notation with Blockly's shapes — notch, puzzle tab, boxed fields — in the
   current flat look. See [Blockly and jwinf](#blockly-and-jwinf)
-- **jwinf profile**: the Jugendwettbewerb Informatik's classic-Blockly look,
-  its robot and turtle blocks, and the palette of the training tasks
+- **jwinf profiles**: the Jugendwettbewerb Informatik's classic-Blockly look
+  and its robot and turtle blocks, with the palette of the robot training
+  tasks (`jwinf`) or of the turtle sandbox (`jwinf-turtle`)
+- **`colors`** on `set-blockst()`, `blockst()`, `blockly()` and `scratch()`:
+  the document's own category colours over any profile's palette
 - **NEPO (Open Roberta)** for the Calliope mini and micro:bit, contributed by
   @lkoehl as a renderer of its own — see [examples/nepo](examples/nepo/README.md)
 - Arabic: the common assignment wordings `مساوية لـ` / `مساويًا لـ` now resolve (#13)
@@ -537,7 +540,8 @@ variants before comparing.
 | --- | --- | --- |
 | `"blockly"` (default) | today's flat Blockly (thrasos) | Blockly's German standard blocks |
 | `"blockly-klassisch"` | Blockly before 2019 | same |
-| `"jwinf"` | jwinf.de — classic geometry, jwinf's palette | robot and turtle world blocks, plus the standard blocks in the old wording |
+| `"jwinf"` | jwinf.de — classic geometry, the palette of the robot training tasks | robot and turtle world blocks, plus the standard blocks in the old wording |
+| `"jwinf-turtle"` | the same, with the colours of the Freie Turtle-Umgebung | same |
 
 ```typst
 #blockly("
@@ -573,6 +577,21 @@ profile. `set-blockst(profile: …)` sets the default profile for `blockly()`;
 Themes work as for Scratch: `print`, `high-contrast` and `grayscale` are
 derived from the profile's palette, so a jwinf worksheet photocopies with its
 categories still told apart.
+
+jwinf colours its categories per task family: the robot training tasks
+(`jwinf`) and the turtle sandbox (`jwinf-turtle`) differ in loops, logic and
+maths. A task that deviates from both is covered by `colors`, which lays the
+document's own category colours over any profile's palette — globally, per
+group, or per call:
+
+```typst
+#set-blockst(profile: "jwinf", colors: (logik: "#73cc47"))
+#blockly("falls <auf Kiste>\nende", colors: (logik: rgb("#5ba55b")))
+```
+
+The shades a theme derives — bevel, stroke, `high-contrast`, `grayscale` —
+follow the new fill. `scratch()` takes `colors` as well, keyed by Scratch's
+category names (`motion`, `looks`, …).
 
 Block texts and colours are generated from the published sources — Blockly
 (Apache-2.0) and France-IOI's bebras-modules (MIT) — by

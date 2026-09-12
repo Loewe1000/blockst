@@ -60,3 +60,13 @@
 }
 
 #let get-inset-scale(options) = options.at("inset-scale", default: 1.0)
+
+/// Category colours the document overrides, as `category -> "#rrggbb"`.
+/// Typst colours are converted; strings are passed through.
+#let get-colors(options) = {
+  let out = (:)
+  for (category, value) in options.at("colors", default: (:)) {
+    out.insert(category, if type(value) == color { value.to-hex() } else { str(value) })
+  }
+  out
+}

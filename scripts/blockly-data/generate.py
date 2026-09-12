@@ -732,6 +732,21 @@ PROFILES = {
         },
         "inherits": "blockly-klassisch",
     },
+    "jwinf-turtle": {
+        "title": "jwinf.de, Freie Turtle-Umgebung.",
+        "note": (
+            "The turtle sandbox colours the standard categories differently\n"
+            "# from the robot training tasks; everything else is the jwinf\n"
+            "# profile. Colours read from the DOM of /task/1668."
+        ),
+        "geometry": {},
+        "colors": {
+            "schleifen": "#47cccc",
+            "logik": "#73cc47",
+            "mathe": "#475dcc",
+        },
+        "inherits": "jwinf",
+    },
 }
 
 

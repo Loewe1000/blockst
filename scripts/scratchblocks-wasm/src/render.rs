@@ -2,7 +2,7 @@ use crate::measure::{block_size, mouth_indent, c_block_inner_width, c_block_size
 use crate::model::{BlockSpec, DocumentSpec, ScriptSpec, SegmentSpec};
 use crate::svg::{boolean_path, cap_path, escape_text, hat_path, mouth_cap_path, mouth_path, proc_hat_path, reporter_path, stack_path};
 use crate::geometry::{for_profile, geometry, set_geometry, Shapes};
-use crate::palette::{colors_for, palette_for, set_palette};
+use crate::palette::{colors_for, palette_with, set_palette};
 
 const LABEL_MARGIN: f32 = 4.447_998;
 
@@ -41,7 +41,8 @@ fn label_fill(theme: &str, fill: &str) -> String {
 
 pub fn render_document(document: &DocumentSpec) -> String {
     crate::measure::set_rtl(document.rtl);
-    set_palette(palette_for(document.profile.as_deref()));
+    let overrides: Vec<(String, String)> = document.colors.iter().map(|(c, f)| (c.clone(), f.clone())).collect();
+    set_palette(palette_with(document.profile.as_deref(), &overrides));
     set_geometry(for_profile(document.profile.as_deref()));
     let scale = document.scale.unwrap_or(1.0).max(0.1);
     let theme = document.theme.as_deref().unwrap_or("normal");
@@ -1043,6 +1044,7 @@ mod tests {
         let doc = DocumentSpec {
             rtl: false,
             profile: None,
+            colors: Default::default(),
             scale: Some(1.0),
             theme: Some("normal".to_string()),
             line_numbers: true,
@@ -1086,6 +1088,7 @@ mod tests {
         let doc = DocumentSpec {
             rtl: false,
             profile: None,
+            colors: Default::default(),
             scale: Some(1.0),
             theme: Some("normal".to_string()),
             line_numbers: true,

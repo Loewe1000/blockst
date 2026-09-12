@@ -22,9 +22,10 @@
   line-number-gutter: auto,
   inset-scale: auto,
   language: auto,
+  colors: auto,
   body,
 ) = context {
-  if theme == auto and scale == auto and font == auto and line-numbering == auto and line-numbers == auto and line-number-start == auto and line-number-first-block == auto and line-number-gutter == auto and inset-scale == auto and language == auto {
+  if theme == auto and scale == auto and font == auto and line-numbering == auto and line-numbers == auto and line-number-start == auto and line-number-first-block == auto and line-number-gutter == auto and inset-scale == auto and language == auto and colors == auto {
     return body
   }
 
@@ -40,6 +41,8 @@
   resolved-opts.insert("line-number-gutter", if line-number-gutter == auto { previous-opts.at("line-number-gutter", default: 24) } else { line-number-gutter })
   resolved-opts.insert("inset-scale", if inset-scale == auto { previous-opts.at("inset-scale", default: 1.0) } else { inset-scale })
   resolved-opts.insert("language", if language == auto { previous-opts.at("language", default: "en") } else { language })
+  // Local colours are laid over the global ones, category by category.
+  resolved-opts.insert("colors", if colors == auto { previous-opts.at("colors", default: (:)) } else { previous-opts.at("colors", default: (:)) + colors })
   [
     #hide(scratch-block-options.update(_ => resolved-opts))
     #body
@@ -60,6 +63,7 @@
   line-number-gutter: auto,
   inset-scale: auto,
   language: auto,
+  colors: auto,
   spacing: 1.5em,
   body,
 ) = context {
@@ -74,14 +78,21 @@
     line-number-gutter: line-number-gutter,
     inset-scale: inset-scale,
     language: language,
+    colors: colors,
     stack(spacing: spacing, body),
   )
 }
 
 /// Global settings applied to all scratch() and sb3 calls.
+///
+/// `colors` lays the document's own category colours over the profile's
+/// palette: `set-blockst(colors: (logik: "#73cc47"))` — a hex string or a
+/// Typst colour per category. The shades a theme derives (bevel, stroke,
+/// high-contrast, grayscale) follow the new fill.
 #let set-blockst(
   theme: none,
   profile: none,
+  colors: none,
   scale: none,
   stroke-width: none,
   font: none,
@@ -97,6 +108,7 @@
     let new-opts = old
     if theme != none { new-opts.insert("theme", theme) }
     if profile != none { new-opts.insert("profile", profile) }
+    if colors != none { new-opts.insert("colors", new-opts.at("colors", default: (:)) + colors) }
     if scale != none { new-opts.insert("scale", scale) }
     if stroke-width != none { new-opts.insert("stroke-width", stroke-width) }
     if font != none { new-opts.insert("font", font) }
@@ -175,6 +187,7 @@
   line-number-first-block: auto,
   line-number-gutter: auto,
   inset-scale: auto,
+  colors: auto,
 ) = context {
   let opts = get-options()
   let lang = if language != auto { language } else { opts.at("language", default: "en") }
@@ -191,6 +204,7 @@
     line-number-gutter: line-number-gutter,
     inset-scale: inset-scale,
     language: lang,
+    colors: colors,
     [
       #hide(_merge-labels(labels))
       #_generic-render(source, language: lang, profile: "scratch")
@@ -205,7 +219,10 @@
 /// - `"blockly"` (the default): today's flat look, Blockly's German wording
 /// - `"blockly-klassisch"`: the pre-2019 look
 /// - `"jwinf"`: jwinf.de — classic geometry, the robot and turtle world
-///   blocks, and the palette of the training tasks
+///   blocks, and the palette of the robot training tasks
+/// - `"jwinf-turtle"`: the same with the colours of the Freie Turtle-Umgebung
+///
+/// `colors: (logik: "#73cc47")` overrides single categories of any profile.
 ///
 /// Labels that no profile knows are drawn as written, with the category
 /// taken from a `::kategorie` suffix — on jwinf the normal case, because the
@@ -225,6 +242,7 @@
   line-number-first-block: auto,
   line-number-gutter: auto,
   inset-scale: auto,
+  colors: auto,
 ) = context {
   let opts = get-options()
   let prof = if profile != auto { profile } else { opts.at("profile", default: "blockly") }
@@ -243,6 +261,7 @@
     line-number-gutter: line-number-gutter,
     inset-scale: inset-scale,
     language: lang,
+    colors: colors,
     [
       #hide(_merge-labels(labels))
       #_generic-render(source, language: lang, profile: prof)
@@ -261,13 +280,17 @@
 ///   wiederhole (4) mal:
 ///   ende
 ///   ```
-/// A ```jwinf fence uses the jwinf profile whatever the arguments say.
+/// A ```jwinf fence uses the jwinf profile whatever the arguments say, a
+/// ```jwinf-turtle fence the turtle sandbox's colours.
 #let raw-blockly(..args) = (
   body => {
     let jwinf-args = args.named()
     jwinf-args.insert("profile", "jwinf")
+    let turtle-args = args.named()
+    turtle-args.insert("profile", "jwinf-turtle")
     show raw.where(block: true, lang: "blockly"): blockly.with(..args)
     show raw.where(block: true, lang: "jwinf"): blockly.with(..jwinf-args)
+    show raw.where(block: true, lang: "jwinf-turtle"): blockly.with(..turtle-args)
     body
   }
 )

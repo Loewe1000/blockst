@@ -43,4 +43,12 @@ setze [Punkte v] auf (0)
     drehe um (90) nach [links v]
     ```
   ],
+
+  text(size: 8pt, fill: gray)[jwinf-turtle], text(size: 8pt, fill: gray)[jwinf · `colors: (aktionen: …)`], [],
+
+  // The turtle sandbox colours loops, logic and maths differently.
+  blockly(programm, profile: "jwinf-turtle"),
+  // A task with its own colours: lay them over the profile's palette.
+  blockly(programm, profile: "jwinf", colors: (aktionen: "#cc7347", schleifen: rgb("#5ba55b"))),
+  [],
 )

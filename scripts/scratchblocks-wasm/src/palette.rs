@@ -339,16 +339,43 @@ impl Palette {
     }
 }
 
-/// The palette for a profile name; Scratch for none or an unknown one.
-pub fn palette_for(profile: Option<&str>) -> Palette {
+/// The palette for a profile with the document's own colours laid over it.
+/// A Blockly profile is rebuilt from its merged colour list, so the
+/// greyscale ranking takes the overrides into account; Scratch keeps its
+/// hand-made tables and only the overridden categories are re-derived.
+pub fn palette_with(profile: Option<&str>, overrides: &[(String, String)]) -> Palette {
     let name = match profile {
-        Some("blockly") | Some("blockly-modern") => "blockly-modern",
-        Some("blockly-classic") | Some("blockly-klassisch") => "blockly-klassisch",
-        Some(other) => other,
-        None => return Palette::scratch(),
+        Some("blockly") | Some("blockly-modern") => Some("blockly-modern"),
+        Some("blockly-classic") | Some("blockly-klassisch") => Some("blockly-klassisch"),
+        Some("scratch") | None => None,
+        Some(other) => Some(other),
     };
-    match profile_colors(name) {
-        Some(colors) => Palette::from_colors(&colors),
-        None => Palette::scratch(),
+    let colors = name.and_then(profile_colors);
+    match colors {
+        Some(mut colors) => {
+            for (category, fill) in overrides {
+                match colors.iter_mut().find(|(c, _)| c == category) {
+                    Some(entry) => entry.1 = fill.clone(),
+                    None => colors.push((category.clone(), fill.clone())),
+                }
+            }
+            Palette::from_colors(&colors)
+        }
+        None => {
+            let mut palette = Palette::scratch();
+            for (category, fill) in overrides {
+                if let Some((normal, high, lum)) = derive(fill) {
+                    palette.normal.insert(category.clone(), normal);
+                    palette.high_contrast.insert(category.clone(), high);
+                    // A category Scratch has keeps its grey; a new one gets
+                    // the grey nearest its own luminance.
+                    if !palette.grayscale.contains_key(category) {
+                        let step = ((1.0 - lum.clamp(0.0, 1.0)) * (GRAY_VALUES.len() - 1) as f32).round() as usize;
+                        palette.grayscale.insert(category.clone(), gray(step));
+                    }
+                }
+            }
+            palette
+        }
     }
 }
