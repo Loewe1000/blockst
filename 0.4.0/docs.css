@@ -175,12 +175,47 @@ nav.versionen a:hover { text-decoration: underline; }
 
 nav.versionen .veraltet { margin-left: auto; }
 
+/* ── Blättern ────────────────────────────────────────────────────────────── */
+
+/* Vor und zurück zwischen den Kapiteln eines geteilten Handbuchs, unter dem
+   Inhalt, in der Spalte des Textes: zwei Knöpfe, links das vorige, rechts
+   das nächste Kapitel. */
+nav.blaettern {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.95rem;
+  font-weight: 550;
+}
+
+@media (min-width: 62rem) {
+  nav.blaettern { padding-left: calc(1.5rem + 15rem + 3rem); }
+}
+
+nav.blaettern a {
+  display: inline-block;
+  max-width: 48%;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--linie);
+  border-radius: 0.45rem;
+  background: var(--flaeche);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+nav.blaettern a:hover { border-color: var(--accent); }
+
+nav.blaettern .weiter { margin-left: auto; text-align: right; }
+
 /* ── Gerüst ──────────────────────────────────────────────────────────────── */
 
 .rahmen {
   max-width: 76rem;
   margin: 0 auto;
-  padding: 2.2rem 1.5rem 4rem;
+  padding: 2.2rem 1.5rem 3rem;
 }
 
 @media (min-width: 62rem) {
