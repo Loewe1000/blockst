@@ -210,7 +210,8 @@ procedures_defnoreturn = "mutator,comment"
 text_join = "mutator"
 
 [aliases]
-"ende" = "scratchblocks:end"
+"end" = "scratchblocks:end"
+"else" = "control_else"
 "Ende" = "scratchblocks:end"
 "%1 == %2" = "logic_compare_eq"
 "%1 != %2" = "logic_compare_ne"

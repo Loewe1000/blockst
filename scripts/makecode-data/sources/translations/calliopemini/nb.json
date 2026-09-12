@@ -1,0 +1,16 @@
+{
+"Array._removeAtStatement|block": "%list| fjern verdi ved %index",
+"empty array": "tom tabell",
+"game.LedSprite.isTouchingEdge|block": "%sprite|berører kant?",
+"game.LedSprite.isTouching|block": "%sprite|berører %other|?",
+"images.createImage|block": "lag bilde",
+"input.runningTimeMicros|block": "kjøretid (mikrosekunder)",
+"led.enable|block": "skjerm på %on",
+"led.toggle|block": "bytt|x %x|y %y",
+"music.ringTone|block": "ringetone (Hz)|%note=device_note",
+"music.setTempo|block": "sett tempo til (bpm)|%value",
+"pins.analogSetPitchPin|block": "analog tone kontakt %name",
+"pins.servoSetPulse|block": "servo skriv pulslengde|på %value|til (µs) %micros",
+"serial.redirectToUSB|block": "serieport | viderekoble til USB",
+"serial.writeNumbers|block": "serieport|skriv tallene %values"
+}

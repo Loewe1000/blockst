@@ -28,34 +28,38 @@ reviewed in a diff without anyone having to run the script.
 Commits are pinned in `generate.py` (`MICROBIT_SHA`, `CALLIOPE_SHA`); bump
 them by hand to pick up upstream changes.
 
-## German coverage — read this before trusting the German locale
+## Where the translations come from
 
-MakeCode's per-block text (`basic.showNumber|block`, and so on for every
-`//%`-annotated block) is translated on Crowdin and served to the running
-editor from a translation table that is **not** exposed by the public
-`/api/translations` HTTP endpoint the way the editor's general UI strings
-are — that endpoint happily serves `strings.json`, `target-strings.json`
-and `sim-strings.json` in German, but returns an empty object for the
-per-block `bundled-strings.json`, in every language tried while writing
-this generator. Nor is it committed anywhere in pxt-microbit/pxt-calliope:
-only the English source strings live in the repos, under
-`_locales/*-strings.json`.
+MakeCode publishes no translated string files: only the English source
+strings live in the repos (`_locales/*-strings.json`), nothing is in the npm
+packages, and Crowdin has no keyless export. The running editor fetches its
+translations from `cdn.makecode.com/api/translations?lang=<lang>&filename=<file>&approved=true`
+— pxt's `downloadLiveTranslationsAsync` — and that is what the generator
+does too, for every language in the targets' `appTheme.availableLocales`
+(36, the same list for both) and for the files pxt merges: `strings.json`
+(the pxt builtins: loops, logic, variables, …), `<target>/target-strings.json`
+and `<target>/<lib>-strings.json` per bundled lib (`microbit`, `calliopemini`).
+Only approved strings come back; a block without one keeps its English
+text, exactly as the editor shows it.
 
-So, unlike `scripts/blockly-data/generate.py` (whose German comes wholesale
-from Blockly's and bebras-modules' own bundled locale files), this
-generator's German text for the custom namespace blocks is a **hand-curated
-table** (`GERMAN_TEXT` in `generate.py`) — part of it read directly off a
-running German makecode.microbit.org/.cc session while developing this
-script, part of it well-established MakeCode DE wording that was not
-independently re-verified this session. Anything without an entry there is
-left in English in the German locale and listed in `REPORT.md`, exactly the
-way an untranslated jwinf world block is.
+The raw downloads go to `sources/translations-raw/` (ignored, ~11 MB);
+the strings the catalog actually uses are kept in
+`sources/translations/<target>/<lang>.json` (committed, ~600 KB), so
+`--offline` rebuilds every locale without the network.
 
-The exception is the pxt-builtin loop/logic/math/variables/arrays/text/
-functions blocks: pxt routes *those* through its general-purpose UI string
-table (`Util.blf`/`lf()`), which the public endpoint does serve, so their
-German in `BUILTIN_BLOCKS` was read from that table and is reproducibly
-sourced, not guessed.
+Keys are matched to catalog blocks through the German text: a block's
+`api|block` key where the live crawl gives one, else the German value
+(whitespace- and hyphen-insensitive, trailing placeholders ignored), else
+the English text as key. pxt builds a few blocks from single words —
+`{id:logic}if`/`{id:logic}then`, `{id:op}and`, `join` — listed in
+`COMPOSED_KEYS`; the operator blocks are the same glyph in every language
+(`NEUTRAL_PREFIXES`). Mouth labels resolve via `{id:repeat}do` and friends;
+`{id:empty}` (Japanese) means the editor draws no label. Blocks whose key
+could not be found are listed in the report and stay English.
+
+German and English themselves are read off the running editors (below),
+which is also what tells the generator the slot kinds and colours; the
+translations only replace the text.
 
 ## Output
 
@@ -65,9 +69,14 @@ Relative to `scripts/scratchblocks-wasm/data/dialects/`:
   blocks, each a complete locale (German does not silently fall back to
   English at the engine level; an untranslated string is copied into the
   German file as-is and listed in the report instead)
-- `locales/makecode-calliope-en.toml`, `locales/makecode-calliope-de.toml`
-  — Calliope mini's extra/overridden blocks only; each `inherits` the
-  matching micro:bit locale for everything else
+- `locales/makecode-<lang>.toml` for the 34 other editor languages — texts,
+  markers and mouth labels only; shapes, categories and slots come from
+  `makecode-en`, which they `inherit`
+- `locales/makecode-calliope-<lang>.toml` — Calliope mini's extra/overridden
+  blocks only; each `inherits` the matching micro:bit locale for everything
+  else
+- `../../src/generated/makecode_locales.rs` — the `include_str!` list the
+  engine embeds
 - `profiles/makecode.toml`, `profiles/makecode-calliope.toml` — palette per
   target; the Calliope profile `inherits` the micro:bit one and overrides
   only the categories its own `pxtarget.json` gives a different colour
@@ -104,11 +113,9 @@ curated German text yet.
 
 ## The running editors as the source of the block texts
 
-MakeCode loads its translations at run time and publishes no per-block
-string files, and its translation endpoint returns nothing for the block
-strings. So the texts the editors actually show — in German and in English,
-with the slot kinds, mouth labels and colour of every toolbox block — are
-read off the running editors:
+The texts the editors actually show in German and in English — with the
+slot kinds, mouth labels and colour of every toolbox block, which no string
+file carries — are read off the running editors:
 
 - `sources/live/crawl.js`: paste into the browser console of
   makecode.microbit.org or makecode.calliope.cc (opened with

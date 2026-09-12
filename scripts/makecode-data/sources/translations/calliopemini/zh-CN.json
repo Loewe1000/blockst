@@ -1,0 +1,18 @@
+{
+"Array._removeAtStatement|block": "%list| 移除 %index 处的值",
+"empty array": "空数组",
+"game.LedSprite.isTouchingEdge|block": "%sprite|碰到边缘？",
+"game.LedSprite.isTouching|block": "%sprite|碰到 %other|？",
+"images.createImage|block": "创建图像",
+"input.runningTimeMicros|block": "运行时间 (ms)",
+"led.enable|block": "LED 启用 %on",
+"led.toggle|block": "切换|x %x|y %y",
+"music.ringTone|block": "播放铃声 (Hz)|%note=device_note",
+"music.setTempo|block": "将节奏设定为 (bpm)|%value",
+"pins.analogSetPitchPin|block": "模拟设置音阶引脚 %name",
+"pins.servoSetPulse|block": "将伺服机构|引脚 %value|脉冲设置为 (µs) %micros",
+"serial.redirectToUSB|block": "串行|重定向到 USB",
+"serial.setRxBufferSize|block": "串行设置 rx 缓冲区大小 $size",
+"serial.setTxBufferSize|block": "串行集 tx 缓冲区大小 $size",
+"serial.writeNumbers|block": "串行|写入数字%values"
+}

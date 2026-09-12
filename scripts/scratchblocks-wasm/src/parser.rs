@@ -215,8 +215,8 @@ fn locale_key(profile: Option<&str>, language: &str) -> String {
     match profile {
         Some(p) if p.starts_with("jwinf") => format!("jwinf-{language}"),
         Some(p) if p.starts_with("blockly") => format!("blockly-{language}"),
-        Some("makecode-calliope") => format!("makecode-calliope-{language}"),
-        Some(p) if p.starts_with("makecode") => format!("makecode-{language}"),
+        Some("makecode-calliope") => format!("makecode-calliope-{}", language.to_lowercase()),
+        Some(p) if p.starts_with("makecode") => format!("makecode-{}", language.to_lowercase()),
         _ => language.to_string(),
     }
 }
@@ -337,10 +337,13 @@ fn data() -> &'static ParserData {
         let default_blocks = blocks_file.defaults;
 
         let mut languages: HashMap<String, LanguageRuntime> = HashMap::new();
+        let mut pending_mouths: Vec<(String, String, String)> = Vec::new();
 
         let all_locales = crate::generated::LOCALE_DATA
             .iter()
-            .chain(crate::generated::DIALECT_LOCALE_DATA.iter());
+            .chain(crate::generated::DIALECT_LOCALE_DATA.iter())
+            .chain(crate::generated::MAKECODE_LOCALE_DATA.iter())
+            .chain(crate::generated::BLOCKLY_LOCALE_DATA.iter());
         for &(code, locale_toml) in all_locales {
             let locale: LocaleToml = toml::from_str(locale_toml)
                 .unwrap_or_else(|e| panic!("locales/{code}.toml: {e}"));
@@ -354,7 +357,7 @@ fn data() -> &'static ParserData {
                     shape: shape.clone(),
                     category: locale.categories.get(block_id).cloned().unwrap_or_default(),
                     inputs: Vec::new(),
-                    mouth: locale.mouths.get(block_id).cloned(),
+                    mouth: locale.mouths.get(block_id).cloned().filter(|m| !m.is_empty()),
                     slots: locale
                         .slots
                         .get(block_id)
@@ -439,6 +442,16 @@ fn data() -> &'static ParserData {
                 }
             }
 
+            // A translated locale carries specs and mouth labels only; its
+            // shapes live in the base. The mouths are grafted onto the base
+            // definitions once every locale is known.
+            let own_ids: std::collections::HashSet<String> = defs.keys().cloned().collect();
+            for (block_id, label) in &locale.mouths {
+                if !own_ids.contains(block_id) {
+                    pending_mouths.push((code.to_string(), block_id.clone(), label.clone()));
+                }
+            }
+
             languages.insert(
                 code.to_string(),
                 LanguageRuntime {
@@ -453,6 +466,28 @@ fn data() -> &'static ParserData {
                     defs,
                 },
             );
+        }
+
+        for (code, block_id, label) in pending_mouths {
+            let mut base = languages.get(&code).and_then(|r| r.inherits.clone());
+            let mut found = None;
+            while let Some(name) = base {
+                let runtime = match languages.get(&name) {
+                    Some(r) => r,
+                    None => break,
+                };
+                if let Some(def) = runtime.defs.get(&block_id) {
+                    found = Some(def.clone());
+                    break;
+                }
+                base = runtime.inherits.clone();
+            }
+            if let Some(mut def) = found.or_else(|| commands_by_id.get(&block_id).cloned()) {
+                def.mouth = if label.is_empty() { None } else { Some(label) };
+                if let Some(runtime) = languages.get_mut(&code) {
+                    runtime.defs.insert(block_id, def);
+                }
+            }
         }
 
         ParserData { commands_by_id, languages, default_blocks }
@@ -481,7 +516,21 @@ fn parse_code(code: &str, language: &str, inline: bool) -> Result<Vec<PublicNode
         .collect())
 }
 
+/// A locale by name, or the first regional variant of it: `makecode-es`
+/// resolves to `makecode-es-es`, `makecode-zh` to `makecode-zh-cn`.
+fn resolve_locale(language: &str) -> Option<&'static str> {
+    let languages = &data().languages;
+    if let Some((name, _)) = languages.get_key_value(language) {
+        return Some(name.as_str());
+    }
+    let prefix = format!("{language}-");
+    let mut variants: Vec<&str> = languages.keys().filter(|k| k.starts_with(&prefix)).map(String::as_str).collect();
+    variants.sort();
+    variants.first().copied()
+}
+
 pub(crate) fn parse_internal(code: &str, language: &str, inline: bool) -> Result<Vec<Vec<ParsedBlock>>, String> {
+    let language = resolve_locale(language).ok_or_else(|| format!("scratchblocks-wasm: unknown language '{language}'"))?;
     let requested = data()
         .languages
         .get(language)

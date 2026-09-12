@@ -463,3 +463,22 @@ fn a_plain_block_has_no_icon() {
     let svg = render("gehe (3) Schritte", "jwinf");
     assert!(!svg.contains("opacity=\"0.6\""), "{svg}");
 }
+
+// --- languages -------------------------------------------------------------
+
+fn parse_in(code: &str, language: &str) -> serde_json::Value {
+    let payload = serde_json::json!({"code": code, "language": language, "inline": false, "profile": "blockly"});
+    serde_json::from_str(&parse_request_json(&payload.to_string()).expect("parse failed")).unwrap()
+}
+
+#[test]
+fn the_standard_blocks_read_blocklys_own_message_files() {
+    assert_eq!(parse_in("répéter (10) fois\nfin", "fr")[0]["id"], "controls_repeat_ext");
+    assert_eq!(parse_in("repeat while <vrai>\nend", "en")[0]["id"], "controls_whileUntil_while");
+    assert_eq!(parse_in("répéter tant que <vrai>\nfin", "fr")[0]["id"], "controls_whileUntil_while");
+    assert_eq!(parse_in("(10) 回繰り返す\n終わり", "ja")[0]["id"], "controls_repeat_ext");
+    assert_eq!(parse_in("<<vrai> et <faux>>", "fr")[0]["id"], "logic_operation_and");
+    // The German and English markers work everywhere.
+    assert_eq!(parse_in("répéter (10) fois\nende", "fr")[0]["id"], "controls_repeat_ext");
+    assert_eq!(parse_in("wiederhole (10)-mal:\nend", "de")[0]["id"], "controls_repeat_ext");
+}

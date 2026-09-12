@@ -250,7 +250,9 @@
 /// taken from a `::kategorie` suffix — on jwinf the normal case, because the
 /// same block reads differently from task to task.
 ///
-///   #blockly("wiederhole (4) mal:\n  gehe nach rechts\nende", profile: "jwinf")
+/// ```typ
+/// #blockly("wiederhole (4) mal:\n  gehe nach rechts\nende", profile: "jwinf")
+/// ```
 #let blockly(
   text,
   profile: auto,
@@ -268,8 +270,9 @@
 ) = context {
   let opts = get-options()
   let prof = if profile != auto { profile } else { opts.at("profile", default: "blockly") }
-  // German is the only Blockly vocabulary shipped so far.
-  let lang = if language != auto { language } else { "de" }
+  // The standard blocks read Blockly's own message files, 24 languages;
+  // the jwinf world blocks exist in German only.
+  let lang = if language != auto { language } else { opts.at("language", default: "de") }
   let source = _normalize-source(text)
   let labels = _collect-labels-from-nodes(_generic-parse(source, language: lang, profile: prof))
   _with-local-options(
@@ -297,13 +300,17 @@
 }
 
 /// Enable Blockly code blocks in raw text:
-///   #show: raw-blockly()
-///   ```blockly
-///   wiederhole (4) mal:
-///   ende
-///   ```
-/// A ```jwinf fence uses the jwinf profile whatever the arguments say, a
-/// ```jwinf-turtle fence the turtle sandbox's colours.
+///
+/// ````typ
+/// #show: raw-blockly()
+/// ```blockly
+/// wiederhole (4) mal:
+/// ende
+/// ```
+/// ````
+///
+/// A `jwinf` fence uses the jwinf profile whatever the arguments say, a
+/// `jwinf-turtle` fence the turtle sandbox's colours.
 #let raw-blockly(..args) = (
   body => {
     let jwinf-args = args.named()
@@ -322,9 +329,15 @@
 /// Same notation as `scratch()`; `(…)` is a value, `[… v]` a dropdown,
 /// `<…>` a boolean, `ende`/`end` closes a C-block and `sonst`/`else` opens
 /// the else branch. The profile picks the target: `"makecode"` (micro:bit,
-/// the default) or `"makecode-calliope"`; the language is `"de"` or `"en"`.
+/// the default) or `"makecode-calliope"`; the language is any of the
+/// editors' 36 (`"de"` by default, `"en"`, `"fr"`, `"es"`, `"zh-cn"`, …),
+/// with the block texts the editors show in that language. The end marker
+/// follows the language (`ende`, `end`, `fin`, …); `end` and `ende` work in
+/// every language.
 ///
-///   #makecode("beim Start\n  zeige Zahl (0)\nende")
+/// ```typ
+/// #makecode("beim Start\n  zeige Zahl (0)\nende")
+/// ```
 #let makecode(
   text,
   profile: auto,
@@ -346,7 +359,6 @@
     if p.starts-with("makecode") { p } else { "makecode" }
   }
   let lang = if language != auto { language } else { opts.at("language", default: "de") }
-  let lang = if lang == "en" { "en" } else { "de" }
   let source = _normalize-source(text)
   let labels = _collect-labels-from-nodes(_generic-parse(source, language: lang, profile: prof))
   _with-local-options(
@@ -374,13 +386,18 @@
 }
 
 /// Enable MakeCode code blocks in raw text:
-///   #show: raw-makecode()
-///   ```makecode
-///   beim Start
-///     zeige Zahl (0)
-///   ende
-///   ```
-/// A ```calliope fence uses the Calliope mini profile whatever the arguments say.
+///
+/// ````typ
+/// #show: raw-makecode()
+/// ```makecode
+/// beim Start
+///   zeige Zahl (0)
+/// ende
+/// ```
+/// ````
+///
+/// A `microbit` fence is the same; a `calliope` fence uses the Calliope mini
+/// profile whatever the arguments say.
 #let raw-makecode(..args) = (
   body => {
     let calliope-args = args.named()

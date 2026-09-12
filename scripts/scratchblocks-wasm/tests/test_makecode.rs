@@ -233,3 +233,44 @@ fn the_melody_editor_is_an_eight_note_grid_in_a_grey_pill() {
     assert!(d.contains(" V 58 V 62 a 4 4 0 0,1 -4,4 H 48 "), "8 + 50 + 4 + 4: {d}");
     assert!(svg.contains("m 25,0 h "), "the melody shadow is a 50 pill: {svg}");
 }
+
+// --- languages -------------------------------------------------------------
+
+#[test]
+fn the_editors_other_languages_come_from_the_translation_files() {
+    assert_eq!(parse("montrer nombre (0)", "makecode", "fr")[0]["id"], "device_show_number");
+    assert_eq!(parse("显示数字 (0)", "makecode", "zh-cn")[0]["id"], "device_show_number");
+    assert_eq!(parse("répéter (4) fois\nfin", "makecode", "fr")[0]["id"], "controls_repeat_ext");
+    let svg = render("répéter (4) fois\nfin", "makecode", "fr");
+    assert!(svg.contains(">faire<"), "translated mouth label: {svg}");
+}
+
+#[test]
+fn a_bare_language_code_falls_back_to_its_regional_variant() {
+    // MakeCode ships es-ES, not es.
+    assert_eq!(parse("mostrar número (0)", "makecode", "es")[0]["id"], "device_show_number");
+    assert_eq!(parse("mostrar número (0)", "makecode", "es-ES")[0]["id"], "device_show_number");
+}
+
+#[test]
+fn end_ende_and_else_close_and_branch_in_every_language() {
+    let node = &parse("si <vrai> alors\n  montrer nombre (1)\nelse\n  montrer nombre (2)\nende", "makecode", "fr")[0];
+    assert_eq!(node["id"], "controls_if");
+    assert_eq!(node["else-body"].as_array().map(Vec::len), Some(1), "{node}");
+    assert_eq!(parse("くりかえし (4)\nend", "makecode", "ja")[0]["id"], "controls_repeat_ext");
+}
+
+#[test]
+fn pxt_composes_if_and_or_join_from_single_words() {
+    assert_eq!(parse("si <vrai> alors\nfin", "makecode", "fr")[0]["id"], "controls_if");
+    assert_eq!(parse("<<vrai> et <vrai>>", "makecode", "fr")[0]["id"], "logic_operation_and");
+    assert_eq!(parse("(concaténation [a] [b])", "makecode", "fr")[0]["id"], "text_join");
+    assert_eq!(parse("au démarrage\nfin", "makecode", "fr")[0]["id"], "pxt-on-start");
+}
+
+#[test]
+fn the_calliope_translations_inherit_the_microbit_ones() {
+    let svg = render("montrer nombre (0)", "makecode-calliope", "fr");
+    assert!(svg.contains("fill=\"#54c9c9\""), "{svg}");
+    assert!(!svg.contains("fill=\"#1e90ff\""), "{svg}");
+}

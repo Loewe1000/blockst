@@ -201,3 +201,8 @@ serial_redirect_to_usb = true
 serial_writenumbers = true
 soundLevel = true
 string_parsefloat = true
+
+# Other spellings an author may use for a block.
+[aliases]
+"else" = "control_else"
+"end" = "scratchblocks:end"

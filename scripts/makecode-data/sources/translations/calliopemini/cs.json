@@ -1,0 +1,19 @@
+{
+"Array._removeAtStatement|block": "%list| odstraň hodnotu na pozici %index",
+"empty array": "prázdný seznam",
+"game.LedSprite.isTouchingEdge|block": "se %sprite|dotýká okraje",
+"game.LedSprite.isTouching|block": "se %sprite|dotýká %other",
+"images.createImage|block": "vytvoř obrázek",
+"input.runningTimeMicros|block": "trvání operace (micros)",
+"led.enable|block": "zapnout LED %on",
+"led.toggle|block": "přepni | x %x | y %y",
+"music.ringTone|block": "zahraj tón |%note=device_note (Hz)",
+"music.setTempo|block": "nastav tempo na |%value (dob/min)",
+"pins._analogPin|block": "analogový pin $pin",
+"pins._digitalPin|block": "digitální pin $pin",
+"pins.analogSetPitchPin|block": "analog - nastavit tóninu pinu %name",
+"pins.pulseIn|block": "impuls v (µs)|pin %name|pulsní hodnota %value",
+"pins.servoSetPulse|block": "nastav puls na pinu %value|ovládajícího servo na %micros|µs",
+"serial.redirectToUSB|block": "přesměruj sériovou komunikaci do USB",
+"serial.writeNumbers|block": "zapiš čísla %values na sériový port"
+}

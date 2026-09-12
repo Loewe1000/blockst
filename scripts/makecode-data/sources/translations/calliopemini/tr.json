@@ -1,0 +1,17 @@
+{
+"empty array": "boş dizi",
+"game.LedSprite.isTouchingEdge|block": "%sprite|kenara dokunuyor mu?",
+"game.LedSprite.isTouching|block": "%sprite| buna dokunuyor mu %other",
+"images.createImage|block": "görüntü oluştur",
+"input.runningTimeMicros|block": "çalışma süresi (mikro sn)",
+"led.enable|block": "ekran etkin %on",
+"led.toggle|block": "led yak/söndür |x %x|y %y",
+"music.ringTone|block": "ton çal (Hz)|%note=device_note",
+"music.setTempo|block": "tempoyu ayarla (bpm)|%value",
+"parseFloat|block": "%text metni sayıya çevir",
+"pins.analogSetPitchPin|block": "analog %name pini ton için tanımla",
+"pins.pulseIn|block": "|%name|pinin %value değere geçme zamanı (µs)",
+"pins.servoSetPulse|block": "servo |pin %value| darbe süresini %micros (µs) yap",
+"serial.redirectToUSB|block": "seri | portu USB 'ye yönlendir",
+"serial.writeNumbers|block": "seri sayılar yaz %values"
+}

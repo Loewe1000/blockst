@@ -67,6 +67,7 @@ import argparse
 import json
 import re
 import sys
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -189,12 +190,14 @@ CALLBACK_RE = re.compile(r"^\([^()]*\)\s*=>\s*void$")
 
 
 class RawBlock:
-    def __init__(self, key: str, category: str, block_text: str, params: dict[str, str]):
+    def __init__(self, key: str, category: str, block_text: str, params: dict[str, str], api: str = ""):
         self.key = key
         self.category = category
         self.block_text = block_text
         self.params = params  # name -> TS type, callback params already removed
         self.shape = "stack"
+        # "basic.showNumber": the key MakeCode's translations use, as `<api>|block`
+        self.api = api
 
 
 def split_top_level(params_raw: str) -> list[str]:
@@ -304,7 +307,7 @@ def extract_blocks(text: str) -> list[RawBlock]:
                 key = json.loads(raw_id) if raw_id.startswith('"') else raw_id.strip('"')
             params, has_callback = parse_params(params_raw)
             ret = (ret or "void").strip()
-            block = RawBlock(key, current_ns.lower(), raw_text, params)
+            block = RawBlock(key, current_ns.lower(), raw_text, params, api=f"{current_ns}.{name}")
             if has_callback:
                 block.shape = "hat"
             elif ret == "boolean":
@@ -623,12 +626,16 @@ def build_catalog(files: list[tuple[str, None]]) -> tuple[dict, list[str]]:
                 "shape": raw.shape,
                 "category": raw.category,
                 "slots": slots,
+                "api": raw.api,
             }
     return specs, dropped
 
 
 def escape(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+UNIVERSAL_MARKERS = {"end": "scratchblocks:end", "ende": "scratchblocks:end", "else": "control_else"}
 
 
 def write_locale(
@@ -640,10 +647,16 @@ def write_locale(
     inherits: str | None = None,
     else_word: str | None = None,
     aliases: dict | None = None,
+    end_word: str | None = None,
+    full: bool = True,
 ) -> None:
-    """Write one locale TOML. `lang` is "en" or "de"; picks which text/mouth
-    keys to read out of each spec and which end/else marker words to use."""
-    markers = {"scratchblocks:end": "end" if lang == "en" else "ende", "control_else": else_word or ("else" if lang == "en" else "sonst")}
+    """Write one locale TOML. `lang` picks which text/mouth keys to read out
+    of each spec. `full=False` writes only what differs per language — the
+    texts, the markers and the mouth labels — and leaves shapes, categories
+    and slots to the base locale it inherits."""
+    end_default = {"en": "end", "de": "ende"}.get(lang, "end")
+    else_default = {"en": "else", "de": "sonst"}.get(lang, "else")
+    markers = {"scratchblocks:end": end_word or end_default, "control_else": else_word or else_default}
     marker_shapes = {"control_else": ("celse", "logic"), "scratchblocks:end": ("cend", "logic")}
 
     lines = [
@@ -658,54 +671,60 @@ def write_locale(
     lines.append("[specs]")
     for key, value in markers.items():
         lines.append(f'"{key}" = "{escape(value)}"' if ":" in key else f'{key} = "{escape(value)}"')
+    seen_text: dict[str, str] = {}
     for block_id in sorted(specs):
-        lines.append(f'{block_id} = "{escape(specs[block_id][lang])}"')
+        text = specs[block_id][lang]
+        if not full and text in seen_text:
+            continue  # a translation that collides with another block's: first id wins
+        seen_text[text] = block_id
+        lines.append(f'{block_id} = "{escape(text)}"')
 
     lines += ["", "[shapes]"]
     for key in markers:
         lines.append(f'"{key}" = "{marker_shapes[key][0]}"' if ":" in key else f'{key} = "{marker_shapes[key][0]}"')
-    for block_id in sorted(specs):
+    for block_id in sorted(specs) if full else []:
         lines.append(f'{block_id} = "{specs[block_id]["shape"]}"')
 
     lines += ["", "[categories]"]
     for key in markers:
         lines.append(f'"{key}" = "{marker_shapes[key][1]}"' if ":" in key else f'{key} = "{marker_shapes[key][1]}"')
-    for block_id in sorted(specs):
+    for block_id in sorted(specs) if full else []:
         lines.append(f'{block_id} = "{specs[block_id]["category"]}"')
 
-    slots = {k: v["slots"] for k, v in specs.items() if v.get("slots")}
+    slots = {k: v["slots"] for k, v in specs.items() if v.get("slots")} if full else {}
     if slots:
         lines += ["", "# What each %n is: a value socket, a field box, a dropdown, a statement mouth.", "[slots]"]
         for block_id in sorted(slots):
             lines.append(f'{block_id} = "{",".join(slots[block_id])}"')
 
-    inline = {k: v["inline"] for k, v in specs.items() if "inline" in v}
+    inline = {k: v["inline"] for k, v in specs.items() if "inline" in v} if full else {}
     if inline:
         lines += ["", "# inputsInline as the editor has it: false puts every input on a row of its own.", "[inline]"]
         for block_id in sorted(inline):
             lines.append(f"{block_id} = {str(bool(inline[block_id])).lower()}")
 
     mouth_key = f"mouth_{lang}"
-    mouths = {k: v[mouth_key] for k, v in specs.items() if v.get(mouth_key)}
+    # An empty label in a translated locale overrides the base's label.
+    mouths = {k: v[mouth_key] for k, v in specs.items() if mouth_key in v and (v[mouth_key] or not full)}
     if mouths:
-        lines += ["", "# Label drawn next to the mouth of a C-block.", "[mouths]"]
+        lines += ["", "# Label drawn next to the mouth of a C-block; empty when the editor shows none.", "[mouths]"]
         for block_id in sorted(mouths):
             lines.append(f'{block_id} = "{escape(mouths[block_id])}"')
 
-    icons = {k: v["icon"] for k, v in specs.items() if v.get("icon")}
+    icons = {k: v["icon"] for k, v in specs.items() if v.get("icon")} if full else {}
     if icons:
         lines += ["", "# Icon in the first row: the mutator gear.", "[icons]"]
         for block_id in sorted(icons):
             lines.append(f'{block_id} = "{icons[block_id]}"')
 
+    # `end`/`ende` close a C-block and `else` opens the else branch in every
+    # language, so a worksheet can mix languages without relearning markers.
+    aliases = {**UNIVERSAL_MARKERS, **(aliases or {})}
+    aliases = {a: b for a, b in aliases.items() if a not in markers.values()}
     if aliases:
-
         lines += ["", "# Other spellings an author may use for a block.", "[aliases]"]
-
         for alias_spec, block_id in sorted(aliases.items()):
-
             lines.append(f'"{escape(alias_spec)}" = "{block_id}"')
-
 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -894,6 +913,8 @@ def apply_live(specs: dict, target: str) -> dict:
         entry = live_entry(en.get(block_id), de.get(block_id), colours)
         if entry is None:
             continue
+        if block_id in specs and specs[block_id].get("api"):
+            entry["api"] = specs[block_id]["api"]
         specs[block_id] = entry
     markers = {}
     for lang, recs in (("en", en), ("de", de)):
@@ -916,6 +937,267 @@ def drop_twins(specs: dict, lang: str) -> list[str]:
     for item in dropped:
         specs.pop(item.split(" ")[0], None)
     return dropped
+
+
+# ---------------------------------------------------------------------------
+# Every language the editors offer
+#
+# The editors load their translations at run time from a public, keyless
+# endpoint in front of MakeCode's Crowdin project:
+#   https://cdn.makecode.com/api/translations?lang=<lang>&filename=<file>&approved=true
+# with `strings.json` (pxt's own blocks and UI), `<target>/target-strings.json`
+# and `<target>/<lib>-strings.json` for every bundled library. Keys are
+# language-independent: `basic.showNumber|block` for a target's API blocks,
+# the English source text ("repeat %1 times", "{id:repeat}do") for pxt's
+# own. English itself is never served — it is the source.
+#
+# A block's key is found through its German text (the live catalog has the
+# exact German), then the same key gives the text in every other language.
+# The downloads are cached under sources/translations-raw (ignored); the
+# handful of keys the catalog uses are kept under sources/translations
+# (committed), so --offline regenerates everything.
+# ---------------------------------------------------------------------------
+
+CDN_TRANSLATIONS = "https://cdn.makecode.com/api/translations?lang={lang}&filename={file}&approved=true"
+TRANSLATIONS = SOURCES / "translations"
+TRANSLATIONS_RAW = SOURCES / "translations-raw"
+PLACEHOLDER_RE = re.compile(r"[%$](\w+)(?:=[\w.]+)?")
+
+
+def target_meta(prefix: str) -> tuple[str, list[str], list[str]]:
+    """(target id on the CDN, bundled lib names, available locales)."""
+    meta = json.loads((SOURCES / f"{prefix}_pxtarget.json").read_text(encoding="utf-8"))
+    libs = [d.split("/")[-1] for d in meta.get("bundleddirs", [])]
+    locales = [l for l in meta.get("appTheme", {}).get("availableLocales", []) if l != "en"]
+    return meta["id"], libs, locales
+
+
+def fetch_json(url: str) -> dict:
+    try:
+        with urllib.request.urlopen(url, timeout=60) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def fetch_translations(prefix: str, offline: bool) -> dict[str, dict[str, str]]:
+    """lang -> merged strings for one target; downloads what is not cached."""
+    target_id, libs, locales = target_meta(prefix)
+    raw_dir = TRANSLATIONS_RAW / target_id
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    result: dict[str, dict[str, str]] = {}
+    missing = [lang for lang in locales if not (raw_dir / f"{lang}.json").exists()]
+    if missing and offline:
+        # fall back to the committed, filtered files
+        filtered_dir = TRANSLATIONS / target_id
+        for lang in locales:
+            path = filtered_dir / f"{lang}.json"
+            if path.exists():
+                result[lang] = json.loads(path.read_text(encoding="utf-8"))
+        return result
+    if missing:
+        from concurrent.futures import ThreadPoolExecutor
+        files = ["strings.json", f"{target_id}/target-strings.json"] + [f"{target_id}/{lib}-strings.json" for lib in libs]
+        print(f"  translations for {target_id}: {len(missing)} languages x {len(files)} files")
+
+        def load(lang: str) -> tuple[str, dict]:
+            merged: dict[str, str] = {}
+            for file in files:
+                merged.update(fetch_json(CDN_TRANSLATIONS.format(lang=urllib.parse.quote(lang), file=urllib.parse.quote(file, safe=""))))
+            return lang, merged
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            for lang, merged in pool.map(load, missing):
+                (raw_dir / f"{lang}.json").write_text(json.dumps(merged, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+    for lang in locales:
+        result[lang] = json.loads((raw_dir / f"{lang}.json").read_text(encoding="utf-8"))
+    return result
+
+
+def norm_translation(value: str) -> str:
+    """A translation string in the %1/%2 form the catalog uses."""
+    value = re.sub(r"^\{id:[^}]*\}", "", value)
+    value = value.split("||")[0].replace("|", " ")
+    counter = 0
+
+    def replace(match: re.Match[str]) -> str:
+        nonlocal counter
+        counter += 1
+        return f"%{counter}"
+
+    value = PLACEHOLDER_RE.sub(replace, value)
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def renumber_by_names(value: str, names: list[str]) -> str:
+    """Translators may reorder placeholders; number them by their names'
+    order in the source string so %1 stays the same slot."""
+    value = re.sub(r"^\{id:[^}]*\}", "", value).split("||")[0].replace("|", " ")
+    counter = 0
+
+    def replace(match: re.Match[str]) -> str:
+        nonlocal counter
+        counter += 1
+        name = match.group(1)
+        if name.isdigit():
+            return f"%{name}"
+        if name in names:
+            return f"%{names.index(name) + 1}"
+        return f"%{counter}"
+
+    return re.sub(r"\s+", " ", PLACEHOLDER_RE.sub(replace, value)).strip()
+
+
+# pxt builds a few blocks from single words it translates separately.
+COMPOSED_KEYS = {
+    "controls_if": ["{id:logic}if", "%1", "{id:logic}then"],
+    "logic_operation_and": ["%1", "{id:op}and", "%2"],
+    "logic_operation_or": ["%1", "{id:op}or", "%2"],
+    "text_join": ["join", "%1", "%2"],
+}
+# Blocks that read the same in every language: the operator glyphs.
+NEUTRAL_PREFIXES = ("logic_compare_", "math_arithmetic_")
+
+
+def loose(text: str) -> str:
+    """For matching: no spaces or hyphens, no trailing placeholders."""
+    text = re.sub(r"(\s*%\d+\s*)+$", "", text)
+    return re.sub(r"[\s\-–]+", "", text).lower()
+
+
+def find_keys(specs: dict, strings_de: dict[str, str]) -> dict[str, list[str]]:
+    """Give every catalog block its translation key, found through the German
+    text, and the placeholder names of that key's string. Also resolves the
+    mouth labels. Returns the list of unresolved ids per kind."""
+    by_value: dict[str, list[str]] = {}
+    by_loose_value: dict[str, list[str]] = {}
+    by_loose_key: dict[str, str] = {}
+    for key, value in strings_de.items():
+        by_value.setdefault(norm_translation(value), []).append(key)
+        by_loose_value.setdefault(loose(norm_translation(value)), []).append(key)
+        if not key.endswith("|block"):
+            by_loose_key.setdefault(loose(norm_translation(key)), key)
+
+    def pick(candidates: list[str], api: str, category: str) -> str:
+        if len(candidates) == 1:
+            return candidates[0]
+        if api:
+            for c in candidates:
+                if c.lower() == f"{api}|block".lower():
+                    return c
+        blocks = [c for c in candidates if c.endswith("|block")]
+        for c in blocks:
+            if c.lower().startswith(category.lower() + "."):
+                return c
+        return (blocks or candidates)[0]
+
+    unresolved = {"text": [], "mouth": []}
+    for block_id, entry in specs.items():
+        if block_id.startswith(NEUTRAL_PREFIXES):
+            entry["tneutral"] = True
+            continue
+        if block_id in COMPOSED_KEYS and all(part.startswith("%") or part in strings_de for part in COMPOSED_KEYS[block_id]):
+            entry["tparts"] = COMPOSED_KEYS[block_id]
+            continue
+        api = entry.get("api", "")
+        key = None
+        if api and f"{api}|block" in strings_de:
+            key = f"{api}|block"
+        else:
+            candidates = by_value.get(entry["de"]) or by_loose_value.get(loose(entry["de"]))
+            if candidates:
+                key = pick(candidates, api, entry.get("category", ""))
+            elif loose(entry["en"]) in by_loose_key:
+                key = by_loose_key[loose(entry["en"])]
+        if key:
+            entry["tkey"] = key
+            entry["tnames"] = PLACEHOLDER_RE.findall(strings_de[key])
+        else:
+            unresolved["text"].append(block_id)
+        if entry.get("mouth_de"):
+            candidates = by_value.get(norm_translation(entry["mouth_de"]))
+            if candidates:
+                # prefer the loop-context key ({id:repeat}do) over a bare word
+                entry["mouth_tkey"] = sorted(candidates, key=lambda c: (not c.startswith("{id:"), c))[0]
+            else:
+                unresolved["mouth"].append(block_id)
+    return unresolved
+
+
+def translate_specs(specs: dict, lang: str, strings: dict[str, str]) -> tuple[int, int]:
+    """Fill entry[lang] and entry[f"mouth_{lang}"] from the key found by
+    find_keys; English where the language has no approved string. Returns
+    (translated, fallen back)."""
+    translated = fallback = 0
+    for entry in specs.values():
+        if entry.get("tneutral"):
+            entry[lang] = entry["en"]
+            translated += 1
+            continue
+        if entry.get("tparts"):
+            words = [part if part.startswith("%") else strings.get(part, "") for part in entry["tparts"]]
+            if all(words):
+                entry[lang] = " ".join(norm_translation(w) if not w.startswith("%") else w for w in words)
+                translated += 1
+            else:
+                entry[lang] = entry["en"]
+                fallback += 1
+            continue
+        key = entry.get("tkey")
+        value = strings.get(key) if key else None
+        if value and value.strip():
+            text = renumber_by_names(value, entry.get("tnames", []))
+            # pxt's message may carry mouth placeholders the catalog spec drops ("on start %1 %2").
+            wanted = len(PLACEHOLDER_RE.findall(entry["en"]))
+            while len(PLACEHOLDER_RE.findall(text)) > wanted and re.search(r"\s*%\d+\s*$", text):
+                text = re.sub(r"\s*%\d+\s*$", "", text)
+            if PLACEHOLDER_ONLY_RE.match(text) or not text:
+                text = entry["en"]
+                fallback += 1
+            else:
+                translated += 1
+        else:
+            text = entry["en"]
+            fallback += 1
+        entry[lang] = text
+        if entry.get("mouth_de"):
+            mkey = entry.get("mouth_tkey")
+            mvalue = strings.get(mkey) if mkey else None
+            # `{id:empty}` is pxt's way of saying "no label here" (Japanese).
+            if mvalue and mvalue.strip() == "{id:empty}":
+                entry[f"mouth_{lang}"] = ""
+            else:
+                entry[f"mouth_{lang}"] = norm_translation(mvalue) if mvalue else entry["mouth_en"]
+    return translated, fallback
+
+
+def scratch_end_marker(lang: str) -> str:
+    """The end marker the Scratch locale of that language uses, so `ende`,
+    `fin`, `konec` … read the same across block languages; "end" otherwise."""
+    code = lang.lower()
+    for candidate in (code, code.split("-")[0]):
+        path = OUT.parent / "locales" / f"{candidate}.toml"
+        if path.exists():
+            match = re.search(r'^"scratchblocks:end"\s*=\s*"([^"]+)"', path.read_text(encoding="utf-8"), re.M)
+            if match:
+                return match.group(1)
+    return "end"
+
+
+def write_makecode_locales_rs(locales: list[str]) -> None:
+    """The include_str! list the plugin embeds, one line per generated file."""
+    path = HERE.parent / "scratchblocks-wasm" / "src" / "generated" / "makecode_locales.rs"
+    lines = [
+        "// Generated by scripts/makecode-data/generate.py — do not edit by hand.",
+        "// The MakeCode dialect locales, one per language the editors offer.",
+        "",
+        "pub(crate) const MAKECODE_LOCALE_DATA: &[(&str, &str)] = &[",
+    ]
+    for name in locales:
+        lines.append(f'    ("{name}", include_str!("../../data/dialects/locales/{name}.toml")),')
+    lines += ["];", ""]
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def main() -> int:
@@ -956,6 +1238,68 @@ def main() -> int:
         "Blocks from pxt, pxt-microbit and pxt-calliope (all MIT); "
         f"pinned at pxt-microbit@{MICROBIT_SHA[:10]}, pxt-calliope@{CALLIOPE_SHA[:10]}."
     )
+
+    print("Translations")
+    microbit_tr = fetch_translations("microbit", args.offline)
+    calliope_tr = fetch_translations("calliope", args.offline)
+    unresolved = {"microbit": find_keys(microbit_specs, microbit_tr.get("de", {})), "calliope": find_keys(calliope_only, calliope_tr.get("de", {}))}
+    # the else marker's key, through its German
+    else_keys = [k for k, v in microbit_tr.get("de", {}).items() if norm_translation(v) == microbit_markers.get("de", "ansonsten")]
+    else_key = sorted(else_keys, key=lambda k: (not k.startswith("{id:"), k))[0] if else_keys else None
+    languages = sorted(set(microbit_tr) & set(calliope_tr))
+    coverage: dict[str, tuple[int, int, int, int]] = {}
+    used_keys: dict[str, set[str]] = {"microbit": set(), "calliopemini": set()}
+    for entries, target in ((microbit_specs, "microbit"), (calliope_only, "calliopemini")):
+        for e in entries.values():
+            for k in [e.get("tkey"), e.get("mouth_tkey")] + [part for part in e.get("tparts", []) if not part.startswith("%")]:
+                if k:
+                    used_keys[target].add(k)
+    if else_key:
+        used_keys["microbit"].add(else_key)
+    generated_locales = ["makecode-en", "makecode-de", "makecode-calliope-en", "makecode-calliope-de"]
+    for lang in languages:
+        code = lang.lower()
+        if code in ("en", "de"):
+            continue
+        mt, mf = translate_specs(microbit_specs, code, microbit_tr[lang])
+        ct, cf = translate_specs(calliope_only, code, calliope_tr[lang])
+        coverage[code] = (mt, mf, ct, cf)
+        else_value = microbit_tr[lang].get(else_key) if else_key else None
+        else_word = norm_translation(else_value) if else_value else "else"
+        end_word = scratch_end_marker(code)
+        write_locale(
+            OUT / "locales" / f"makecode-{code}.toml",
+            f"MakeCode (micro:bit), {lang} — from the editors' translations (cdn.makecode.com).",
+            LICENSE_NOTE,
+            microbit_specs,
+            code,
+            inherits="makecode-en",
+            else_word=else_word,
+            end_word=end_word,
+            full=False,
+        )
+        write_locale(
+            OUT / "locales" / f"makecode-calliope-{code}.toml",
+            f"MakeCode (Calliope mini), {lang} — extra and overridden blocks.",
+            LICENSE_NOTE,
+            calliope_only,
+            code,
+            inherits=f"makecode-{code}",
+            else_word=else_word,
+            end_word=end_word,
+        )
+        generated_locales += [f"makecode-{code}", f"makecode-calliope-{code}"]
+        # keep only the strings the catalog uses, so --offline can rebuild this
+        for target, tr in (("microbit", microbit_tr), ("calliopemini", calliope_tr)):
+            (TRANSLATIONS / target).mkdir(parents=True, exist_ok=True)
+            subset = {k: tr[lang][k] for k in sorted(used_keys[target]) if k in tr[lang]}
+            (TRANSLATIONS / target / f"{lang}.json").write_text(json.dumps(subset, ensure_ascii=False, indent=0, sort_keys=True) + "\n", encoding="utf-8")
+    for target, tr in (("microbit", microbit_tr), ("calliopemini", calliope_tr)):
+        if "de" in tr:
+            subset = {k: tr["de"][k] for k in sorted(used_keys[target]) if k in tr["de"]}
+            (TRANSLATIONS / target / "de.json").write_text(json.dumps(subset, ensure_ascii=False, indent=0, sort_keys=True) + "\n", encoding="utf-8")
+    write_makecode_locales_rs(generated_locales)
+    print(f"  {len(coverage)} further languages")
 
     for lang, title_word in (("en", "English"), ("de", "German")):
         write_locale(
@@ -1053,6 +1397,16 @@ def main() -> int:
         f"- {live_count} blocks with text read off the running editors (sources/live), in both languages",
         f"- {len(untranslated)} blocks with no German text — kept in English: "
         + (", ".join(untranslated) if untranslated else "none"),
+        "",
+        "### Languages",
+        "",
+        "Texts for every language the editors offer, from cdn.makecode.com's translation endpoint; a block whose key has no approved translation keeps its English text.",
+        "",
+        "| Language | micro:bit translated | English fallback | Calliope extra translated | fallback |",
+        "| --- | ---: | ---: | ---: | ---: |",
+        *[f"| {code} | {v[0]} | {v[1]} | {v[2]} | {v[3]} |" for code, v in sorted(coverage.items())],
+        "",
+        f"- blocks whose translation key could not be found through their German text (kept English everywhere): micro:bit {', '.join(unresolved['microbit']['text']) or 'none'}; Calliope {', '.join(unresolved['calliope']['text']) or 'none'}",
         "",
         "### Twins dropped (same text as another block, first id kept)",
         "",

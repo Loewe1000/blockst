@@ -34,8 +34,8 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
   the document's own category colours over any profile's palette
 - **MakeCode** as a third block language: `makecode()` draws the micro:bit
   and Calliope mini editors' blocks — Blockly's zelos look, MakeCode's
-  monospace labels, the editors' own block texts in German and English.
-  See [MakeCode](#makecode)
+  monospace labels, the editors' own block texts in all 36 of their
+  languages. See [MakeCode](#makecode)
 - **NEPO (Open Roberta)** for the Calliope mini and micro:bit, contributed by
   @lkoehl as a renderer of its own — see [examples/nepo](examples/nepo/README.md)
 - Arabic: the common assignment wordings `مساوية لـ` / `مساويًا لـ` now resolve (#13)
@@ -545,7 +545,7 @@ variants before comparing.
 
 | Profile | Look | Vocabulary |
 | --- | --- | --- |
-| `"blockly"` (default) | today's flat Blockly (thrasos) | Blockly's German standard blocks |
+| `"blockly"` (default) | today's flat Blockly (thrasos) | Blockly's standard blocks, German by default, 24 languages |
 | `"blockly-klassisch"` | Blockly before 2019 | same |
 | `"jwinf"` | jwinf.de — classic geometry, the palette of the robot training tasks | robot and turtle world blocks, plus the standard blocks in the old wording |
 | `"jwinf-turtle"` | the same, with the colours of the Freie Turtle-Umgebung | same |
@@ -571,6 +571,14 @@ category with a `::` suffix: `aktionen`, `schildkroete`, `sensoren`,
 `schleifen`, `logik`, `mathe`, `variablen`, `funktionen`, `text`, `listen`,
 `ausgeben`, `einlesen`. Blocks the profile knows — loops, conditions,
 variables, the robot and turtle commands — are recognised without a suffix.
+
+The standard blocks read Blockly's own message files: `language: "fr"`
+gives `répéter (10) fois`, `"ja"` gives `(10) 回繰り返す`, in ar, ca, cs, de,
+el, en, es, fa, fr, he, hi, hr, hu, id, it, ja, nb, nl, pl, pt, ro, ru, sl
+and tr. The jwinf world blocks exist in German only. Each language closes
+a C-block with the marker its Scratch locale uses (`ende`, `end`, `fin`, …)
+and opens the else branch with Blockly's word for it (`sonst`, `else`,
+`sinon`, …); `ende`, `end` and `else` work in every language.
 
 C-blocks close with `ende`; `sonst` opens the else branch. `<…>` and `(…)`
 are equivalent: Blockly draws no hexagon, a boolean plugs in with the same
@@ -639,9 +647,16 @@ ende
 
 The block texts are the editors' own — read off makecode.microbit.org and
 makecode.calliope.cc in German and English by
-[scripts/makecode-data](scripts/makecode-data/README.md), because MakeCode
-loads its translations at run time and publishes no per-block string files.
-`language: "de"` (the default) or `"en"`. A unit the editor shows in
+[scripts/makecode-data](scripts/makecode-data/README.md), and for the
+other 34 editor languages taken from the translation service the editors
+load at run time (cdn.makecode.com, approved strings only). `language:` is
+any language the editors offer: `"de"` (the default), `"en"`, `"fr"`,
+`"es"`, `"ja"`, `"zh-cn"`, … — a bare code picks the regional variant the
+editor ships (`"es"` → es-ES, `"pt"` → pt-BR). A block whose translation
+is not approved yet keeps its English text, as in the editor. The end
+marker follows the language (`fin`, `終わり`, …), the else marker is the
+editor's word (`sinon`, `でなければ`, …); `ende`, `end` and `else` work
+everywhere. A unit the editor shows in
 parentheses is typed like a value and drawn as the label: `pausiere (ms)
 (100)`, `Temperatur (°C)`. `ende`/`end` closes a C-block, `ansonsten`/`else`
 opens the else branch, which gets the editor's − and + buttons. Operators

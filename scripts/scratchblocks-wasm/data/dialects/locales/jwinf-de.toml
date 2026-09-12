@@ -227,12 +227,9 @@ writeNumber = "value"
 [mouths]
 controls_repeat_ext = "mache"
 
-# Icon in the first row: the mutator gear, or the warning sign a loop-control block gets outside a loop.
-[icons]
-
-
 [aliases]
-"ende" = "scratchblocks:end"
+"end" = "scratchblocks:end"
+"else" = "control_else"
 "Ende" = "scratchblocks:end"
 "%1 == %2" = "logic_compare_eq"
 "%1 != %2" = "logic_compare_ne"

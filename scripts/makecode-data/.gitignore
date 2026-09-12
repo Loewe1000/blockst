@@ -1,3 +1,4 @@
 sources/*
 !sources/live/
+!sources/translations/
 __pycache__/

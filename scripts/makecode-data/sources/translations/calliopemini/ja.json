@@ -1,0 +1,21 @@
+{
+"Array._removeAtStatement|block": "%list|から%index|番目の値を削除して返す",
+"basic.rgb|block": "赤(R) %red|緑(G) %green|青(B) %blue",
+"empty array": "空の配列",
+"game.LedSprite.isTouchingEdge|block": "%sprite(スプライト)|が端にある",
+"game.LedSprite.isTouching|block": "%sprite(スプライト)|が他のスプライト %other|にさわっている",
+"images.createImage|block": "画像を作成",
+"input.runningTimeMicros|block": "稼働時間（マイクロ秒）",
+"input.soundLevel|block": "音量",
+"led.enable|block": "LED表示を有効にする %on",
+"led.toggle|block": "反転|x %x|y %y",
+"music.ringTone|block": "音を鳴らす|高さ（Hz） %note=device_note",
+"music.setTempo|block": "テンポを設定する（bpm）|%value",
+"parseFloat|block": "文字列 %text|を数値に変換する",
+"pins._analogPin|block": "アナログピン$pin",
+"pins._digitalPin|block": "デジタルピン$pin",
+"pins.analogSetPitchPin|block": "音を鳴らす端子を %name|にする",
+"pins.servoSetPulse|block": "サーボ 設定する|端子 %value|パルス幅（マイクロ秒） %micros",
+"serial.redirectToUSB|block": "シリアル通信|通信先をUSBに変更する",
+"serial.writeNumbers|block": "シリアル通信|複数の数値をカンマくぎりで書き出す %values"
+}

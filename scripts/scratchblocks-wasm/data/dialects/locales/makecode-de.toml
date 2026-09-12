@@ -1053,7 +1053,7 @@ text_join = true
 variable_to_text = true
 variables_set = false
 
-# Label drawn next to the mouth of a C-block.
+# Label drawn next to the mouth of a C-block; empty when the editor shows none.
 [mouths]
 controls_repeat_ext = "mache"
 device_while = "mache"
@@ -1073,3 +1073,5 @@ controls_if = "mutator"
 "%1 >= %2" = "logic_compare_ge"
 "%1 ^ %2" = "math_arithmetic_pow"
 "%1 ÷ %2" = "math_arithmetic_div"
+"else" = "control_else"
+"end" = "scratchblocks:end"

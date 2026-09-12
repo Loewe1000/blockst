@@ -1,0 +1,18 @@
+{
+"empty array": "matriz vacía rehegua",
+"game.LedSprite.isTouchingEdge|block": "ha'e %sprite|opokóva tembe'y rehe",
+"game.LedSprite.isTouching|block": "ha'e %sprite|opoko %other",
+"images.createImage|block": "omoheñói ta’ãnga",
+"input.runningTimeMicros|block": "mba'apo tiempo (micros)",
+"input.soundLevel|block": "nivel de sonido",
+"led.enable|block": "led ombohapéva %on",
+"led.toggle|block": "ñembohasa|x %x|y %y",
+"music.ringTone|block": "tono de timbre (Hz)|%note=device_note",
+"music.setTempo|block": "emohenda tempo (bpm)|%value",
+"pins._analogPin|block": "pin analógico $pin",
+"pins._digitalPin|block": "pin digital $pin",
+"pins.analogSetPitchPin|block": "analógico ñemohenda pitch pin %name",
+"pins.servoSetPulse|block": "servo omohenda pulso|pin %value|ha (μs) %micros",
+"serial.redirectToUSB|block": "serial|redirección USB-pe",
+"serial.writeNumbers|block": "serial|ohai papapy %values"
+}

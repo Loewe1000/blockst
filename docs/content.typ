@@ -267,6 +267,8 @@ Arabic short vowels are optional and their order is not canonical, so blocks mat
 
 `blockly()` renders Blockly blocks from the notation `scratch()` uses, drawn with Blockly's shapes. A profile chooses look and vocabulary: `"blockly"` (the default, today's flat look), `"blockly-klassisch"` (before 2019), `"jwinf"` — the Jugendwettbewerb Informatik's classic geometry, the palette of its robot training tasks, and its robot and turtle blocks — or `"jwinf-turtle"`, the same with the colours of the Freie Turtle-Umgebung.
 
+The standard blocks come in 24 languages, from Blockly's own message files: `language: "de"` (the default), `"en"`, `"fr"` (`répéter (10) fois`), `"ja"` (`(10) 回繰り返す`), and ar, ca, cs, el, es, fa, he, hi, hr, hu, id, it, nb, nl, pl, pt, ro, ru, sl, tr. The jwinf world blocks exist in German only. Each language closes a C-block with the marker its Scratch locale uses (`ende`, `end`, `fin`, …) and opens the else branch with Blockly's word (`sonst`, `else`, `sinon`, …); `ende`, `end` and `else` work in every language.
+
 #show-code(```typst
 #blockly("
 Roboter-Programm
@@ -281,13 +283,13 @@ ende
 
 On jwinf a block's text changes from task to task, so unknown labels are drawn as written and take their category from a `::kategorie` suffix. Known blocks — loops, conditions, variables, the world commands — need none. `ende` closes a C-block, `sonst` opens its else branch, and `<…>` equals `(…)`: Blockly has no hexagonal boolean.
 
-`raw-blockly()` renders ````blockly` and ````jwinf` fences; `blockly-parse()` returns the AST. `set-blockst(profile: …)` sets the default profile for `blockly()` only. Themes apply as for Scratch, with `grayscale` derived from the profile's palette.
+`raw-blockly()` renders ```` ```blockly ```` and ```` ```jwinf ```` fences; `blockly-parse()` returns the AST. `set-blockst(profile: …)` sets the default profile for `blockly()` only. Themes apply as for Scratch, with `grayscale` derived from the profile's palette.
 
 jwinf colours its categories per task family. Where a task deviates from both profiles, `colors` lays the document's own category colours over the palette — `set-blockst(colors: (logik: "#73cc47"))` for the document, or `colors:` on `blockly()`, `scratch()` and `blockst()` for a single block or group. A hex string or a Typst colour per category; the derived shades (bevel, stroke, `high-contrast`, `grayscale`) follow the new fill.
 
 = MakeCode
 
-`makecode()` renders the blocks of the MakeCode editors for the micro:bit (`profile: "makecode"`, the default) and the Calliope mini (`"makecode-calliope"`), from the notation `scratch()` uses. The look is Blockly's zelos renderer as the editors run it — pills, hexagons, white literal pills, MakeCode's monospace label — and the block texts are the editors' own, in German (`language: "de"`, the default) or English.
+`makecode()` renders the blocks of the MakeCode editors for the micro:bit (`profile: "makecode"`, the default) and the Calliope mini (`"makecode-calliope"`), from the notation `scratch()` uses. The look is Blockly's zelos renderer as the editors run it — pills, hexagons, white literal pills, MakeCode's monospace label — and the block texts are the editors' own, in every language the editors offer: German (`language: "de"`, the default) and English read off the running editors, the other 34 — `"fr"`, `"es"`, `"ja"`, `"zh-cn"`, … — from the translation service the editors load at run time (approved strings only; an untranslated block keeps its English text, as in the editor). A bare code picks the regional variant the editor ships (`"es"` → es-ES). The end and else markers follow the language (`fin`/`sinon`, `終わり`/`でなければ`, …); `ende`, `end` and `else` work everywhere.
 
 #show-code(```typst
 #makecode("
@@ -301,7 +303,7 @@ ende
 ")
 ```)
 
-A unit the editor shows in parentheses is typed like a value and drawn as the label (`pausiere (ms) (100)`). The LED matrix takes 25 cells, `#` lit and `.` dark (`zeige LEDs [#...#|.#.#.|..#..|.#.#.|#...#]`), the melody editor eight notes or rests (`spiele (Melodie [C D E F - - - -] mit Tempo (120) (bpm)) [bis zum Ende v]`). `ende` closes a C-block, `ansonsten` opens the else branch with the editor's − and + buttons. `raw-makecode()` renders ````makecode`, ````microbit` and ````calliope` fences; `makecode-parse()` returns the AST. `set-blockst(profile: "makecode-calliope")` sets the default profile for `makecode()`, `colors:` overrides single categories, and the themes (`grayscale`, `high-contrast`, `print`) and line numbers work as for Scratch. Unknown labels are drawn as written with the category from a `::kategorie` suffix (`basic`, `input`, `music`, `led`, `radio`, `loops`, `logic`, `variables`, `math`, `functions`, `arrays`, `text`, `game`, `images`, `pins`, `serial`, `control`).
+A unit the editor shows in parentheses is typed like a value and drawn as the label (`pausiere (ms) (100)`). The LED matrix takes 25 cells, `#` lit and `.` dark (`zeige LEDs [#...#|.#.#.|..#..|.#.#.|#...#]`), the melody editor eight notes or rests (`spiele (Melodie [C D E F - - - -] mit Tempo (120) (bpm)) [bis zum Ende v]`). `ende` closes a C-block, `ansonsten` opens the else branch with the editor's − and + buttons. `raw-makecode()` renders ```` ```makecode ````, ```` ```microbit ```` and ```` ```calliope ```` fences; `makecode-parse()` returns the AST. `set-blockst(profile: "makecode-calliope")` sets the default profile for `makecode()`, `colors:` overrides single categories, and the themes (`grayscale`, `high-contrast`, `print`) and line numbers work as for Scratch. Unknown labels are drawn as written with the category from a `::kategorie` suffix (`basic`, `input`, `music`, `led`, `radio`, `loops`, `logic`, `variables`, `math`, `functions`, `arrays`, `text`, `game`, `images`, `pins`, `serial`, `control`).
 
 #image("../examples/example-makecode.svg")
 

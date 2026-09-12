@@ -1,0 +1,15 @@
+{
+"empty array": "מערך ריק",
+"game.LedSprite.isTouchingEdge|block": "האם %sprite|נוגע בקצה",
+"game.LedSprite.isTouching|block": "האם %sprite|נוגע ב %other",
+"images.createImage|block": "צור תמונה",
+"input.runningTimeMicros|block": "זמן ריצה (micros)",
+"led.enable|block": "אפשר נורית %on",
+"led.toggle|block": "עבור בין מצבים|x %x|y %y",
+"music.ringTone|block": "צלצול(Hz)|%note=device_note",
+"music.setTempo|block": "הגדר קצב ל-(bpm)|%value",
+"pins.analogSetPitchPin|block": "אנלוגי הגדר גובה צליל פין%name",
+"pins.servoSetPulse|block": "סרבו קבע אות ב|פין %value|ל (µs) %micros",
+"serial.redirectToUSB|block": "חיבור טורי|נתב ל USB",
+"serial.writeNumbers|block": "חיבור טורי|כתוב מספרים %values"
+}
