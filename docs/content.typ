@@ -1,10 +1,17 @@
 #import "@schule/schuldocs:0.3.0": doc-target, info, show-code, show-example, show-module, tip, warning
-#import "../lib.typ": scratch, nepo
+#import "../lib.typ": scratch, blockly, makecode, nepo
+#import "catalog.typ": catalog-entries
 
 // Gesetzte Blöcke brauchen im HTML-Export einen Rahmen: ohne ihn verwirft
 // Typst den Zustand, den die Renderer über `hide` mitführen, und warnt
 // („hide was ignored during HTML export"). Im Handbuch bleibt alles, wie es ist.
 #let framed(body) = context if doc-target() == "web" { html.frame(body) } else { body }
+
+// Verweis auf ein Kapitel: die Website ist geteilt, jedes Kapitel eine Seite
+// (`<slug>.html`, die Einleitung `index.html`); im Handbuch bleibt der Text.
+#let goto(page, body, anchor: "") = context if doc-target() == "web" {
+  link((if page == "index" { "index.html" } else { page + ".html" }) + anchor, body)
+} else { body }
 
 = Introduction
 
@@ -85,7 +92,7 @@ ende
   [Open Roberta], [`nepo()`], [platforms `calliope` (default), `calliopev3`, `microbit`], [`"de"`], [`nepo` via `raw-nepo()`],
 )
 
-Every function takes the same rendering options — theme, scale, font, line numbers, colours — and all of them read the defaults set with `set-blockst()`. The chapters #link("#scratch")[Scratch], #link("#blockly-and-jwinf")[Blockly and jwinf], #link("#makecode")[MakeCode] and #link("#nepo-open-roberta")[NEPO] describe what is particular to each editor.
+Every function takes the same rendering options — theme, scale, font, line numbers, colours — and all of them read the defaults set with `set-blockst()`. The chapters #goto("scratch")[Scratch], #goto("blockly-and-jwinf")[Blockly and jwinf], #goto("makecode")[MakeCode] and #goto("nepo-open-roberta")[NEPO] describe what is particular to each editor.
 
 == Package information
 
@@ -114,16 +121,16 @@ Blocks are written one per line, the way they read in the editor. Inputs are mar
   [C-block], [`repeat (4)` … `end`], [A block with a body: indent the body, close it with the end marker],
   [C-block with else], [`if <…> then` … `else` … `end`], [A second body after the else marker],
   [Icon], [`@greenFlag`, `@turnRight`, `@turnLeft`], [The flag and the turn arrows],
-  [Line label], [`move (10) steps #step`], [Names the line, see #link("#labels-and-line-numbers")[Labels and line numbers]],
+  [Line label], [`move (10) steps #step`], [Names the line, see #goto("labels-and-line-numbers")[Labels and line numbers]],
 )
 
 What differs between the editors is small and follows the editor:
 
 - *End and else markers* follow the language: `end`/`else` in English, `ende`/`sonst` in German Blockly, `ende`/`ansonsten` in German MakeCode, `fin`/`sinon` in French. `end`, `ende` and `else` are understood in every Blockly and MakeCode language.
 - *Booleans.* Scratch and MakeCode draw a condition as a hexagon, so `<…>` and `(…)` are different shapes. Blockly has no hexagonal boolean: there `<…>` equals `(…)`.
-- *Unknown labels.* Scratch names a category with a prefix, `@motion free text` (see #link("#category-quick-color-defaults")[\@category]). Blockly and MakeCode use a suffix, `hebe Murmel auf ::aktionen` — on jwinf the normal case, because the same block reads differently from task to task.
+- *Unknown labels.* Scratch names a category with a prefix, `@motion free text` (see #goto("scratch", anchor: "#category-quick-color-defaults")[\@category]). Blockly and MakeCode use a suffix, `hebe Murmel auf ::aktionen` — on jwinf the normal case, because the same block reads differently from task to task.
 - *Units.* MakeCode shows some units in parentheses; they are typed like a value and drawn as the label: `pausiere (ms) (100)`, `Temperatur (°C)`.
-- *Editors.* MakeCode's LED matrix and melody editor have a notation of their own, see #link("#makecode")[MakeCode].
+- *Editors.* MakeCode's LED matrix and melody editor have a notation of their own, see #goto("makecode")[MakeCode].
 
 = Options for every editor
 
@@ -254,7 +261,7 @@ Parses Scratch text and renders the blocks the way Scratch 3 draws them.
 )
 ```)
 
-`text` is the Scratch block text in the chosen language; the other parameters are the #link("#options-for-every-editor")[options every editor shares], `auto` meaning the document's default. The parser knows the full Scratch 3 vocabulary in all 26 locales, including the pen extension.
+`text` is the Scratch block text in the chosen language; the other parameters are the #goto("options-for-every-editor")[options every editor shares], `auto` meaning the document's default. The parser knows the full Scratch 3 vocabulary in all 26 locales, including the pen extension.
 
 == raw-scratch — Code fences
 
@@ -374,7 +381,7 @@ Parses Scratch text to an abstract syntax tree for programmatic use — a nested
 #scratch-parse(text, language: "en")
 ```)
 
-The complete list of Scratch blocks, rendered live, is the #link("#scratch-block-catalog")[Scratch block catalog] at the end of this manual. Running Scratch programs as turtle graphics and importing `.sb3` files have chapters of their own.
+The complete list of Scratch blocks, rendered live, is the #goto("scratch-block-catalog")[Scratch block catalog] at the end of this manual. Running Scratch programs as turtle graphics and importing `.sb3` files have chapters of their own.
 
 = Blockly and jwinf
 
@@ -430,7 +437,7 @@ ende
 
 On jwinf the same block reads differently from task to task — „hebe Murmel auf", „nimm Fisch", „Holzstapel einsammeln" — so there is no fixed vocabulary to match against. Write the label as it appears and name the category with a `::` suffix: `aktionen`, `schildkroete`, `sensoren`, `schleifen`, `logik`, `mathe`, `variablen`, `funktionen`, `text`, `listen`, `ausgeben`, `einlesen`. Blocks the profile knows — loops, conditions, variables, the robot and turtle commands — are recognised without a suffix.
 
-`ende` closes a C-block, `sonst` opens its else branch, and `<…>` equals `(…)`: Blockly has no hexagonal boolean. Where a task's colours deviate from both profiles, `colors` lays the document's own over the palette (see #link("#colours")[Colours]).
+`ende` closes a C-block, `sonst` opens its else branch, and `<…>` equals `(…)`: Blockly has no hexagonal boolean. Where a task's colours deviate from both profiles, `colors` lays the document's own over the palette (see #goto("options-for-every-editor", anchor: "#colours")[Colours]).
 
 == Languages
 
@@ -842,13 +849,13 @@ Renders a static Scratch stage preview with sprites, backdrop, and monitors.
 
 = Scratch block catalog
 
-Every block of each Scratch 3 category, rendered live, next to the text that produces it. Blockly's and MakeCode's vocabularies are the editors' own and too large to list here; the generator reports in the repository (`scripts/scratchblocks-wasm/data/dialects/REPORT.md`) hold them per language.
+Every block of each Scratch 3 category, rendered live, next to the text that produces it. The #goto("blockly-block-catalog")[Blockly] and #goto("makecode-block-catalog")[MakeCode] catalogs follow.
 
-#let _catalog-table(blocks) = table(
+#let _catalog-table(blocks, render: scratch) = table(
   columns: (auto, auto),
   align: (left, left),
   table.header([*Block*], [*Code*]),
-  ..blocks.map(block => (table.cell[#framed(scratch(block))], table.cell[#raw(block)])).flatten(),
+  ..blocks.map(block => (table.cell[#framed(render(block))], table.cell[#raw(block)])).flatten(),
 )
 
 == Motion
@@ -1014,6 +1021,59 @@ not <>
 (() mod ())
 (round ())
 ([sqrt v] of (9))".split("\n"))
+
+#let _locales = "../scripts/scratchblocks-wasm/data/dialects/locales/"
+#let _titled(name) = upper(name.first()) + name.slice(1)
+// Every block of a dialect locale, a table per category. `skip` leaves out
+// the mutator containers, which are no blocks of their own.
+#let _dialect-catalog(file, render, skip: (), order: (), level: 3) = {
+  let groups = catalog-entries(toml(_locales + file))
+  // In the order of the editor's palette; what the palette does not name
+  // follows in the order of the file.
+  let names = order.filter(n => n in groups) + groups.keys().filter(n => n not in order)
+  for category in names {
+    let texts = groups.at(category).filter(e => e.id not in skip).map(e => e.text)
+    if texts.len() == 0 { continue }
+    // `depth`, nicht `level`: schuldocs teilt die Website an Überschriften der
+    // Tiefe 1, und `heading(level: …)` ließe die Tiefe auf 1 stehen.
+    heading(depth: level, _titled(category))
+    _catalog-table(texts, render: render)
+  }
+}
+
+= Blockly block catalog
+
+Every block the Blockly dialect knows, in the German wording the renderer ships, built from the locale files the parser reads (`scripts/scratchblocks-wasm/data/dialects/locales/`). Empty slots stand for a value `()` or a dropdown `[ v]`; write the content in your own document.
+
+== Standard blocks
+
+The `blockly` profile: Blockly's standard blocks in today's wording. The same blocks exist in 24 languages, see the languages of #goto("blockly-and-jwinf")[Blockly and jwinf].
+
+#let _blockly-order = ("schleifen", "logik", "mathe", "text", "listen", "variablen", "funktionen")
+#_dialect-catalog("blockly-de.toml", blockly, skip: ("text_create_join_container", "text_join"), order: _blockly-order)
+
+== jwinf
+
+The `jwinf` profile: the robot and turtle world blocks of jwinf.de, plus the standard blocks whose wording differs there.
+
+#_dialect-catalog("jwinf-de.toml", blockly.with(profile: "jwinf"), skip: ("text_create_join_container", "colourRGB"), order: ("start", "aktionen", "schildkroete", "turtleInput", "sensoren") + _blockly-order)
+
+= MakeCode block catalog
+
+Every block of the MakeCode editors, in their German wording, built from the locale files the parser reads. The same blocks exist in all 36 editor languages, see the languages of #goto("makecode")[MakeCode].
+
+== micro:bit
+
+The `makecode` profile: the blocks of makecode.microbit.org.
+
+#let _makecode-order = ("basic", "input", "music", "led", "radio", "loops", "logic", "variables", "math", "functions", "arrays", "text", "game", "images", "pins", "serial", "control", "motors")
+#_dialect-catalog("makecode-de.toml", makecode, order: _makecode-order)
+
+== Calliope mini
+
+The `makecode-calliope` profile adds the Calliope mini's own blocks and recolours the shared ones; listed here are only the blocks the Calliope editor adds or words differently.
+
+#_dialect-catalog("makecode-calliope-de.toml", makecode.with(profile: "makecode-calliope"), order: _makecode-order)
 
 = Contributing
 

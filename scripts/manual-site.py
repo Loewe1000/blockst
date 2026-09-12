@@ -135,8 +135,10 @@ def main() -> None:
         sys.exit("manual-site: no version folder in the site")
     latest = versions[0]
 
+    # Every page of a version: the manual is split into one page per chapter.
     for version in versions:
-        inject_bar(args.site / version / "index.html", version, versions)
+        for page in sorted((args.site / version).glob("*.html")):
+            inject_bar(page, version, versions)
 
     (args.site / "versions.json").write_text(json.dumps({"latest": latest, "versions": versions}, indent=2) + "\n", encoding="utf-8")
     (args.site / "index.html").write_text(redirect_page(f"{latest}/", versions, "blockst — Handbuch"), encoding="utf-8")
