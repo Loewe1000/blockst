@@ -695,3 +695,10 @@ Source: [examples/catalog/operators.typ](examples/catalog/operators.typ)
 ## Contributing
 
 Contributions are welcome: bug reports, missing blocks, parser improvements, rendering polish, docs, and new localizations.
+
+The renderers are Rust plugins compiled to WASM. Rebuild them from source
+with `./scripts/build-plugins.sh` (it pins the rustup toolchain; a Homebrew
+rust lacks the wasm target) and check that the committed binaries still
+reproduce with `./scripts/build-plugins.sh --check`.
+`./scripts/compare-examples.sh baseline|check` renders every example and
+compares it pixel by pixel with the recorded baseline.

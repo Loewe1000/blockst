@@ -375,6 +375,7 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
                 mouth: None,
                 slots: Vec::new(),
                 inline: None,
+                icon: None,
                 };
                 block_size(&temp).0.max(100.0)
             };

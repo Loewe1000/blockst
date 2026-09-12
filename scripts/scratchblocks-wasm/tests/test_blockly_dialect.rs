@@ -437,3 +437,29 @@ fn modern_stacks_sit_28_apart_and_an_empty_socket_row_is_26() {
     assert!(svg.contains("<g transform=\"translate(0 28)\">"), "{svg}");
     assert!(svg.contains(" v 6 h 14.5 v -26 z"), "empty socket: {d}");
 }
+
+
+// ---------------------------------------------------------------------------
+// Icons: the mutator gear on falls and on procedure definitions, drawn as
+// the editor draws it and pushing the label to x = 37 in both generations.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn falls_carries_the_mutator_gear_in_both_generations() {
+    for profile in ["jwinf", "blockly"] {
+        let svg = render("falls <auf Kiste>\nende", profile);
+        assert!(svg.contains("opacity=\"0.6\""), "{profile}: icon group: {svg}");
+        assert!(svg.contains("d=\"m4.203,7.296 "), "{profile}: gear symbol: {svg}");
+        assert!(svg.contains("<text class=\"sb-label\" x=\"37\""), "{profile}: label after the icon: {svg}");
+    }
+    let classic = render("falls <auf Kiste>\nende", "jwinf");
+    assert!(classic.contains("<g transform=\"translate(10 5)\" opacity"), "classic icon at (10,5): {classic}");
+    let modern = render("falls <auf Kiste>\nende", "blockly");
+    assert!(modern.contains("<g transform=\"translate(10 5.5)\" opacity"), "modern icon centred in the 18 row: {modern}");
+}
+
+#[test]
+fn a_plain_block_has_no_icon() {
+    let svg = render("gehe (3) Schritte", "jwinf");
+    assert!(!svg.contains("opacity=\"0.6\""), "{svg}");
+}

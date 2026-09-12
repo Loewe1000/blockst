@@ -39,7 +39,8 @@
   "rows": {
     "note": "block = top row 5 (10 if the first input row has a statement) + input rows with spacer rows between + bottom row 5 (10 after a statement); the notch adds 4 below. Spacers: 10 between two plain rows, 4 before a statement row, 10 between two statement rows, 5 after a statement row before a plain one, 0 after the top row. Input row height = tallest element: text/field 18, icon 17, empty inline socket 26, filled inline socket = child height, empty external input 15, filled external input = child height - 10, empty statement 24, filled statement = child stack height incl. notch. Text centreline = row centre, except in a row with an inline socket or a statement: top + 9 + 5.",
     "spacing": "start: 10 before a label or icon, 5 before an editable field, 8 before an inline socket, 20 before an unlabelled statement. Between: label/field 5, field/label 5, label/label 10, field/field 10, label->inline 8, label->external 8, field->inline 3, field->external 3, inline->label 10, inline->field 5, label->statement 10, field->statement 5. End: 10 after a label or an inline socket, 5 after a field, 0 after an external or statement input. External input element = 8 tab + 2 padding; a row stretched to the block width gets its slack before the external input.",
-    "children": "external child at (right edge - 8, row top - 5), i.e. its body starts at the parent's right edge and its own 5px top row sits above the parent's row; inline child at (cut-out left, cut-out top); statement child at (statement edge, row top); next block at y = body height (no dark-path pixel)."
+    "children": "external child at (right edge - 8, row top - 5), i.e. its body starts at the parent's right edge and its own 5px top row sits above the parent's row; inline child at (cut-out left, cut-out top); statement child at (statement edge, row top); next block at y = body height (no dark-path pixel).",
+    "more": "Top row 10 when the first input row has a statement (measured with a custom block: TopRow h=10, statement row at y=10). After a statement row: spacer 5 before an external-input row (procedures_defreturn), 10 before a plain row. A row-start editable field (controls_flow_statements dropdown) gets 5. controls_for: one inline row of 28 with three sockets, spacing label->socket 8, socket->label 10."
   },
   "blocks": {
     "variables_set": {
@@ -109,5 +110,11 @@
       "h": 87,
       "rows": "top 5 | 18 | spacer 4 | statement 32 | spacer 5 | external 18 | bottom 5; no notches, rounded left corners"
     }
+  },
+  "icons": {
+    "note": "Mutator gear (controls_if, text_join, lists_create_with, procedures_def*) and the warning sign (controls_flow_statements outside a loop) are Icon elements 17 wide and 17 high in the first row, spacing 10 before and after (21 after when nothing follows); drawn as <g transform=translate(x, centreline-8.5)> with a 16x16 rect rx4 fill #00f stroke #fff and a white symbol path, group opacity 0.6. No comment icon on procedures in 12.3.1.",
+    "controls_if_first_row": "sp 10 | Icon(10,17) | sp 10 | Field if (37,7.33) | ... ; icon group translate(10, 5.5) in an 18 row",
+    "mutator_symbol": "m4.203,7.296 0,1.368 -0.92,0.677 -0.11,0.41 0.9,1.559 0.41,0.11 1.043,-0.457 1.187,0.683 0.127,1.134 0.3,0.3 1.8,0 0.3,-0.299 0.127,-1.138 1.185,-0.682 1.046,0.458 0.409,-0.11 0.9,-1.559 -0.11,-0.41 -0.92,-0.677 0,-1.366 0.92,-0.677 0.11,-0.41 -0.9,-1.559 -0.409,-0.109 -1.046,0.458 -1.185,-0.682 -0.127,-1.138 -0.3,-0.299 -1.8,0 -0.3,0.3 -0.126,1.135 -1.187,0.682 -1.043,-0.457 -0.41,0.11 -0.899,1.559 0.108,0.409z + circle r 2.7 at (8,8)",
+    "warning": "path M2,15Q-1,15 0.5,12L6.5,1.7Q8,-1 9.5,1.7L15.5,12Q17,15 14,15z + symbol m7,4.8v3.16l0.27,2.27h1.46l0.27,-2.27v-3.16z + rect (7,11,2,2)"
   }
 }
