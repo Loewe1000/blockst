@@ -15,6 +15,8 @@ beim Start
   setze [zähler v] auf (0)
 ende
 wenn Knopf [A v] geklickt
+  zeige LEDs [#...#|.#.#.|..#..|.#.#.|#...#]
+  spiele (Melodie [C D E F - - - -] mit Tempo (120) (bpm)) [bis zum Ende v]
   ändere [zähler v] um (1)
   zeige Zahl (zähler)
   wenn <(zähler) > (9)> dann

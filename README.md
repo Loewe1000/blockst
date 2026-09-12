@@ -642,12 +642,18 @@ loads its translations at run time and publishes no per-block string files.
 parentheses is typed like a value and drawn as the label: `pausiere (ms)
 (100)`, `Temperatur (°C)`. `ende`/`end` closes a C-block, `ansonsten`/`else`
 opens the else branch, which gets the editor's − and + buttons. Operators
-take the editor's glyph or a spelling: `×` or `*`, `÷` or `/`, `≥`, `≤`, `≠`
-(`>=` cannot be typed inside `<…>`, the `>` would close the boolean). Unknown labels are
+take the editor's glyph or a spelling: `×` or `*`, `÷` or `/`, `≥` or `>=`,
+`≤` or `<=`, `≠` or `!=`. Unknown labels are
 drawn as written with the category from a `::kategorie` suffix (`basic`,
 `input`, `music`, `led`, `radio`, `loops`, `logic`, `variables`, `math`,
 `functions`, `arrays`, `text`, `game`, `images`, `pins`, `serial`,
 `control`).
+
+Two of MakeCode's editor fields have a notation of their own. The LED
+matrix takes 25 cells, `#` lit and `.` dark, in any grouping:
+`zeige LEDs [#...#|.#.#.|..#..|.#.#.|#...#]`. The melody editor takes
+eight notes or rests: `spiele (Melodie [C D E F - - - -] mit Tempo (120)
+(bpm)) [bis zum Ende v]`.
 
 In raw blocks, `#show: raw-makecode()` renders ````makecode` and
 ````microbit` fences with the micro:bit profile and ````calliope` fences

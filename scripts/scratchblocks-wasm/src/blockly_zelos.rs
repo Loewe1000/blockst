@@ -52,6 +52,16 @@ const MAX_DYNAMIC_W: f32 = 48.0;
 const ROUND_MAX_H: f32 = 96.0;
 const STATEMENT_SPACER_MIN_W: f32 = 160.0;
 const BUTTON: f32 = 24.0;
+/// The LED matrix field: 25px cells on a 32px pitch, 7px in and 5px down.
+const MATRIX_W: f32 = 167.0;
+const MATRIX_H: f32 = 169.0;
+const MATRIX_CELL: f32 = 25.0;
+const MATRIX_PITCH: f32 = 32.0;
+/// The melody editor pill and its eight 10x20 note cells.
+const MELODY_W: f32 = 140.0;
+const MELODY_H: f32 = 42.0;
+const MELODY_FILL: &str = "#d9d9d9";
+const NOTE_COLOURS: [&str; 8] = ["#a80000", "#d83b01", "#ffb900", "#107c10", "#008272", "#0078d7", "#5c2d91", "#b4009e"];
 /// Room MakeCode leaves for each quote glyph beside a text literal.
 const QUOTE_W: f32 = 3.0;
 /// A non-shadow value at least this tall pulls the rows around it 4px closer.
@@ -138,6 +148,14 @@ fn is_boolean_literal(block: &BlockSpec) -> bool {
         && matches!(&block.segments[0], SegmentSpec::Text { value } if matches!(value.as_str(), "wahr" | "falsch" | "true" | "false"))
 }
 
+/// A block built around one of MakeCode's editor fields (the melody).
+fn holds_editor(block: &BlockSpec) -> bool {
+    block.segments.iter().any(|s| matches!(s, SegmentSpec::Input { input, .. } if input == "string")) && {
+        let p = plan(block);
+        p.rows.iter().any(|r| r.items.iter().any(|i| matches!(i, Item::Editor { kind, .. } if kind == "melody")))
+    }
+}
+
 fn literal_text(block: &BlockSpec) -> (String, bool) {
     match &block.segments[0] {
         SegmentSpec::Input { input, value, .. } => (value.clone(), input == "string" || input == "text"),
@@ -150,6 +168,10 @@ enum ElemKind {
     Label,
     /// An editable field: dropdown or text box, drawn with a 34px frame.
     Field,
+    /// The 5x5 LED matrix editor, 167 x 169.
+    Matrix,
+    /// The melody editor: an 8-note grid in a grey pill, 140 x 42.
+    Melody,
     /// A 24px image button (the +/- of an if block).
     Button,
     Inline,
@@ -235,13 +257,23 @@ fn elem_for_item(item: &Item, shadow_block: bool, string_literal: bool) -> Elem 
             }
             Elem { kind: ElemKind::Field, x: 0.0, w, h, item: None, shape: Shape::Round, tall_child: false, text_input: false }
         }
+        Item::Editor { kind, .. } => {
+            if kind == "matrix" {
+                Elem { kind: ElemKind::Matrix, x: 0.0, w: MATRIX_W, h: MATRIX_H, item: None, shape: Shape::Round, tall_child: false, text_input: false }
+            } else {
+                Elem { kind: ElemKind::Melody, x: 0.0, w: MELODY_W, h: MELODY_H, item: None, shape: Shape::Round, tall_child: false, text_input: false }
+            }
+        }
         Item::Socket(None, boolean) => {
             let shape = if *boolean { Shape::Hex } else { Shape::Round };
             Elem { kind: ElemKind::Inline, x: 0.0, w: EMPTY_INLINE_PAD + 2.0 * shape.width(EMPTY_INLINE_H), h: EMPTY_INLINE_H, item: None, shape, tall_child: false, text_input: false }
         }
         Item::Socket(Some(child), _) => {
             let (w, h) = measure_child(child);
-            let tall = !is_literal(child) && !is_boolean_literal(child) && h >= TIGHT_NESTING_MIN_H;
+            // shadows never trigger tight nesting: literals, and the editor
+            // blocks (the melody) that only ever sit in their parent's slot
+            let shadow = is_literal(child) || is_boolean_literal(child) || holds_editor(child);
+            let tall = !shadow && h >= TIGHT_NESTING_MIN_H;
             Elem { kind: ElemKind::Inline, x: 0.0, w, h, item: None, shape: shape_of(child), tall_child: tall, text_input: false }
         }
     }
@@ -553,7 +585,7 @@ fn negative_spacing(outer: Shape, conn_w: f32, elem: Option<&Elem>, multi_row: b
             conn_w - outer.hug(Some(inner))
         }
         ElemKind::Field if outer == Shape::Round && elem.text_input => conn_w - 2.75 * GRID,
-        ElemKind::Field | ElemKind::Label => conn_w - outer.hug(None),
+        ElemKind::Field | ElemKind::Label | ElemKind::Matrix | ElemKind::Melody => conn_w - outer.hug(None),
         ElemKind::Button => SMALL,
         ElemKind::Statement => 0.0,
     }
@@ -675,7 +707,12 @@ fn render_block_in(block: &BlockSpec, theme: &str, _first: bool, _last: bool, pa
     let literal = p.is_value && is_literal(block);
     let base = colors_for(&block.category, theme);
     let plain_theme = theme != "grayscale" && theme != "print";
-    let (fill, stroke, colors) = if literal {
+    let holds_melody = p.rows.iter().any(|r| r.items.iter().any(|i| matches!(i, Item::Editor { kind, .. } if kind == "melody")));
+    let (fill, stroke, colors) = if holds_melody && plain_theme {
+        // the melody block is a shadow drawn in the category's secondary colour
+        let secondary = blend("#000000", &base.fill, 0.15);
+        (secondary.clone(), tertiary(&base.fill), CategoryColors::new(&secondary, &base.stroke, "#ffffff", &base.alt))
+    } else if literal {
         let stroke = if plain_theme { shadow_stroke(parent_tertiary) } else { base.stroke.clone() };
         ("#ffffff".to_string(), stroke, CategoryColors::new("#ffffff", &base.stroke, "#000000", "#ffffff"))
     } else if plain_theme {
@@ -818,6 +855,53 @@ fn render_block_in(block: &BlockSpec, theme: &str, _first: bool, _last: bool, pa
                                 colors.text
                             ));
                         }
+                    }
+                }
+                ElemKind::Matrix => {
+                    let text = match e.item.map(|i| &items[i]) { Some(Item::Editor { text, .. }) => text.clone(), _ => String::new() };
+                    let top = centre - e.h / 2.0;
+                    let lit: Vec<bool> = text.chars().filter_map(|c| match c { '#' | 'X' | 'x' | '1' => Some(true), '.' | '0' | '-' => Some(false), _ => None }).collect();
+                    for cell in 0..25 {
+                        let (col, row) = (cell % 5, cell / 5);
+                        let on = lit.get(cell).copied().unwrap_or(false);
+                        let x = e.x + 7.0 + MATRIX_PITCH * col as f32;
+                        let y = top + 5.0 + MATRIX_PITCH * row as f32;
+                        if on {
+                            content.push_str(&format!("<rect x=\"{x}\" y=\"{y}\" width=\"{MATRIX_CELL}\" height=\"{MATRIX_CELL}\" rx=\"5\" fill=\"#ffffff\"/>"));
+                        } else {
+                            content.push_str(&format!("<rect x=\"{x}\" y=\"{y}\" width=\"{MATRIX_CELL}\" height=\"{MATRIX_CELL}\" rx=\"5\" fill=\"#000000\" fill-opacity=\"0.2\"/>"));
+                        }
+                    }
+                }
+                ElemKind::Melody => {
+                    let text = match e.item.map(|i| &items[i]) { Some(Item::Editor { text, .. }) => text.clone(), _ => String::new() };
+                    let top = centre - e.h / 2.0;
+                    let r = MELODY_H / 2.0;
+                    let inner = MELODY_W - 2.0 * r;
+                    content.push_str(&format!(
+                        "<path d=\"M {},{top} h {inner} a {r} {r} 0 0,1 {r},{r} v 0 a {r} {r} 0 0,1 -{r},{r} h -{inner} a {r} {r} 0 0,1 -{r},-{r} v 0 a {r} {r} 0 0,1 {r},-{r} z\" fill=\"{MELODY_FILL}\" stroke=\"#bfbfbf\" stroke-width=\"1\"/>",
+                        e.x + r
+                    ));
+                    content.push_str(&format!("<text x=\"{}\" y=\"{}\" font-size=\"13\" fill=\"#575757\" text-anchor=\"middle\">\u{266a}</text>", e.x + 18.0, top + 25.0));
+                    let notes: Vec<&str> = text.split_whitespace().collect();
+                    for i in 0..8 {
+                        let note = notes.get(i).copied().unwrap_or("-");
+                        let colour = match note.chars().next().map(|c| c.to_ascii_uppercase()) {
+                            Some('C') if note.len() > 1 && note.ends_with(|c: char| c.is_ascii_digit()) && note.chars().last() != Some('4') => NOTE_COLOURS[7],
+                            Some('C') => NOTE_COLOURS[0],
+                            Some('D') => NOTE_COLOURS[1],
+                            Some('E') => NOTE_COLOURS[2],
+                            Some('F') => NOTE_COLOURS[3],
+                            Some('G') => NOTE_COLOURS[4],
+                            Some('A') => NOTE_COLOURS[5],
+                            Some('B') | Some('H') => NOTE_COLOURS[6],
+                            _ => "#dcdcdc",
+                        };
+                        content.push_str(&format!(
+                            "<rect x=\"{}\" y=\"{}\" width=\"10\" height=\"20\" rx=\"3\" ry=\"2\" fill=\"{colour}\" stroke=\"#898989\" stroke-width=\"1\"/>",
+                            e.x + 32.0 + 12.0 * i as f32,
+                            top + 9.0
+                        ));
                     }
                 }
                 ElemKind::Button => {

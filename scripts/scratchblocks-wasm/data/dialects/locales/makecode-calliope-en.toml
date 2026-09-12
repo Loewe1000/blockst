@@ -45,8 +45,6 @@ serial_redirect_to_usb = "serial redirect to USB"
 serial_writenumbers = "serial write numbers %1"
 soundLevel = "sound level"
 string_parsefloat = "parse to number %1"
-variables_change = "change %1 by %2"
-variables_set = "set %1 to %2"
 
 [shapes]
 "scratchblocks:end" = "cend"
@@ -88,8 +86,6 @@ serial_redirect_to_usb = "stack"
 serial_writenumbers = "stack"
 soundLevel = "reporter"
 string_parsefloat = "reporter"
-variables_change = "stack"
-variables_set = "stack"
 
 [categories]
 "scratchblocks:end" = "logic"
@@ -131,8 +127,6 @@ serial_redirect_to_usb = "serial"
 serial_writenumbers = "serial"
 soundLevel = "input"
 string_parsefloat = "text"
-variables_change = "variables"
-variables_set = "variables"
 
 # What each %n is: a value socket, a field box, a dropdown, a statement mouth.
 [slots]
@@ -143,7 +137,7 @@ basic_show_icon = "dropdown,value"
 block_dual_motor = "dropdown,value"
 core_rgb = "value,value,value"
 device_analog_set_pitch_pin = "value"
-device_build_image = "field"
+device_build_image = "matrix"
 device_button_selected_event = "dropdown,value"
 device_get_rotation = "dropdown"
 device_led_enable = "value"
@@ -167,10 +161,8 @@ serialSetRxBufferSize = "value"
 serialSetTxBufferSize = "value"
 serial_writenumbers = "value"
 string_parsefloat = "value"
-variables_change = "field,value"
-variables_set = "field,value"
 
-# Blocks that draw their two value sockets inline rather than stacked.
+# inputsInline as the editor has it: false puts every input on a row of its own.
 [inline]
 analog_pin = true
 array_removeat_statement = true
@@ -179,6 +171,7 @@ basic_show_icon = true
 block_dual_motor = true
 core_rgb = true
 device_analog_set_pitch_pin = true
+device_build_image = false
 device_button_selected_event = true
 device_get_rotation = true
 device_get_running_time_micros = true
@@ -198,6 +191,7 @@ digital_pin = true
 function_call = true
 game_sprite_touching_edge = true
 game_sprite_touching_sprite = true
+i2c_writenumber = false
 lists_create_with = true
 pins_i2c_readnumber = true
 pins_pulse_in = true
@@ -207,4 +201,3 @@ serial_redirect_to_usb = true
 serial_writenumbers = true
 soundLevel = true
 string_parsefloat = true
-variables_change = true

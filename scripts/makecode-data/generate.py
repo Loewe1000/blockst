@@ -679,11 +679,11 @@ def write_locale(
         for block_id in sorted(slots):
             lines.append(f'{block_id} = "{",".join(slots[block_id])}"')
 
-    inline = {k: v["inline"] for k, v in specs.items() if v.get("inline")}
+    inline = {k: v["inline"] for k, v in specs.items() if "inline" in v}
     if inline:
-        lines += ["", "# Blocks that draw their two value sockets inline rather than stacked.", "[inline]"]
+        lines += ["", "# inputsInline as the editor has it: false puts every input on a row of its own.", "[inline]"]
         for block_id in sorted(inline):
-            lines.append(f"{block_id} = true")
+            lines.append(f"{block_id} = {str(bool(inline[block_id])).lower()}")
 
     mouth_key = f"mouth_{lang}"
     mouths = {k: v[mouth_key] for k, v in specs.items() if v.get(mouth_key)}
@@ -734,10 +734,19 @@ BOOLEAN_LITERALS = {
 }
 
 
+# Shadow blocks the toolbox never lists on their own: the melody of
+# `spiele %1 %2` is a `music_string_playable` shadow holding the melody
+# editor (`melody_editor`, an 8-note grid) and a tempo; read off the block
+# in the running editor (fields: Melodie / mit Tempo / (bpm)).
+EDITOR_BLOCKS = {
+    "music_string_playable": {"en": "melody %1 at tempo %2 (bpm)", "de": "Melodie %1 mit Tempo %2 (bpm)", "shape": "reporter", "category": "music", "slots": ["melody", "value"], "inline": True},
+}
+
+
 def merge_builtins(specs: dict) -> None:
     """Fold BUILTIN_BLOCKS (pxt's own loop/logic/math/... blocks) into a
     per-language-agnostic spec dict shaped like build_catalog()'s output."""
-    for block_id, entry in {**BUILTIN_BLOCKS, **BOOLEAN_LITERALS}.items():
+    for block_id, entry in {**BUILTIN_BLOCKS, **BOOLEAN_LITERALS, **EDITOR_BLOCKS}.items():
         merged = {
             "en": entry["en"],
             "de": entry["de"],
@@ -771,7 +780,7 @@ def merge_builtins(specs: dict) -> None:
 # ---------------------------------------------------------------------------
 
 LIVE = SOURCES / "live"
-LIVE_SLOT_KIND = {"value": "value", "boolean": "value", "dropdown": "dropdown", "number": "field", "text": "field", "variable": "field", "checkbox": "field", "field": "field"}
+LIVE_SLOT_KIND = {"value": "value", "boolean": "value", "dropdown": "dropdown", "number": "field", "text": "field", "variable": "dropdown", "checkbox": "field", "field": "field"}
 LIVE_SHAPE = {"stack": "stack", "c-block": "c-block", "cap": "cap", "event": "c-block hat", "hat": "hat", "reporter": "reporter", "boolean": "boolean"}
 PLACEHOLDER_ONLY_RE = re.compile(r"^(%\d+\s*)+$")
 
@@ -796,7 +805,36 @@ def load_live(target: str, lang: str) -> dict[str, dict]:
     return records
 
 
-def live_entry(rec_en: dict | None, rec_de: dict | None) -> dict | None:
+def colour_category(block_id: str, colour: str, colours: dict[str, str], fallback: str) -> str:
+    """A block keeps its own colour wherever the toolbox shows it —
+    variables_set is red in the Arrays category too — so the colour names
+    the category when the palette has it. Two categories may share a colour
+    (Calliope's pins and variables); then the block id decides, then the
+    toolbox category, and an unresolved tie keeps the toolbox category."""
+    wanted = colour.lower()
+    matches = sorted(cat for cat, hex_ in colours.items() if hex_.lower() == wanted)
+    if len(matches) == 1:
+        return matches[0]
+    for cat in matches:
+        if block_id.startswith(cat):
+            return cat
+    return fallback
+
+
+def live_colours(target: str) -> dict[str, str]:
+    """Each toolbox category's colour as the editor shows it: the colour most
+    of its blocks carry."""
+    from collections import Counter
+    votes: dict[str, Counter] = {}
+    for lang in ("en", "de"):
+        for rec in load_live(target, lang).values():
+            cat = rec.get("cat", "").lower()
+            if cat and rec.get("c"):
+                votes.setdefault(cat, Counter())[rec["c"].lower()] += 1
+    return {cat: counter.most_common(1)[0][0] for cat, counter in votes.items()}
+
+
+def live_entry(rec_en: dict | None, rec_de: dict | None, colours: dict[str, str] | None = None) -> dict | None:
     base = rec_en or rec_de
     if base is None:
         return None
@@ -804,17 +842,25 @@ def live_entry(rec_en: dict | None, rec_de: dict | None) -> dict | None:
     text_de = (rec_de or rec_en)["spec"].strip()
     if not text_en or PLACEHOLDER_ONLY_RE.match(text_en):
         return None
+    slots = [LIVE_SLOT_KIND.get(k, "field") for k in base.get("slots", [])]
+    # A field whose default is a backtick grid is the 5x5 LED matrix editor;
+    # a value whose default shadow is the melody block gets the melody editor
+    # through that shadow (see EDITOR_BLOCKS).
+    for i, default in enumerate(base.get("def", [])):
+        if i < len(slots) and default.startswith("`"):
+            slots[i] = "matrix"
     entry = {
         "en": text_en,
         "de": text_de,
         "de_source": "live" if rec_de else "en-fallback",
         "shape": LIVE_SHAPE.get(base["s"], "stack"),
-        "category": base.get("cat", "").lower() or "advanced",
-        "slots": [LIVE_SLOT_KIND.get(k, "field") for k in base.get("slots", [])],
+        "category": colour_category(base["t"], base.get("c", ""), colours or {}, base.get("cat", "").lower() or "advanced"),
+        "slots": slots,
         "colour": base.get("c", ""),
     }
-    if base.get("inline"):
-        entry["inline"] = True
+    # inputsInline as the editor has it; false puts every input on a row of
+    # its own (the LED matrix under its label).
+    entry["inline"] = bool(base.get("inline"))
     mouths_en = (rec_en or rec_de).get("mouths", [])
     mouths_de = (rec_de or rec_en).get("mouths", [])
     if mouths_en and mouths_en[0].get("label"):
@@ -842,8 +888,10 @@ def apply_live(specs: dict, target: str) -> dict:
     markers per language, read off the if/else block."""
     en = load_live(target, "en")
     de = load_live(target, "de")
+    static = MICROBIT_COLORS if target == "microbit" else {**MICROBIT_COLORS, **CALLIOPE_COLORS}
+    colours = {**{k: v.lower() for k, v in static.items()}, **live_colours(target)}
     for block_id in sorted(set(en) | set(de)):
-        entry = live_entry(en.get(block_id), de.get(block_id))
+        entry = live_entry(en.get(block_id), de.get(block_id), colours)
         if entry is None:
             continue
         specs[block_id] = entry
@@ -937,7 +985,7 @@ def main() -> int:
         "Colours from pxt-microbit's pxtarget.json appTheme.blockColors plus "
         "each namespace's own //% color=... annotation (see MICROBIT_COLORS "
         "in the generator for the exact file/line of each).",
-        MICROBIT_COLORS,
+        {**MICROBIT_COLORS, **{k: v.upper() for k, v in live_colours("microbit").items() if k in MICROBIT_COLORS or k not in ("advancedcollapsed", "addpackage")}},
         inherits=None,
     )
     write_profile(
@@ -948,7 +996,7 @@ def main() -> int:
         "which overrides most categories from the micro:bit palette; "
         "categories not listed there (pins, serial, control, game, images) "
         "are inherited unchanged.",
-        CALLIOPE_COLORS,
+        {**CALLIOPE_COLORS, **{k: v.upper() for k, v in live_colours("calliope").items() if k not in ("advancedcollapsed", "addpackage")}},
         inherits="makecode",
     )
 

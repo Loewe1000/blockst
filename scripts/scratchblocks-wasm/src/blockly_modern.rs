@@ -84,7 +84,7 @@ fn kind(item: &Item) -> Kind {
     match item {
         Item::Label(_) => Kind::Label,
         Item::Icon(_) => Kind::Icon,
-        Item::Field { .. } => Kind::Editable,
+        Item::Field { .. } | Item::Editor { .. } => Kind::Editable,
         Item::Socket(..) => Kind::Inline,
     }
 }
@@ -95,6 +95,7 @@ fn item_size(item: &Item) -> (f32, f32) {
         // measured as 17 by 17 in RenderInfo, drawn 16 wide
         Item::Icon(_) => (ICON_W + 1.0, ICON_W + 1.0),
         Item::Field { text, dropdown } => (field_advance(text, *dropdown) + 10.0, TEXT_H),
+        Item::Editor { text, .. } => (field_advance(text, false) + 10.0, TEXT_H),
         Item::Socket(None, _) => (EMPTY_INLINE_W + TAB_W, EMPTY_INLINE_H),
         Item::Socket(Some(child), _) => {
             let (w, h) = size(child);
@@ -338,6 +339,15 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
             match item {
                 Item::Label(text) => content.push_str(&label(&colors, text, placed.x, centre + BASELINE_BELOW_CENTRE, theme)),
                 Item::Icon(kind) => content.push_str(&icon_svg(kind, placed.x, centre - placed.h / 2.0, theme)),
+                Item::Editor { text, .. } => {
+                    content.push_str(&format!(
+                        "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{TEXT_H}\" rx=\"4\" ry=\"4\" fill=\"#ffffff\"/>",
+                        placed.x,
+                        centre - TEXT_H / 2.0,
+                        placed.w
+                    ));
+                    content.push_str(&format!("<text class=\"sb-input-text\" x=\"{}\" y=\"{}\" style=\"fill:#000000\">{}</text>", placed.x + 5.0, centre + BASELINE_BELOW_CENTRE, escape_text(text)));
+                }
                 Item::Field { text, dropdown } => {
                     let shown = if *dropdown { format!("{text}{DROPDOWN_ARROW}") } else { text.clone() };
                     content.push_str(&format!(

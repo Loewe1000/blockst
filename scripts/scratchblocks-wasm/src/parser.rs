@@ -1418,6 +1418,10 @@ impl<'a> Parser<'a> {
     }
 
     fn is_infix_greater_than(&self) -> bool {
+        // `>=` is the operator, never the predicate's close.
+        if self.chars.get(self.index + 1) == Some(&'=') {
+            return true;
+        }
         // Inside a predicate: '>' followed by whitespace + an input-like
         // token (reporter '(', string '[', or predicate '<') is infix.
         // If followed by a label character (text), it's the predicate close.
@@ -1434,6 +1438,10 @@ impl<'a> Parser<'a> {
     }
 
     fn is_infix_less_than(&self) -> bool {
+        // `<=` is the operator, never a predicate's start.
+        if self.chars.get(self.index + 1) == Some(&'=') {
+            return true;
+        }
         // Need a whitespace character right after '<'
         if !self.chars.get(self.index + 1).is_some_and(|c| c.is_whitespace()) {
             return false;

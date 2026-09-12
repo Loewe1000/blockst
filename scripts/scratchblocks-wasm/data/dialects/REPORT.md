@@ -47,8 +47,8 @@ Regenerate with `python3 scripts/makecode-data/generate.py`.
 
 | Set | Blocks |
 | --- | ---: |
-| micro:bit (incl. shared loops/logic/math/variables/arrays/text/functions) | 217 |
-| Calliope mini, extra/overridden | 39 |
+| micro:bit (incl. shared loops/logic/math/variables/arrays/text/functions) | 218 |
+| Calliope mini, extra/overridden | 37 |
 | dropped as placeholder-only (micro:bit) | 3 |
 | dropped as placeholder-only (Calliope) | 0 |
 
@@ -56,7 +56,7 @@ Regenerate with `python3 scripts/makecode-data/generate.py`.
 
 | Category | micro:bit | Calliope extra |
 | --- | ---: | ---: |
-| arrays | 17 | 2 |
+| arrays | 16 | 2 |
 | basic | 9 | 8 |
 | control | 11 | 0 |
 | functions | 3 | 1 |
@@ -68,12 +68,12 @@ Regenerate with `python3 scripts/makecode-data/generate.py`.
 | loops | 8 | 0 |
 | math | 13 | 0 |
 | motors | 0 | 1 |
-| music | 14 | 2 |
+| music | 15 | 2 |
 | pins | 27 | 7 |
 | radio | 12 | 0 |
 | serial | 17 | 4 |
 | text | 12 | 1 |
-| variables | 1 | 2 |
+| variables | 2 | 0 |
 
 ### By shape
 
@@ -83,14 +83,14 @@ Regenerate with `python3 scripts/makecode-data/generate.py`.
 | c-block | 5 |
 | c-block hat | 18 |
 | cap | 2 |
-| reporter | 81 |
-| stack | 122 |
+| reporter | 82 |
+| stack | 120 |
 
 ### German coverage
 
 MakeCode does not publish its per-block translations as a file, and the public translation endpoint that serves the editor's general UI strings returns nothing for the per-block ones (see the generator's module docstring). The loop/logic/math/variables/arrays/text/functions blocks pxt itself builds *are* reproducibly sourced (pxt routes those through the general string table instead); everything else's German comes from a hand-curated table (GERMAN_TEXT in the generator), part of it read live off the running editor and part of it well-established MakeCode wording that was not re-verified live this session.
 
-- 235 blocks with text read off the running editors (sources/live), in both languages
+- 233 blocks with text read off the running editors (sources/live), in both languages
 - 0 blocks with no German text — kept in English: none
 
 ### Twins dropped (same text as another block, first id kept)

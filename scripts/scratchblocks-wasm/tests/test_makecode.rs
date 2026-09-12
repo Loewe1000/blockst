@@ -174,6 +174,9 @@ fn operators_take_their_spelling_variants() {
     assert_eq!(parse("((1) * (2))", "makecode", "de")[0]["id"], "math_arithmetic_mul");
     assert_eq!(parse("((1) × (2))", "makecode", "de")[0]["id"], "math_arithmetic_mul");
     assert_eq!(parse("<(1) ≥ (2)>", "makecode", "en")[0]["id"], "logic_compare_ge");
+    assert_eq!(parse("<(1) >= (2)>", "makecode", "en")[0]["id"], "logic_compare_ge");
+    assert_eq!(parse("<(1) <= (2)>", "makecode", "de")[0]["id"], "logic_compare_le");
+    assert_eq!(parse("<(1) != (2)>", "makecode", "de")[0]["id"], "logic_compare_ne");
     assert_eq!(parse("((1) ^ (2))", "makecode", "en")[0]["id"], "math_arithmetic_pow");
 }
 
@@ -192,4 +195,41 @@ fn the_else_row_carries_its_button_at_the_right_edge_and_the_plus_row_follows() 
     assert!(d.contains(" V 40 V 44 a 4 4 0 0,1 -4,4 H 64 "), "{d}");
     assert!(d.ends_with("h -8 a 4 4 0 0,1 -4,-4 z"), "{d}");
     assert_eq!(svg.matches("<circle").count(), 2, "one minus, one plus: {svg}");
+}
+
+/// A block keeps its own colour wherever the toolbox lists it: setze and ändere are both variables-red.
+#[test]
+fn set_and_change_variable_share_the_variables_colour() {
+    for code in ["setze [zähler v] auf (0)", "ändere [zähler v] um (1)"] {
+        let svg = render(code, "makecode", "de");
+        assert!(svg.contains("fill=\"#dc143c\""), "{code}: {svg}");
+    }
+}
+
+// --- editor fields ---------------------------------------------------------------
+
+/// zeige LEDs: a 167 x 169 grid of 25px cells on a 32px pitch in a row of its own; the editor's outline is `… V 40 V 48 V 217 V 221 …`, 233 high.
+#[test]
+fn the_led_matrix_is_a_5_by_5_grid_in_its_own_row() {
+    let svg = render("zeige LEDs [#...#|.#.#.|..#..|.#.#.|#...#]", "makecode", "de");
+    let d = paths(&svg).remove(0);
+    assert!(d.contains(" V 48 V 217 V 221 a 4 4 0 0,1 -4,4 H 48 "), "{d}");
+    assert_eq!(svg.matches("width=\"25\" height=\"25\" rx=\"5\"").count(), 25, "{svg}");
+    assert_eq!(svg.matches("rx=\"5\" fill=\"#ffffff\"").count(), 9, "nine lit LEDs: {svg}");
+    assert!(svg.contains("x=\"15\" y=\"53\""), "first cell at (8 + 7, 48 + 5): {svg}");
+}
+
+/// spiele (Melodie […] mit Tempo (120) (bpm)) [bis zum Ende v]: the melody shadow is a 50 pill holding a 140 x 42 grey editor with eight 10 x 20 note cells.
+#[test]
+fn the_melody_editor_is_an_eight_note_grid_in_a_grey_pill() {
+    let code = "spiele (Melodie [C D E F - - - -] mit Tempo (120) (bpm)) [bis zum Ende v]";
+    let node = &parse(code, "makecode", "de")[0];
+    assert_eq!(node["id"], "music_playable_play", "{node}");
+    let svg = render(code, "makecode", "de");
+    assert!(svg.contains("fill=\"#d9d9d9\""), "{svg}");
+    assert_eq!(svg.matches("width=\"10\" height=\"20\" rx=\"3\"").count(), 8, "{svg}");
+    assert_eq!(svg.matches("fill=\"#dcdcdc\"").count(), 4, "four rests: {svg}");
+    let d = paths(&svg).remove(0);
+    assert!(d.contains(" V 58 V 62 a 4 4 0 0,1 -4,4 H 48 "), "8 + 50 + 4 + 4: {d}");
+    assert!(svg.contains("m 25,0 h "), "the melody shadow is a 50 pill: {svg}");
 }

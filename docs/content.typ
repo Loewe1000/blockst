@@ -300,7 +300,7 @@ ende
 ")
 ```)
 
-A unit the editor shows in parentheses is typed like a value and drawn as the label (`pausiere (ms) (100)`). `ende` closes a C-block, `ansonsten` opens the else branch with the editor's − and + buttons. `raw-makecode()` renders ````makecode`, ````microbit` and ````calliope` fences; `makecode-parse()` returns the AST.
+A unit the editor shows in parentheses is typed like a value and drawn as the label (`pausiere (ms) (100)`). The LED matrix takes 25 cells, `#` lit and `.` dark (`zeige LEDs [#...#|.#.#.|..#..|.#.#.|#...#]`), the melody editor eight notes or rests (`spiele (Melodie [C D E F - - - -] mit Tempo (120) (bpm)) [bis zum Ende v]`). `ende` closes a C-block, `ansonsten` opens the else branch with the editor's − and + buttons. `raw-makecode()` renders ````makecode`, ````microbit` and ````calliope` fences; `makecode-parse()` returns the AST.
 
 = Labels and Line Numbers
 
