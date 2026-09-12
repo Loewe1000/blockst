@@ -11,12 +11,12 @@
 #let logo = context if doc-target() == "web" {
   // In einer Box, sonst steht das Bild als Block da und der Name landet in
   // einem eigenen <p> innerhalb der Überschrift.
-  { box(image("../examples/logo.svg", height: 2.6em, alt: "blockst")); "blockst" }
+  { box(image("../examples/logo.svg", height: 1.35em, alt: "blockst")); "blockst" }
 } else {
   text(
     font: ("Inter", "Source Sans 3", "Noto Sans", "Helvetica Neue"),
     size: 30pt, weight: 600, fill: rgb("#0c4a6e"),
-  )[#box(baseline: 22%, image("../examples/logo.svg", height: 1.25em)) #h(0.1em) blockst]
+  )[#box(baseline: 18%, image("../examples/logo.svg", height: 1.05em)) #h(0.1em) blockst]
 }
 
 #show: docs.with(
