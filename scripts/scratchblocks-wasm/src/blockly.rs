@@ -267,21 +267,26 @@ pub fn size(block: &BlockSpec) -> (f32, f32) {
         width = width.max(w);
         height += h;
     }
-    for (index, mouth) in p.mouths.iter().enumerate() {
-        let edge = statement_edge(mouth);
-        width = width.max(edge + g.notch_end);
+    if !p.mouths.is_empty() {
+        width = width.max(statement_edge(&p.mouths) + g.notch_end);
+    }
+    for mouth in &p.mouths {
         height += mouth_height(mouth);
         height += ARM_H;
-        let _ = index;
     }
     (width, height)
 }
 
-fn statement_edge(mouth: &Mouth) -> f32 {
-    match mouth.label.as_deref() {
-        Some(label) if !label.is_empty() => STATEMENT_EDGE_MIN.max(SEP_X + text_width(label) + SEP_X),
-        _ => STATEMENT_EDGE_MIN,
-    }
+/// Where the mouths' inner wall sits. Blockly keeps one statement edge per
+/// block: the widest of the mouth labels decides, and every mouth uses it.
+fn statement_edge(mouths: &[Mouth]) -> f32 {
+    mouths
+        .iter()
+        .map(|mouth| match mouth.label.as_deref() {
+            Some(label) if !label.is_empty() => SEP_X + text_width(label) + SEP_X,
+            _ => 0.0,
+        })
+        .fold(STATEMENT_EDGE_MIN, f32::max)
 }
 
 fn stack_height(blocks: &[BlockSpec]) -> f32 {
@@ -385,8 +390,8 @@ pub fn extent(block: &BlockSpec) -> (f32, f32) {
             }
         }
     }
+    let edge = statement_edge(&p.mouths);
     for mouth in &p.mouths {
-        let edge = statement_edge(mouth);
         for child in &mouth.body {
             width = width.max(edge + 1.0 + extent(child).0);
         }
@@ -527,18 +532,19 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
         }
         y += h;
     }
-    let mut mouth_tops: Vec<(f32, f32, f32)> = Vec::new(); // (top, edge, height)
+    // Every mouth shares the block's statement edge; the arm under a mouth
+    // runs back out to the block's full width.
+    let edge = statement_edge(&p.mouths);
+    let mut mouth_tops: Vec<(f32, f32)> = Vec::new(); // (top, height)
     for mouth in &p.mouths {
-        let edge = statement_edge(mouth);
         let mh = mouth_height(mouth);
-        mouth_tops.push((y, edge, mh));
+        mouth_tops.push((y, mh));
         runs.push((
             format!(
-                " H {} {} h -7 a {r},{r} 0 0,0 -{r},{r} v {} a {r},{r} 0 0,0 {r},{r} H {}",
+                " H {} {} h -7 a {r},{r} 0 0,0 -{r},{r} v {} a {r},{r} 0 0,0 {r},{r} H {own_w}",
                 edge + g.notch_end,
                 notch(&g, -1.0),
                 mh - 2.0 * r,
-                edge + g.notch_end
             ),
             ARM_H,
         ));
@@ -578,8 +584,10 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
             d.push_str(" H 0 z");
         }
     }
-    // inline socket cut-outs, as sub-paths of the same outline
+    // inline socket cut-outs, as sub-paths of the same outline, and the
+    // light line along each cut-out's right wall and floor
     let mut cutouts = String::new();
+    let mut highlight_inline = String::new();
 
     // --- items ----------------------------------------------------------
     let mut content = String::new();
@@ -622,6 +630,14 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
                         left + socket_w,
                         socket_h - 20.0
                     ));
+                    highlight_inline.push_str(&format!(
+                        " M {},{} v {socket_h} h -{socket_w} M {},{} l {},-2.1",
+                        left + socket_w + 0.5,
+                        socket_top + 0.5,
+                        left - 5.1,
+                        socket_top + 15.0 + 5.0 - 0.7,
+                        TAB_W * 0.46
+                    ));
                     if let Some(child) = child {
                         let (child_svg, _, _) = render_block(child, theme, true, true);
                         content.push_str(&format!(
@@ -640,7 +656,7 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
         }
     }
     for (index, mouth) in p.mouths.iter().enumerate() {
-        let (top, edge, _) = mouth_tops[index];
+        let (top, _) = mouth_tops[index];
         if let Some(label_text) = mouth.label.as_deref().filter(|l| !l.is_empty()) {
             content.push_str(&label(&colors, label_text, SEP_X, top + FIELD_Y + 12.5, theme));
         }
@@ -655,21 +671,73 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
     let outline = format!("{d}{cutouts}");
     if g.bevel {
         // Classic Blockly: a darker copy one pixel down and right, the block
-        // itself without a stroke, and a lighter line along the top and left
-        // edges. The highlight here follows the outer edges only; Blockly's
-        // also traces the notch and tab, which is a refinement for later.
+        // itself without a stroke, and a lighter line along the edges that
+        // face the light — the top edge with its notch, the tab glints, the
+        // floor of each mouth, and the left edge with its corners. The
+        // highlight follows Blockly's block_render_svg.js line for line.
         let dark = darken(&colors.fill, 0.8);
         let light = lighten(&colors.fill, 0.3);
         svg.push_str(&format!("<path d=\"{outline}\" fill=\"{dark}\" fill-rule=\"evenodd\" transform=\"translate(1 1)\"/>"));
         svg.push_str(&format!("<path d=\"{outline}\" fill=\"{}\" fill-rule=\"evenodd\"/>", colors.fill));
-        let highlight = if p.is_value {
-            format!("M 0.5,{} V 0.5 H {}", body_h - 0.5, own_w - 0.5)
-        } else if round_top_left {
-            format!("M 0.5,{} V {} A {r},{r} 0 0,1 {},0.5 H {}", body_h - 0.5, r + 0.5, r + 0.5, own_w - 0.5)
+        let d45_inside = (1.0 - std::f32::consts::FRAC_1_SQRT_2) * (r - 0.5) + 0.5;
+        let d45_outside = (1.0 - std::f32::consts::FRAC_1_SQRT_2) * (r + 0.5) - 0.5;
+        let mut hl = String::new();
+        // top edge
+        if round_top_left {
+            hl.push_str(&format!("m 0.5,{} A {},{} 0 0,1 {r},0.5", r - 0.5, r - 0.5, r - 0.5));
         } else {
-            format!("M 0.5,{} V 0.5 H {}", body_h - 0.5, own_w - 0.5)
-        };
-        svg.push_str(&format!("<path d=\"{highlight}\" fill=\"none\" stroke=\"{light}\" stroke-width=\"1\"/>"));
+            hl.push_str("m 0.5,0.5");
+        }
+        if p.top_notch {
+            hl.push_str(&format!(" H {} {}", g.notch_start, notch(&g, 1.0)));
+        }
+        hl.push_str(&format!(" H {}", own_w - 0.5));
+        // a glint at the foot of every external tab
+        for (index, row) in p.rows.iter().enumerate() {
+            if row.external.is_some() {
+                hl.push_str(&format!(" M {},{} l {},-2.1", own_w - 5.0, row_tops[index] + FIELD_Y + 15.0 - 0.7, TAB_W * 0.46));
+            }
+        }
+        // the floor of each mouth, from its inner corner out to the edge
+        for (top, mh) in &mouth_tops {
+            hl.push_str(&format!(
+                " M {},{} a {},{} 0 0,0 {},{} H {}",
+                edge + d45_outside,
+                top + mh - d45_outside,
+                r + 0.5,
+                r + 0.5,
+                r - d45_outside,
+                d45_outside + 0.5,
+                own_w - 0.5
+            ));
+        }
+        // bottom-left corner and the left edge, up to where the top began
+        if p.is_value {
+            hl.push_str(&format!(
+                " M 0.5,{} V {} m {},-0.5 q {},-5.5 0,-11 m {},1 V 0.5 H 1",
+                body_h - 0.5,
+                FIELD_Y + 15.0 - 1.5,
+                -TAB_W * 0.92,
+                -TAB_W * 0.19,
+                TAB_W * 0.92
+            ));
+        } else {
+            let top_of_left = if round_top_left { r } else { 0.5 };
+            if last {
+                hl.push_str(&format!(
+                    " M {},{} A {},{} 0 0,1 0.5,{} V {top_of_left}",
+                    d45_inside,
+                    body_h - d45_inside,
+                    r - 0.5,
+                    r - 0.5,
+                    body_h - r
+                ));
+            } else {
+                hl.push_str(&format!(" M 0.5,{} V {top_of_left}", body_h - 0.5));
+            }
+        }
+        hl.push_str(&highlight_inline);
+        svg.push_str(&format!("<path d=\"{hl}\" fill=\"none\" stroke=\"{light}\" stroke-width=\"1\"/>"));
     } else {
         svg.push_str(&format!("<path d=\"{outline}\" fill=\"{}\" stroke=\"{}\" fill-rule=\"evenodd\"/>", colors.fill, colors.stroke));
     }

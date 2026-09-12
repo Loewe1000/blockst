@@ -238,3 +238,71 @@ fn stacked_blocks_share_square_corners_where_they_touch() {
     assert!(outlines[3].starts_with("m 0,0 H 15 "), "second block, square top-left: {}", outlines[3]);
     assert!(outlines[3].ends_with(" H 8 a 8,8 0 0,1 -8,-8 z"), "second block, rounded bottom-left: {}", outlines[3]);
 }
+
+// ---------------------------------------------------------------------------
+// The bevel highlight, against the editor's svgPathLight_ (fixture key
+// "highlights"). Blockly lights only the edges that face up and left: the top
+// edge with its notch, a glint at the foot of every tab, the floor of each
+// mouth, and the left edge with its corners — never the right or the bottom.
+// ---------------------------------------------------------------------------
+
+fn highlight(code: &str) -> String {
+    let svg = render(code, "jwinf");
+    let body = svg.split("</defs>").nth(1).expect("defs");
+    let mut paths = body.split("<path d=\"").skip(1).map(|p| p.split('"').next().unwrap().to_string());
+    // shadow copy, outline, highlight
+    paths.nth(2).expect("highlight")
+}
+
+/// gehe 1 Schritte: `m 0.5,7.5 A 7.5,7.5 0 0,1 8,0.5 H 15 l 6,4 3,0 6,-4 H 130 … M 2.6967,22.3033 A 7.5,7.5 0 0,1 0.5,17 V 8`
+#[test]
+fn the_highlight_follows_the_notch_and_stops_at_the_rounded_corners() {
+    let h = highlight("gehe (3) Schritte");
+    assert!(h.starts_with("m 0.5,7.5 A 7.5,7.5 0 0,1 8,0.5 H 15 l 6,4 3,0 6,-4 H "), "{h}");
+    assert!(h.ends_with(" M 2.6966991,22.3033 A 7.5,7.5 0 0,1 0.5,17 V 8"), "{h}");
+    assert!(!h.contains(" v 25") && !h.contains("V 25"), "no light on the right edge: {h}");
+}
+
+/// setze x auf 0: `… H 123.73 M 119.23,19.3 l 3.68,-2.1 M 2.6967,22.3033 …` — a glint at the foot of the external tab.
+#[test]
+fn an_external_tab_gets_a_glint_at_its_foot() {
+    let h = highlight("setze [x v] auf (0)");
+    assert!(h.contains(",19.3 l 3.68,-2.1 M 2.6966991,22.3033 A 7.5,7.5 0 0,1 0.5,17 V 8"), "{h}");
+}
+
+/// math_number: `m 0.5,0.5 H 27.66 M 0.5,24.5 V 18.5 m -7.36,-0.5 q -1.52,-5.5 0,-11 m 7.36,1 V 0.5 H 1`
+#[test]
+fn a_value_block_is_lit_along_the_back_of_its_tab() {
+    let svg = render("((1) + (2))", "jwinf");
+    let body = svg.split("</defs>").nth(1).unwrap();
+    let paths: Vec<&str> = body.split("<path d=\"").skip(1).map(|p| p.split('"').next().unwrap()).collect();
+    // operator: dark, fill, light; first number: dark, fill, light
+    let number_light = paths[5];
+    assert_eq!(number_light, "m 0.5,0.5 H 28.4 M 0.5,24.5 V 18.5 m -7.36,-0.5 q -1.52,-5.5 0,-11 m 7.36,1 V 0.5 H 1");
+    // the operator's inline sockets: right wall, floor, glint
+    assert!(paths[2].contains(",5.5 v 27 h -"), "{}", paths[2]);
+    assert!(paths[2].contains(",24.3 l 3.68,-2.1"), "{}", paths[2]);
+}
+
+/// wiederhole 4 Mal: mache [gehe 1 Schritte] — outline `… v 14 a 8,8 0 0,0 8,8 …`, light `M 66.01,64.01 a 8.5,8.5 0 0,0 6.01,2.49 H 93.52`
+#[test]
+fn a_mouth_is_lit_along_its_floor_and_holds_a_child_with_five_pixels_to_spare() {
+    let code = "wiederhole (4) mal:\n  gehe (1) Schritte\nende";
+    let d = outline(code);
+    assert!(d.contains(" h -7 a 8,8 0 0,0 -8,8 v 14 a 8,8 0 0,0 8,8 H "), "{d}");
+    let h = highlight(code);
+    assert!(h.contains(" a 8.5,8.5 0 0,0 6.0104074,2.4895926 H "), "{h}");
+}
+
+/// falls … sonst …: `… H 94.02 v 5 tab v 4 H 94.02 l -6,4 … H 94.02 v 10 H 94.02 l -6,4 … H 94.02 v 10 H 29.5 …` — the same edge everywhere.
+#[test]
+fn every_mouth_of_a_block_shares_one_statement_edge_and_a_full_width_arm() {
+    let d = outline("falls <auf Kiste>\n  gehe nach rechts\nsonst\n  drehe nach links\nende");
+    let edges: Vec<&str> = d.split(" H ").skip(1).map(|s| s.split(' ').next().unwrap()).collect();
+    // notch start, then: top, below the tab, foot 1, mouth 2 notch, foot 2, bottom notch, corner
+    assert!(edges.len() >= 8, "{d}");
+    let right = edges[1];
+    for e in &edges[1..6] {
+        assert_eq!(*e, right, "{d}");
+    }
+}

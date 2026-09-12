@@ -707,8 +707,11 @@ PROFILES = {
         "title": "Jugendwettbewerb Informatik (jwinf.de), training tasks.",
         "note": (
             "Colours read from the DOM of the running editors, not estimated.\n"
-            "# The 'Herausforderungen' area uses a different scheme for the same\n"
-            "# categories; this profile follows the training tasks."
+            "# They are set per task: the robot training tasks (Befehlsfolgen,\n"
+            "# Bedingte Anweisungen, Variablen und Logik, ...) use the scheme\n"
+            "# below; the Freie Turtle-Umgebung colours schleifen #47cccc,\n"
+            "# logik #73cc47 and mathe #475dcc instead. This profile follows the\n"
+            "# training tasks."
         ),
         "geometry": {},
         "colors": {
