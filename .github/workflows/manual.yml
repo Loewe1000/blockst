@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # docs/docs.typ importiert @schule/schuldocs:0.2.0. Das Paket steht nicht
+      # docs/docs.typ importiert @schule/schuldocs:0.3.0. Das Paket steht nicht
       # im offiziellen Verzeichnis, sondern im Schwesterrepo Typst-Schule.
       - name: Check out Typst-Schule (schuldocs)
         uses: actions/checkout@v4
@@ -36,12 +36,12 @@ jobs:
           path: typst-schule
 
       # --package-path erwartet <pfad>/<namensraum>/<name>/<version>; im
-      # Schwesterrepo liegt das Paket flach unter schuldocs/0.2.0.
+      # Schwesterrepo liegt das Paket flach unter schuldocs/0.3.0.
       - name: Arrange local package path
         run: |
           mkdir -p typst-packages/schule
           cp -R typst-schule/schuldocs typst-packages/schule/schuldocs
-          test -f typst-packages/schule/schuldocs/0.2.0/typst.toml
+          test -f typst-packages/schule/schuldocs/0.3.0/typst.toml
 
       - name: Install Typst
         uses: typst-community/setup-typst@v4
