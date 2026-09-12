@@ -362,3 +362,78 @@ fn scratch_takes_overrides_as_well() {
     assert!(svg.contains("#123456"), "{svg}");
     assert!(svg.contains("#9966ff") || svg.contains("#9966FF"), "looks keeps its colour: {svg}");
 }
+
+
+// ---------------------------------------------------------------------------
+// The default profile, against Blockly 12.3.1's thrasos renderer
+// (tests/fixtures/blockly-modern-reference.json). Same idea as above: what
+// is checked is everything that is not a text width.
+// ---------------------------------------------------------------------------
+
+fn modern_outline(code: &str) -> String {
+    let svg = render(code, "blockly");
+    let body = svg.split("</defs>").nth(1).expect("defs");
+    body.split("<path d=\"").nth(1).unwrap().split('"').next().unwrap().to_string()
+}
+
+/// set x to 0: `m 0,8 a 8 8 0 0,1 8,-8 h 7 l 6,4 3,0 6,-4 h 70.5 v 5 V 5 H 100.5 tab v 3 V 23 V 28 h -70.5 l -6,4 -3,0 -6,-4 h -7 a 8 8 0 0,1 -8,-8 z`
+#[test]
+fn modern_field_row_is_5_18_5_with_the_tab_at_the_row_top() {
+    let d = modern_outline("setze [x v] auf (0)");
+    assert!(d.starts_with("m 0,8 a 8 8 0 0,1 8,-8 H 15 l 6,4 3,0 6,-4 H "), "{d}");
+    assert!(d.contains(" V 5 c 0,10 -8,-8 -8,7.5 s 8,-2.5 8,7.5 v 3 V 28 H 30 l -6,4 -3,0 -6,-4 H 8 a 8 8 0 0,1 -8,-8 z"), "{d}");
+    let svg = render("setze [x v] auf (0)", "blockly");
+    // the number block starts at the parent's right edge, its own top row above the parent's row
+    let edge = d.split(" H ").nth(2).unwrap().split(' ').next().unwrap();
+    assert!(svg.contains(&format!("<g transform=\"translate({edge} 0)\">")), "{svg}");
+    assert!(svg.contains("stroke=\"#c08ca6\""), "tertiary stroke: {svg}");
+}
+
+/// math_number: `m 8,0 h 28.15 v 5 V 5 V 23 V 23 V 28 h -28.15 H 8 V 20 tab z` — square, 28 high, the box 18 tall at y 5.
+#[test]
+fn modern_value_block_is_square_and_28_high() {
+    let svg = render("((1) + (2))", "blockly");
+    let body = svg.split("</defs>").nth(1).unwrap();
+    let paths: Vec<&str> = body.split("<path d=\"").skip(1).map(|p| p.split('"').next().unwrap()).collect();
+    assert!(paths[1].ends_with(" V 28 H 0 V 20 c 0,-10 -8,8 -8,-7.5 s 8,2.5 8,-7.5 z"), "{}", paths[1]);
+    assert!(svg.contains("<rect x=\"5\" y=\"5\" width=\"18.9\" height=\"18\" rx=\"4\""), "{svg}");
+    // the arithmetic block: 38 high, sockets 28 tall cut in at y 5, the first one 16 in
+    assert!(paths[0].contains(" V 38 H 0 V 20 "), "{}", paths[0]);
+    assert!(paths[0].contains(" M 16,5 v 5 c 0,10 -8,-8 -8,7.5 s 8,-2.5 8,7.5 v 8 h "), "{}", paths[0]);
+    assert!(paths[0].contains(" v -28 z"), "{}", paths[0]);
+    assert!(svg.contains("<g transform=\"translate(16 5)\">"), "first child at the cut-out: {svg}");
+}
+
+/// if (1 = 2) do […]: `… v 5 V 5 H 66.3 tab v 13 V 37 H 66.3 notch h -7 a 8 8 0 0,0 -8,8 v 16 a 8 8 0 0,0 8,8 H 66.3 V 69 V 79 …`
+#[test]
+fn modern_if_row_grows_with_its_condition_and_the_mouth_with_its_child() {
+    let d = modern_outline("falls <(1) = (2)>\n  setze [x v] auf (7)\nende");
+    assert!(d.contains(" V 5 c 0,10 -8,-8 -8,7.5 s 8,-2.5 8,7.5 v 13 V 37 H "), "row 28 = child 38 - 10, then a 4 spacer: {d}");
+    assert!(d.contains(" l -6,4 -3,0 -6,-4 h -7 a 8 8 0 0,0 -8,8 v 16 a 8 8 0 0,0 8,8 H "), "mouth 32 = child 28 + notch: {d}");
+    assert!(d.contains(" V 79 H 30 l -6,4 -3,0 -6,-4 H 8 a 8 8 0 0,1 -8,-8 z"), "10 under the mouth: {d}");
+}
+
+/// if [not ?] do ? else ?: rows 5 | 18 | 4 | 24 | 10 | 24 | 10, one statement edge.
+#[test]
+fn modern_else_has_a_10_spacer_between_the_mouths() {
+    let d = modern_outline("falls <nicht <>>\nsonst\nende");
+    assert!(d.contains(" v 3 V 27 H "), "{d}");
+    assert!(d.contains(" v 8 a 8 8 0 0,0 8,8 H "), "empty mouth 24: {d}");
+    assert!(d.contains(" V 61 H "), "{d}");
+    assert!(d.contains(" V 95 H 30 l -6,4"), "61 + 24 + 10: {d}");
+    let edges: Vec<&str> = d.split(" H ").skip(1).map(|s| s.split(' ').next().unwrap()).collect();
+    assert_eq!(edges[1], edges[2], "{d}");
+    assert_eq!(edges[2], edges[4], "{d}");
+}
+
+/// repeat ? times do [print, print]: an empty socket makes a 26 row; two children stack at 28 apart, mouth 60.
+#[test]
+fn modern_stacks_sit_28_apart_and_an_empty_socket_row_is_26() {
+    let code = "wiederhole ()-mal:\n  setze [x v] auf (1)\n  setze [x v] auf (2)\nende";
+    let d = modern_outline(code);
+    assert!(d.contains(" V 35 H "), "5 + 26 + 4: {d}");
+    assert!(d.contains(" v 44 a 8 8 0 0,0 8,8 H "), "60 - 16: {d}");
+    let svg = render(code, "blockly");
+    assert!(svg.contains("<g transform=\"translate(0 28)\">"), "{svg}");
+    assert!(svg.contains(" v 6 h 14.5 v -26 z"), "empty socket: {d}");
+}

@@ -69,6 +69,10 @@ pub struct Geometry {
     /// Classic Blockly rounds only the left corners; the right ones are
     /// square. Scratch and today's Blockly round all four.
     pub square_right_corners: bool,
+    /// Today's Blockly lays rows out between 5px top and bottom rows with
+    /// spacer rows between them (`blockly_modern.rs`); the pre-2019
+    /// renderer packs everything into 25px rows (`blockly.rs`).
+    pub spacer_rows: bool,
     /// The label font. Scratch draws 12pt medium; Blockly 11pt regular, and
     /// the widths are measured with the same face, so this decides the
     /// layout as much as the look.
@@ -117,6 +121,7 @@ impl Geometry {
             hat_curve_height: 15.0,
             bevel: false,
             square_right_corners: false,
+            spacer_rows: false,
             font_size_pt: 12.0,
             font_weight: 500,
             field_height: 32.0,
@@ -157,7 +162,8 @@ impl Geometry {
             hat_width: 100.0,
             hat_curve_height: 15.0,
             bevel: false,
-            square_right_corners: false,
+            square_right_corners: true,
+            spacer_rows: true,
             font_size_pt: 11.0,
             font_weight: 400,
             field_height: 16.0,
@@ -188,6 +194,7 @@ impl Geometry {
             tab_height: 20.0,
             bevel: true,
             square_right_corners: true,
+            spacer_rows: false,
             ..Self::blockly_modern()
         }
     }

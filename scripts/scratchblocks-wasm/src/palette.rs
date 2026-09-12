@@ -279,8 +279,9 @@ fn derive(fill: &str) -> Option<(CategoryColors, CategoryColors, f32)> {
     let (r, g, b) = parse_hex(fill)?;
     let normal = CategoryColors {
         fill: to_hex(r, g, b),
-        // Blockly's tertiary colour: the same hue, a fifth darker.
-        stroke: to_hex(r * 0.8, g * 0.8, b * 0.8),
+        // Blockly's tertiary colour, the outline of today's blocks: the
+        // fill pulled three tenths towards white (#5b80a5 -> #8ca6c0).
+        stroke: to_hex(r + (1.0 - r) * 0.3, g + (1.0 - g) * 0.3, b + (1.0 - b) * 0.3),
         // Blockly labels are always white, even on its lightest greens;
         // the contrast rule is kept for the greyscale variant, where it
         // matters.

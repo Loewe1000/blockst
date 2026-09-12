@@ -71,6 +71,12 @@ SKIP_BLOCKS = {
     # Same text as controls_if ("falls %1"); whether an else branch is drawn
     # is decided by the author writing `sonst`, not by the block id.
     "controls_ifelse",
+    # The pieces of the if-block's mutator: "sonst" and "sonst falls" are
+    # not blocks an author writes, and as block texts they shadow the
+    # `sonst` marker that opens an else branch.
+    "controls_if_else",
+    "controls_if_elseif",
+    "controls_if_if",
 }
 
 # Blockly's msg/messages.js declares some keys as synonyms of others rather

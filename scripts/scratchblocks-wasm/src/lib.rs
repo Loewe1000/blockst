@@ -1,4 +1,5 @@
 mod blockly;
+mod blockly_modern;
 mod geometry;
 mod measure;
 mod model;
