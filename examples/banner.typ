@@ -1,4 +1,6 @@
-// README header banner: the four block languages side by side.
+// README banner: the logo, the name, and the four block languages side by
+// side. Rendered to banner.svg (a new file name whenever the picture
+// changes, GitHub caches the old one otherwise).
 #import "@preview/blockst:0.4.0": blockst, scratch, blockly, makecode, nepo, set-blockst
 
 #set page(width: auto, height: auto, margin: 0pt, fill: none)
@@ -7,8 +9,11 @@
 #block(inset: (x: 10mm, top: 6mm, bottom: 8mm))[
   #set-blockst(scale: 78%)
 
-  #text(40pt)[*_blockst_*]
-  #v(2mm)
+  #grid(columns: 2, column-gutter: 4mm, align: horizon,
+    image("logo.svg", height: 13mm),
+    text(40pt)[*_blockst_*],
+  )
+  #v(1mm)
   #let caption(body) = text(9pt, fill: luma(110), tracking: 0.08em, upper(body))
   #grid(
     columns: 4,
