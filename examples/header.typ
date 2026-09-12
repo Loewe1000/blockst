@@ -1,48 +1,53 @@
-// README header banner
-#import "@preview/blockst:0.4.0": blockst, scratch, set-blockst
+// README header banner: the four block languages side by side.
+#import "@preview/blockst:0.4.0": blockst, scratch, blockly, makecode, nepo, set-blockst
 
 #set page(width: auto, height: auto, margin: 0pt, fill: none)
 #set text(font: "Helvetica Neue", fallback: true)
 
-#v(-4em)
-
-#block(inset: (x: 10mm, top: 9mm, bottom: 10mm))[
+#block(inset: (x: 10mm, top: 6mm, bottom: 8mm))[
   #set-blockst(scale: 78%)
 
-  #move(dy: 4em, text(40pt)[
-    *_blockst_*
-  ])
+  #text(40pt)[*_blockst_*]
+  #v(2mm)
+  #let caption(body) = text(9pt, fill: luma(110), tracking: 0.08em, upper(body))
   #grid(
     columns: 4,
-    column-gutter: 5mm,
-    align: bottom,
+    column-gutter: 7mm,
+    row-gutter: 2.5mm,
+    align: left + top,
     scratch("
 when green flag clicked
-move (10) steps
-turn cw (15) degrees
-say [Hello!]
-"),
-    scratch("
-when [space v] key pressed
-forever
-  move (5) steps
-  turn cw (3) degrees
+repeat (4)
+  move (10) steps
+  if <touching [edge v]?> then
+    turn cw (90) degrees
+  end
 end
 "),
-    scratch("
-when I receive [start v]
-set [score v] to (0)
-if <touching [edge v]?> then
-  turn cw (180) degrees
-else
-  change [score v] by (1)
-end
+    blockly("
+Roboter-Programm
+wiederhole (4) mal:
+  gehe nach rechts
+  falls <auf Kiste>
+    hebe Murmel auf ::aktionen
+  ende
+ende
+", profile: "jwinf"),
+    makecode("
+wenn Knopf [A v] geklickt
+  zeige Symbol [Herz v]
+  wenn <(Lichtstärke) > (100)> dann
+    zeige Zahl (zähler)
+  ende
+ende
 "),
-    [#scratch("
-define jump (h) px
-change y by (var [h]
-")
-      #scratch("call jump (50) px")
-    ],
+    nepo("
+Start
+  Zeige Text \"Hallo\"
+  Wiederhole unendlich oft
+    Schalte RGB LED an (#ff0000)
+  Ende
+", scale: 100%),
+    caption[Scratch], caption[Blockly · jwinf], caption[MakeCode · micro:bit], caption[NEPO · Open Roberta],
   )
 ]

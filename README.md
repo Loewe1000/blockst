@@ -1,30 +1,36 @@
-# Blockst - Scratch Blocks in Typst
+# Blockst — Block-based programs in Typst
 
 <p align="left">
   <a href="https://typst.app/universe/package/blockst"><img src="https://img.shields.io/badge/typst-preview%20package-239dad?style=flat" alt="Typst package blockst" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen?style=flat" alt="License MIT" /></a>
 </p>
 
-![Blockst header](examples/header.svg)
+![Blockst header: Scratch, Blockly (jwinf), MakeCode and NEPO blocks](examples/header.svg)
 
-Blockst renders Scratch-style programming blocks directly in Typst documents.
-It is made for worksheets, tutorials, teaching material, and visual programming explanations.
+Blockst renders block-based programs in Typst documents, each drawn the way
+its editor draws it — for worksheets, tutorials, teaching material and
+anything else where block code has to appear in print or online.
 
-The current renderer is text-based: Typst passes Scratch text to a bundled WASM plugin, the plugin parses and renders SVG, and Typst embeds the SVG output.
+| Editor | Function | What you get |
+| --- | --- | --- |
+| **Scratch 3** | `scratch()` | the Scratch look in 26 languages, right-to-left included; turtle graphics that run the program; import of real `.sb3` projects — [Scratch](#scratch) |
+| **Blockly** | `blockly()` | today's flat Blockly and the pre-2019 look, with profiles for the Jugendwettbewerb Informatik (jwinf.de) and its robot and turtle blocks, 24 languages — [Blockly and jwinf](#blockly-and-jwinf) |
+| **MakeCode** | `makecode()` | the micro:bit and Calliope mini editors' blocks, LED matrix and melody editor included, in all 36 editor languages — [MakeCode](#makecode) |
+| **NEPO** | `nepo()` | Open Roberta Lab's Calliope mini and micro:bit blocks — [NEPO (Open Roberta)](#nepo-open-roberta) |
+
+All four share one text notation: a block per line, `(…)` for a value,
+`[… v]` for a dropdown, `<…>` for a condition, indentation and an end marker
+for the body of a loop. Typst hands the text to a bundled WASM plugin, the
+plugin parses it and returns SVG, Typst embeds the SVG. Themes, colours,
+fonts, scale and line numbers work the same for every editor.
 
 **Manual:** [loewe1000.github.io/blockst](https://loewe1000.github.io/blockst/) — the
 newest version; every released version stays readable under its own number,
 e.g. [/0.3.0/](https://loewe1000.github.io/blockst/0.3.0/), and as a PDF in each.
 
-> ⚠️ **BREAKING CHANGE (since `0.2.0`)**
->
-> ❌ The old pre-`0.2.0` syntax is **removed** and no longer available.
->
-> ✅ From `0.2.0` onward, Blockst supports **only** the text-to-WASM pipeline.
->
-> 🔧 Documents that still rely on the previous native Typst renderer syntax **must be migrated**.
-
-Starting with version 0.2.0, Blockst uses only the WASM-based text parser and renderer. The earlier native Typst rendering approach was dropped because it ran into Typst's limits on more complex Scratch layouts.
+> ⚠️ **Breaking change since `0.2.0`:** the pre-`0.2.0` native-Typst renderer
+> syntax is removed. Blockst uses only the text-to-WASM pipeline; documents
+> written for the old syntax must be migrated.
 
 ### New in 0.4.0
 
@@ -62,46 +68,50 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - [Highlights](#highlights)
 - [Install and Import](#install-and-import)
 - [Quick Start](#quick-start)
-- [Example Gallery](#example-gallery)
-- [SB3 Import via Typst Plugin WASM](#sb3-import-via-typst-plugin-wasm)
-- [Right-to-Left Languages](#right-to-left-languages)
+- [Scratch](#scratch) — [example gallery](#example-gallery), [SB3 import](#experimental-sb3-import), [right-to-left languages](#right-to-left-languages)
 - [Blockly and jwinf](#blockly-and-jwinf)
 - [MakeCode](#makecode)
-- [Catalog](#catalog)
+- [NEPO (Open Roberta)](#nepo-open-roberta)
+- [Scratch block catalog](#scratch-block-catalog)
 - [Contributing](#contributing)
 
 ## Highlights
 
-- Scratchblocks-style syntax for scripts, reporters, booleans, inputs, dropdowns, and nested control blocks
-- Themes: normal, high-contrast, print
-- Localized text rendering through the WASM locale data
-- **Right-to-left languages** (Arabic, Hebrew, Persian): the block layout is
-  mirrored automatically — notch, hat, C-block mouth, loop arrow and label
-  order all follow the reading direction
-- **Blockly**, **MakeCode** (micro:bit, Calliope mini) and **Open Roberta
-  (NEPO)** as further block languages, each drawn the way its editor draws
-  it, with a **jwinf** profile for Blockly
-- Category suffixes via `::motion`, `::control`, ... (scratchblocks-style)
-- Optional line numbers and `#label` references for line-aware worksheets
-- Optional compact block geometry with `inset-scale` (text size unchanged, e.g. `60%`, `90%`, `125%`)
-- **experimental:** SB3 import helpers for scripts, lists, variables, images, and static screen previews
+- **Four block languages, one notation.** Scratch, Blockly, MakeCode and NEPO
+  from the same plain-text syntax — scripts, reporters, booleans, inputs,
+  dropdowns and nested control blocks — with `scratch`, `blockly`, `makecode`
+  and `nepo` code fences for Markdown-style documents
+- **Drawn like the editor.** Scratch 3's shapes; Blockly's thrasos and classic
+  geometry, measured on jwinf.de; MakeCode's zelos renderer as the micro:bit
+  and Calliope editors run it; Open Roberta's NEPO blocks
+- **The editors' own words.** Scratch's translations in 26 languages, Blockly's
+  message files in 24, the MakeCode editors' strings in 36 — plus
+  right-to-left layout for Arabic, Hebrew and Persian
+- **Made for paper.** Themes `print`, `grayscale` and `high-contrast`, the
+  document's own category colours over any palette (`colors`), compact or
+  generous block geometry with `inset-scale`, line numbers and `#label`
+  references for line-aware worksheets
+- **Beyond the picture.** Turtle graphics that run a Scratch program on a stage
+  or a coordinate grid; import of real `.sb3` projects — scripts, variables,
+  lists, costumes and a stage preview (experimental)
 
 ## Install and Import
 
 ```typst
-#import "@preview/blockst:0.4.0": blockst, scratch, raw-scratch, sb3
+#import "@preview/blockst:0.4.0": scratch, blockly, makecode, nepo, blockst, set-blockst
 ```
 
-> Font requirement: Blockst is designed for Helvetica Neue (Scratch-like look).
-> On Linux/Windows install a compatible font, for example Nimbus Sans,
-> or override globally with `set-blockst(font: "...")`.
+`raw-scratch`, `raw-blockly`, `raw-makecode` and `raw-nepo` add the code
+fences, `sb3` and `scratch-run` the project import and the execution engine.
+
+> Font requirement: Scratch and Blockly labels are designed for Helvetica Neue.
+> On Linux/Windows install a compatible font, for example Nimbus Sans, or set
+> one with `set-blockst(font: "...")`. MakeCode labels use a monospace face
+> (Menlo, Consolas or DejaVu Sans Mono, whichever is installed).
 
 ## Quick Start
 
 ![Quick Start example](examples/example-quickstart.svg)
-
-<details>
-<summary><strong>Show code</strong></summary>
 
 ```typst
 #scratch("
@@ -111,15 +121,46 @@ turn cw (15) degrees
 ")
 ```
 
-</details>
+The other editors read the same way — a jwinf task and a micro:bit program:
 
-Source: [examples/example-quickstart.typ](examples/example-quickstart.typ)
+```typst
+#blockly("
+Roboter-Programm
+wiederhole (4) mal:
+  gehe nach rechts
+  falls <auf Kiste>
+    hebe Murmel auf ::aktionen
+  ende
+ende
+", profile: "jwinf")
 
-## Example Gallery
+#makecode("
+beim Start
+  zeige Symbol [Herz v]
+ende
+wenn Knopf [A v] geklickt
+  zeige Zahl ((1) + (2))
+  pausiere (ms) (100)
+ende
+")
+```
+
+Source: [examples/example-quickstart.typ](examples/example-quickstart.typ),
+[examples/example-blockly.typ](examples/example-blockly.typ),
+[examples/example-makecode.typ](examples/example-makecode.typ)
+
+## Scratch
+
+`scratch()` renders Scratch 3 blocks from text in any of 26 languages. What
+follows is the gallery: localized text, inline use, labels, code fences,
+themes and the execution engine, then the `.sb3` import and the
+right-to-left languages.
+
+### Example gallery
 
 All long snippets below use the same pattern: result first, code in a collapsible block.
 
-### Localized Text
+#### Localized Text
 
 ![German localization example](examples/example-de.svg)
 
@@ -140,7 +181,7 @@ end", language: "de")
 
 Source: [examples/example-de.typ](examples/example-de.typ)
 
-### Inline Usage Without blockst Container
+#### Inline Usage Without blockst Container
 
 ![Inline usage example](examples/example-inline.svg)
 
@@ -164,7 +205,7 @@ Source: [examples/example-de.typ](examples/example-de.typ)
 
 Source: [examples/example-inline.typ](examples/example-inline.typ)
 
-### Dedicated Label Walkthrough (Euclidean Algorithm)
+#### Dedicated Label Walkthrough (Euclidean Algorithm)
 
 ![Label walkthrough example](examples/example-labels.svg)
 
@@ -207,7 +248,7 @@ end"
 
 Source: [examples/example-labels.typ](examples/example-labels.typ)
 
-### Markdown Code Blocks with raw-scratch
+#### Markdown Code Blocks with raw-scratch
 
 ![raw-scratch example](examples/example-raw-scratch.svg)
 
@@ -230,7 +271,7 @@ end
 
 Source: [examples/example-raw-scratch.typ](examples/example-raw-scratch.typ)
 
-### Theme and Scale
+#### Theme and Scale
 
 ![Theme example (normal, high-contrast, print)](examples/example-theme.svg)
 
@@ -270,7 +311,7 @@ Examples:
 - `ajouter (5) à [i v] ::variables`
 - `::control` (category default block)
 
-### Executable Preview (scratch-run)
+#### Executable Preview (scratch-run)
 
 ![Executable square example](examples/example-executable.svg)
 
@@ -433,7 +474,7 @@ end
 
 Source: [examples/example-executable.typ](examples/example-executable.typ)
 
-## Experimental: SB3 Import via Typst Plugin WASM
+### Experimental: SB3 import
 
 Recommended workflow:
 
@@ -441,7 +482,7 @@ Recommended workflow:
 2. Use the `sb3` helpers to extract scripts, monitors, images, or screen previews.
 3. Render imported scripts through the same text-to-WASM pipeline as `scratch(...)`.
 
-### SB3 Scripts and Screen Preview
+#### SB3 Scripts and Screen Preview
 
 ![SB3 import example](examples/example-sb3-import.svg)
 
@@ -470,7 +511,7 @@ Recommended workflow:
 
 Source: [examples/example-sb3-import.typ](examples/example-sb3-import.typ)
 
-### Variable and List Monitors
+#### Variable and List Monitors
 
 ![SB3 variable and list monitors](examples/example-monitors.svg)
 
@@ -491,7 +532,7 @@ Source: [examples/example-sb3-import.typ](examples/example-sb3-import.typ)
 
 Source: [examples/example-monitors.typ](examples/example-monitors.typ)
 
-### SB3 API at a Glance
+#### SB3 API at a Glance
 
 - Scripts: `sb3.render-sb3-scripts(...)` with target and script filters
 - Lists: `sb3.render-sb3-lists(...)` by target, name, or local index
@@ -500,7 +541,7 @@ Source: [examples/example-monitors.typ](examples/example-monitors.typ)
 - Screen: `sb3.sb3-screen-preview(...)`
 - Catalogs: `sb3.sb3-scripts-catalog(...)`, `sb3.sb3-state-catalog(...)`
 
-## Right-to-Left Languages
+### Right-to-left languages
 
 Arabic, Hebrew and Persian render right-to-left. Nothing extra is required:
 pass the language and the renderer mirrors the layout.
@@ -683,9 +724,36 @@ with the Calliope mini profile. MakeCode's labels are measured and drawn in
 a monospace face (Menlo, Consolas or DejaVu Sans Mono, whichever is
 installed); `set-blockst(font: …)` picks another.
 
-## Catalog
+## NEPO (Open Roberta)
 
-The catalog is split by Scratch 3 category so each file stays readable and can be regenerated independently.
+`nepo()` draws the blocks of Open Roberta Lab for the Calliope mini and the
+micro:bit — a renderer of its own, contributed by
+[@lkoehl](https://github.com/lkoehl). Block text prints in Open Roberta's own
+German wording; `platform` picks the robot: `calliope` (default),
+`calliopev3` or `microbit`.
+
+```typst
+#nepo("
+Start
+  Zeige Text \"Hallo\"
+  Wiederhole unendlich oft
+    Schalte RGB LED an (#ff0000)
+  Ende
+")
+
+#nepo("Start\n  Zeige Text \"Hi\"", platform: "microbit")
+```
+
+![NEPO example](examples/example-nepo.svg)
+
+`#show: raw-nepo()` renders ````nepo` fences; `nepo-parse()` returns the block
+tree. The renderer is a prototype covering the beginner block set of the three
+platforms — [examples/nepo](examples/nepo/README.md) holds the programme
+collection and the comparison sheet against Open Roberta's own drawings.
+
+## Scratch block catalog
+
+Every Scratch 3 block, split by category so each file stays readable and can be regenerated independently.
 
 <details>
 <summary><strong>Motion</strong></summary>
