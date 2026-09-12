@@ -20,6 +20,11 @@ pub struct DocumentSpec {
     /// key, or forced by the caller via the JSON payload.
     #[serde(default)]
     pub rtl: bool,
+    /// Which profile to draw with: the block shapes, measurements and
+    /// palette. Defaults to Scratch, which is what every existing document
+    /// asks for by saying nothing.
+    #[serde(default)]
+    pub profile: Option<String>,
     pub scripts: Vec<ScriptSpec>,
 }
 
@@ -62,6 +67,17 @@ pub struct BlockSpec {
     pub else_body: Vec<BlockSpec>,
     #[serde(default)]
     pub else_segments: Vec<SegmentSpec>,
+    /// Label on the arm beside the mouth of a C-block. Blockly's control
+    /// blocks carry one ("mache"); Scratch's do not.
+    #[serde(default)]
+    pub mouth: Option<String>,
+    /// What each `%n` of the block is — "value", "field", "dropdown",
+    /// "statement" — so the Blockly renderer can tell a socket from a box.
+    #[serde(default)]
+    pub slots: Vec<String>,
+    /// Blockly's `inputsInline`, when the block declares it.
+    #[serde(default)]
+    pub inline: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

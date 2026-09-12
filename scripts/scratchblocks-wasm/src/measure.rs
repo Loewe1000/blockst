@@ -1,3 +1,4 @@
+use crate::geometry::{geometry, Shapes};
 use crate::model::{BlockSpec, SegmentSpec};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -72,13 +73,19 @@ fn v(base_child_h: f32, base_padding: f32) -> f32 {
     base_child_h + (base_padding * current_inset_scale())
 }
 
-pub fn input_box_height(input: &str) -> f32 {
-    match input {
-        "boolean" => inset(32.0, 24.0),
-        "color" => inset(32.0, 24.0),
-        "dropdown" | "dropdown-field" => inset(32.0, 24.0),
-        _ => inset(32.0, 24.0),
+/// How far a C-block's body is indented. Scratch indents by a fixed amount
+/// scaled with the header; Blockly widens the arm to fit its mouth label
+/// ("mache"), so a labelled mouth is indented by the label plus padding.
+pub fn mouth_indent(block: &BlockSpec, base: f32) -> f32 {
+    match block.mouth.as_deref() {
+        Some(label) if !label.is_empty() => base.max(text_width(label) + 2.0 * inset(8.0, 6.0)),
+        _ => base,
     }
+}
+
+pub fn input_box_height(_input: &str) -> f32 {
+    let g = geometry();
+    inset(g.field_height, g.field_height_min)
 }
 
 fn is_label(segment: &SegmentSpec) -> bool {
@@ -233,7 +240,7 @@ pub fn segment_width(segment: &SegmentSpec) -> f32 {
                 }
                 _ => {
                     let side_pad = inset(22.0, 14.0);
-                    let min_w = inset(40.0, 30.0);
+                    let min_w = inset(geometry().value_min_width, geometry().value_min_width_min);
                     (text_width(value) + side_pad).max(min_w)
                 }
             }
@@ -259,7 +266,7 @@ pub(crate) fn line_metrics(block: &BlockSpec) -> (f32, f32, f32, f32) {
         // cmw = 48 - horizontal_padding(block, first_segment)
         if is_notch_block && !first_non_label_aligned && !is_label(segment) && !is_icon(segment) {
             if let Some(first) = segments.first() {
-                let cmw = 48.0 - horizontal_padding(block, first);
+                let cmw = geometry().notch_end - horizontal_padding(block, first);
                 if width < cmw {
                     width = cmw;
                 }
@@ -280,7 +287,7 @@ pub fn c_block_inner_width(block: &BlockSpec) -> f32 {
     let (header_inner, _, _, _) = line_metrics(block);
     // Keep c-shapes readable, but avoid a large fixed minimum that leaves
     // too much empty header area for short labels like "répéter (12) fois".
-    header_inner.max(inset(96.0, 72.0))
+    header_inner.max(inset(geometry().mouth_min_width, geometry().mouth_min_width_min))
 }
 
 /// Returns the maximum height of any nested block/input segment within a block's segments.
@@ -302,27 +309,32 @@ pub fn max_nested_height(block: &BlockSpec) -> f32 {
 }
 
 pub fn block_size(block: &BlockSpec) -> (f32, f32) {
+    if geometry().shapes == Shapes::Blockly {
+        return crate::blockly::extent(block);
+    }
     match block.shape.as_str() {
         "reporter" => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 24.0 {
+            let g = geometry();
+            let height = if nested_h > g.field_height_min {
                 nested_h + inset(8.0, 6.0)
             } else {
-                inset(32.0, 24.0)
+                inset(g.field_height, g.field_height_min)
             };
-            let min_w = inset(40.0, 30.0).max(height + inset(8.0, 6.0));
+            let min_w = inset(g.value_min_width, g.value_min_width_min).max(height + inset(8.0, 6.0));
             (inner.max(min_w), height)
         }
         "boolean" => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 24.0 {
+            let g = geometry();
+            let height = if nested_h > g.field_height_min {
                 nested_h + inset(8.0, 6.0)
             } else {
-                inset(32.0, 24.0)
+                inset(g.field_height, g.field_height_min)
             };
-            let min_w = inset(40.0, 30.0).max(height + inset(8.0, 6.0));
+            let min_w = inset(g.value_min_width, g.value_min_width_min).max(height + inset(8.0, 6.0));
             (inner.max(min_w), height)
         }
         "c-block" | "c-block cap" => c_block_size(block),
@@ -330,10 +342,11 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
             let (inner, _, _, _) = line_metrics(block);
             let width = inner.max(s(100.0));
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 32.0 {
-                v(32.0, 32.0) + (nested_h - 32.0)
+            let g = geometry();
+            let height = if nested_h > g.content_height {
+                v(g.content_height, g.hat_padding) + (nested_h - g.content_height)
             } else {
-                v(32.0, 32.0)
+                v(g.content_height, g.hat_padding)
             };
             (width, height)
         }
@@ -359,6 +372,9 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
                     body: vec![],
                     else_body: vec![],
                     else_segments: vec![],
+                mouth: None,
+                slots: Vec::new(),
+                inline: None,
                 };
                 block_size(&temp).0.max(100.0)
             };
@@ -366,21 +382,24 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
             let define_gap: f32 = s(8.0);
             let width = (s(8.0) + define_w + define_gap + inner_w + s(8.0)).max(s(100.0));
             let nested_h = max_nested_height(block);
-            let base_h: f32 = v(32.0, 52.0);
-            let height = if nested_h > 32.0 { base_h + (nested_h - 32.0) } else { base_h };
+            let ch = geometry().content_height;
+            let base_h: f32 = v(ch, 52.0);
+            let height = if nested_h > ch { base_h + (nested_h - ch) } else { base_h };
             (width, height)
         }
         "cap" => {
             let (inner, _, _, _) = line_metrics(block);
             let width = inner.max(s(64.0));
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 32.0 { nested_h + s(8.0) } else { v(32.0, 8.0) };
+            let g = geometry();
+            let height = if nested_h > g.content_height { nested_h + s(8.0) } else { v(g.content_height, g.cap_padding) };
             (width, height)
         }
         _ => {
             let (inner, _, _, _) = line_metrics(block);
             let nested_h = max_nested_height(block);
-            let height = if nested_h > 32.0 { nested_h + s(16.0) } else { v(32.0, 16.0) };
+            let g = geometry();
+            let height = if nested_h > g.content_height { nested_h + s(g.stack_padding) } else { v(g.content_height, g.stack_padding) };
             
             // Pen blocks have an extra space for the pen icon on the left
             let pen_extra = if block.category == "pen" && !block.segments.is_empty() {
@@ -396,6 +415,9 @@ pub fn block_size(block: &BlockSpec) -> (f32, f32) {
 }
 
 pub fn script_size_with_inside(blocks: &[BlockSpec], inside: bool) -> (f32, f32) {
+    if geometry().shapes == Shapes::Blockly {
+        return crate::blockly::stack_size(blocks);
+    }
     let mut width: f32 = 0.0;
     let mut y: f32 = 1.0;
     for block in blocks {
@@ -419,15 +441,16 @@ pub fn c_block_size(block: &BlockSpec) -> (f32, f32) {
     let inner_width = c_block_inner_width(block);
     let (body_w, body_h) = script_size_with_inside(&block.body, true);
     let script_width = body_w.max(1.0);
-    let body_indent = inset(16.0, 10.0);
+    let body_indent = mouth_indent(block, inset(geometry().body_indent, 10.0));
     let width = inner_width.max(body_indent + script_width);
 
     let has_else = !block.else_body.is_empty() || !block.else_segments.is_empty();
 
     // Dynamic header height: expand when header contains tall nested blocks
     let header_nested_h = max_nested_height(block);
-    let header_base = inset(48.0, 36.0);
-    let header_h = if header_nested_h > 32.0 { header_base + (header_nested_h - 32.0) } else { header_base };
+    let header_base = inset(geometry().row_height, geometry().row_height_min);
+    let ch = geometry().content_height;
+    let header_h = if header_nested_h > ch { header_base + (header_nested_h - ch) } else { header_base };
 
     let script_line_height = (body_h + s(3.0)).max(29.0) - s(2.0);
     let tail_line_height = inset(40.0, 30.0) - inset(11.0, 8.0);

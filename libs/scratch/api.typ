@@ -81,6 +81,7 @@
 /// Global settings applied to all scratch() and sb3 calls.
 #let set-blockst(
   theme: none,
+  profile: none,
   scale: none,
   stroke-width: none,
   font: none,
@@ -95,6 +96,7 @@
   scratch-block-options.update(old => {
     let new-opts = old
     if theme != none { new-opts.insert("theme", theme) }
+    if profile != none { new-opts.insert("profile", profile) }
     if scale != none { new-opts.insert("scale", scale) }
     if stroke-width != none { new-opts.insert("stroke-width", stroke-width) }
     if font != none { new-opts.insert("font", font) }
@@ -177,7 +179,7 @@
   let opts = get-options()
   let lang = if language != auto { language } else { opts.at("language", default: "en") }
   let source = _normalize-source(text)
-  let labels = _collect-labels-from-nodes(_generic-parse(source, language: lang))
+  let labels = _collect-labels-from-nodes(_generic-parse(source, language: lang, profile: "scratch"))
   _with-local-options(
     theme: theme,
     scale: scale,
@@ -191,10 +193,84 @@
     language: lang,
     [
       #hide(_merge-labels(labels))
-      #_generic-render(source, language: lang)
+      #_generic-render(source, language: lang, profile: "scratch")
     ],
   )
 }
+
+/// Render Blockly blocks from text. Same notation as `scratch()`, drawn with
+/// Blockly's shapes — notch, puzzle tab, boxed fields — and the vocabulary,
+/// categories and colours of a profile:
+///
+/// - `"blockly"` (the default): today's flat look, Blockly's German wording
+/// - `"blockly-klassisch"`: the pre-2019 look
+/// - `"jwinf"`: jwinf.de — classic geometry, the robot and turtle world
+///   blocks, and the palette of the training tasks
+///
+/// Labels that no profile knows are drawn as written, with the category
+/// taken from a `::kategorie` suffix — on jwinf the normal case, because the
+/// same block reads differently from task to task.
+///
+///   #blockly("wiederhole (4) mal:\n  gehe nach rechts\nende", profile: "jwinf")
+#let blockly(
+  text,
+  profile: auto,
+  language: auto,
+  theme: auto,
+  scale: auto,
+  font: auto,
+  line-numbering: auto,
+  line-numbers: auto,
+  line-number-start: auto,
+  line-number-first-block: auto,
+  line-number-gutter: auto,
+  inset-scale: auto,
+) = context {
+  let opts = get-options()
+  let prof = if profile != auto { profile } else { opts.at("profile", default: "blockly") }
+  // German is the only Blockly vocabulary shipped so far.
+  let lang = if language != auto { language } else { "de" }
+  let source = _normalize-source(text)
+  let labels = _collect-labels-from-nodes(_generic-parse(source, language: lang, profile: prof))
+  _with-local-options(
+    theme: theme,
+    scale: scale,
+    font: font,
+    line-numbering: line-numbering,
+    line-numbers: line-numbers,
+    line-number-start: line-number-start,
+    line-number-first-block: line-number-first-block,
+    line-number-gutter: line-number-gutter,
+    inset-scale: inset-scale,
+    language: lang,
+    [
+      #hide(_merge-labels(labels))
+      #_generic-render(source, language: lang, profile: prof)
+    ],
+  )
+}
+
+/// Parse Blockly text to AST (for programmatic use).
+#let blockly-parse(text, language: "de", profile: "blockly") = {
+  _generic-parse(_normalize-source(text), language: language, profile: profile)
+}
+
+/// Enable Blockly code blocks in raw text:
+///   #show: raw-blockly()
+///   ```blockly
+///   wiederhole (4) mal:
+///   ende
+///   ```
+/// A ```jwinf fence uses the jwinf profile whatever the arguments say.
+#let raw-blockly(..args) = (
+  body => {
+    let jwinf-args = args.named()
+    jwinf-args.insert("profile", "jwinf")
+    show raw.where(block: true, lang: "blockly"): blockly.with(..args)
+    show raw.where(block: true, lang: "jwinf"): blockly.with(..jwinf-args)
+    body
+  }
+)
 
 /// Parse scratch text to AST (for programmatic use).
 #let scratch-parse(text, language: "en") = {

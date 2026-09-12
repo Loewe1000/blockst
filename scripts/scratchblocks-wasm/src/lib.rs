@@ -1,11 +1,13 @@
+mod blockly;
+mod geometry;
 mod measure;
 mod model;
 mod generated;
 mod parser;
 mod protocol;
 mod render;
+mod palette;
 mod svg;
-mod theme;
 
 use model::DocumentSpec;
 pub use parser::{parse_request_json, render_request_json, extract_texts_json};

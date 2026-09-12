@@ -1,7 +1,8 @@
-use crate::measure::{block_size, c_block_inner_width, c_block_size, current_inset_scale, input_box_height, is_rtl, max_nested_height, script_size_with_inside, segment_width, text_width};
+use crate::measure::{block_size, mouth_indent, c_block_inner_width, c_block_size, current_inset_scale, input_box_height, is_rtl, max_nested_height, script_size_with_inside, segment_width, text_width};
 use crate::model::{BlockSpec, DocumentSpec, ScriptSpec, SegmentSpec};
 use crate::svg::{boolean_path, cap_path, escape_text, hat_path, mouth_cap_path, mouth_path, proc_hat_path, reporter_path, stack_path};
-use crate::theme::colors_for;
+use crate::geometry::{for_profile, geometry, set_geometry, Shapes};
+use crate::palette::{colors_for, palette_for, set_palette};
 
 const LABEL_MARGIN: f32 = 4.447_998;
 
@@ -40,6 +41,8 @@ fn label_fill(theme: &str, fill: &str) -> String {
 
 pub fn render_document(document: &DocumentSpec) -> String {
     crate::measure::set_rtl(document.rtl);
+    set_palette(palette_for(document.profile.as_deref()));
+    set_geometry(for_profile(document.profile.as_deref()));
     let scale = document.scale.unwrap_or(1.0).max(0.1);
     let theme = document.theme.as_deref().unwrap_or("normal");
     let font = &document.font;
@@ -131,6 +134,9 @@ fn css_font_stack(font: &str) -> String {
 
 fn defs(theme: &str, font: &str) -> String {
     let font = &css_font_stack(font);
+    let g = geometry();
+    let size = g.font_size_pt;
+    let weight = g.font_weight;
     let text_fill = if theme == "high-contrast" || theme == "print" { "#000" } else { "#fff" };
 
     // The green flag stays a flag in greyscale: a dark outline round a light
@@ -156,7 +162,7 @@ fn defs(theme: &str, font: &str) -> String {
         let input_text_fill = if theme == "print" || theme == "high-contrast" { "#000" } else { "#575e75" };
 
     format!(
-        "<style>.sb-label{{font:500 12pt {font};fill:{text_fill};word-spacing:1pt}}.sb-input-text{{font:500 12pt {font};fill:{input_text_fill}}}.sb-line-number{{font:500 12pt {font};fill:#6b7280}}</style>\
+        "<style>.sb-label{{font:{weight} {size}pt {font};fill:{text_fill};word-spacing:1pt}}.sb-input-text{{font:{weight} {size}pt {font};fill:{input_text_fill}}}.sb-line-number{{font:{weight} {size}pt {font};fill:#6b7280}}</style>\
         <g id=\"sb-greenFlag\">\
           <path d=\"M20.8 3.7c-.4-.2-.9-.1-1.2.2-2 1.6-4.8 1.6-6.8 0-2.3-1.9-5.6-2.3-8.3-1v-.4c0-.6-.5-1-1-1s-1 .4-1 1v18.8c0 .5.5 1 1 1h.1c.5 0 1-.5 1-1v-6.4c1-.7 2.1-1.2 3.4-1.3 1.2 0 2.4.4 3.4 1.2 2.9 2.3 7 2.3 9.8 0 .3-.2.4-.5.4-.9V4.7c0-.5-.3-.9-.8-1zm-.3 10.2C18 16 14.4 16 11.9 14c-1.1-.9-2.5-1.4-4-1.4-1.2.1-2.3.5-3.4 1.1V4c2.5-1.4 5.5-1.1 7.7.6 2.4 1.9 5.7 1.9 8.1 0h.2l.1.1-.1 9.2z\" fill=\"{flag_outer}\"/>\
           <path d=\"M20.6 4.8l-.1 9.1v.1c-2.5 2-6.1 2-8.6 0-1.1-.9-2.5-1.4-4-1.4-1.2.1-2.3.5-3.4 1.1V4c2.5-1.4 5.5-1.1 7.7.6 2.4 1.9 5.7 1.9 8.1 0h.2c0 .1.1.1.1.2z\" fill=\"{flag_inner}\"/>\
@@ -182,6 +188,9 @@ fn defs(theme: &str, font: &str) -> String {
 }
 
 fn render_script(script: &ScriptSpec, theme: &str, inside: bool) -> (String, f32, f32) {
+    if geometry().shapes == Shapes::Blockly {
+        return crate::blockly::render_stack(&script.blocks, theme);
+    }
     let (width, height) = script_size_with_inside(&script.blocks, inside);
     let mut y = 1.0;
     let mut svg = String::new();
@@ -212,8 +221,8 @@ fn render_block(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
         return render_pen_block(block, theme);
     }
     match block.shape.as_str() {
-        "reporter" => render_reporter_like(block, theme, colors.fill, colors.stroke, false),
-        "boolean" => render_reporter_like(block, theme, colors.fill, colors.stroke, true),
+        "reporter" => render_reporter_like(block, theme, &colors.fill, &colors.stroke, false),
+        "boolean" => render_reporter_like(block, theme, &colors.fill, &colors.stroke, true),
         "c-block" => render_c_block(block, theme, false),
         "c-block cap" => render_c_block(block, theme, true),
         "define-hat" => render_define_hat(block, theme),
@@ -253,7 +262,7 @@ fn render_pen_block(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     } else {
         svg.push_str(&format!("<g transform=\"translate(4 {}) scale({})\"><use href=\"{pen_icon}\"/></g>", icon_y, icon_scale));
     }
-    svg.push_str(&render_segments(block, &block.segments, theme, colors.text, pen_extra, height, 0.0));
+    svg.push_str(&render_segments(block, &block.segments, theme, &colors.text, pen_extra, height, 0.0));
     (svg, total_width, height)
 }
 
@@ -270,7 +279,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     }
     
     // Inner outline: 48px tall (line_height=40 + corner_radii=8)
-    let content_h = 48.0;
+    let content_h = geometry().row_height;
     
     // Compute inner outline width from remaining segments (without leading define keyword)
     let mut remaining: Vec<SegmentSpec> = block.segments.clone();
@@ -295,6 +304,9 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
             body: vec![],
             else_body: vec![],
             else_segments: vec![],
+        mouth: None,
+        slots: Vec::new(),
+        inline: None,
         };
         let (tw, _) = block_size(&temp);
         tw
@@ -302,7 +314,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     let inner_w = inner_content_w.max(100.0);
     
     // Define keyword text on the reading side, vertically centered
-    let define_y = 20.0 + (48.0 - 12.0) / 2.0;
+    let define_y = 20.0 + (geometry().row_height - 12.0) / 2.0;
     // Position of inner outline: after pad(8) + "define" + margin
     let define_gap = 8.0;
     // In RTL the keyword sits on the right and the procedure prototype to
@@ -317,7 +329,7 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
     };
 
     svg.push_str(&format!("<text class=\"sb-label\" x=\"0\" y=\"13\" {} transform=\"translate({} {})\">{}</text>",
-        label_fill(theme, colors.text), keyword_x, define_y, define_label));
+        label_fill(theme, &colors.text), keyword_x, define_y, define_label));
 
     // Inner outline starts after "define" label + gap
     svg.push_str(&format!("<g transform=\"translate({} 20)\">", inner_x));
@@ -338,8 +350,11 @@ fn render_define_hat(block: &BlockSpec, theme: &str) -> (String, f32, f32) {
             body: vec![],
             else_body: vec![],
             else_segments: vec![],
+        mouth: None,
+        slots: Vec::new(),
+        inline: None,
         };
-        svg.push_str(&render_segments(&temp, &temp.segments, theme, colors.text, 0.0, 40.0, 5.0));
+        svg.push_str(&render_segments(&temp, &temp.segments, theme, &colors.text, 0.0, 40.0, 5.0));
     }
     
     svg.push_str("</g>");
@@ -362,7 +377,7 @@ fn render_simple_block(
     } else {
     svg.push_str(&format!("<path d=\"{}\" fill=\"{}\" stroke=\"{}\"/>", path_fn(width, height), colors.fill, colors.stroke));
     }
-    svg.push_str(&render_segments(block, &block.segments, theme, colors.text, 0.0, height, 0.0));
+    svg.push_str(&render_segments(block, &block.segments, theme, &colors.text, 0.0, height, 0.0));
     if block.shape == "cap" {
         svg.push_str("<circle cx=\"0\" cy=\"0\" r=\"0\"/>");
     }
@@ -381,7 +396,7 @@ fn render_reporter_like(block: &BlockSpec, theme: &str, fill: &str, stroke: &str
         path,
         fill,
         stroke,
-        render_segments(block, &block.segments, theme, text_fill, base_x, height, 0.0),
+        render_segments(block, &block.segments, theme, &text_fill, base_x, height, 0.0),
     );
     (svg, width, height)
 }
@@ -411,9 +426,10 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
 
     // Dynamic header height: expand when header contains tall nested blocks
     let header_nested_h = max_nested_height(block);
-    let header_base = inset(48.0, 36.0);
+    let header_base = inset(geometry().row_height, geometry().row_height_min);
     let header_h = if header_nested_h > 32.0 { header_base + (header_nested_h - 32.0) } else { header_base };
-    let body_indent = (header_h / 48.0).clamp(0.6, 1.2) * 16.0;
+    let g = geometry();
+    let body_indent = mouth_indent(block, (header_h / g.row_height).clamp(0.6, 1.2) * g.body_indent);
 
     // The C outline is asymmetric — the mouth is cut into its left side, and
     // the top/bottom notches sit 48px from the left. Mirroring just this one
@@ -432,9 +448,9 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
     };
     let flip_close = if is_rtl() { "</g>" } else { "" };
     if cap {
-        svg.push_str(&format!("{}<path d=\"{}\" fill=\"{}\" stroke=\"{}\" />{}", flip_open, mouth_cap_path(path_width, body_h.max(1.0), header_h), colors.fill, colors.stroke, flip_close));
+        svg.push_str(&format!("{}<path d=\"{}\" fill=\"{}\" stroke=\"{}\" />{}", flip_open, mouth_cap_path(path_width, body_h.max(1.0), header_h, body_indent), colors.fill, colors.stroke, flip_close));
     } else {
-        svg.push_str(&format!("{}<path d=\"{}\" fill=\"{}\" stroke=\"{}\" />{}", flip_open, mouth_path(path_width, body_h.max(1.0), else_h, header_h), colors.fill, colors.stroke, flip_close));
+        svg.push_str(&format!("{}<path d=\"{}\" fill=\"{}\" stroke=\"{}\" />{}", flip_open, mouth_path(path_width, body_h.max(1.0), else_h, header_h, body_indent), colors.fill, colors.stroke, flip_close));
     }
 
     // The header rides on the outline, and the outline now ends at `outer_w`,
@@ -444,7 +460,7 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
     //
     // (This call also used to appear twice in a row — the same header was
     // painted on top of itself.)
-    svg.push_str(&render_segments_in(block, &block.segments, theme, colors.text, 0.0, header_h, 0.0, Some(outer_w)));
+    svg.push_str(&render_segments_in(block, &block.segments, theme, &colors.text, 0.0, header_h, 0.0, Some(outer_w)));
 
     let body_y = header_h - 1.0;
     let (body_svg, body_w, _) = render_script(&ScriptSpec { blocks: block.body.clone() }, theme, true);
@@ -457,6 +473,18 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
         body_indent
     };
     svg.push_str(&format!("<g transform=\"translate({} {body_y})\" >{body_svg}</g>", body_x));
+    if let Some(label) = block.mouth.as_deref().filter(|l| !l.is_empty()) {
+        // The arm label sits in the strip left of the mouth, on the first
+        // body row's baseline.
+        let pad = inset(8.0, 6.0);
+        let label_w = text_width(label);
+        let label_x = if is_rtl() { mirror_span(outer_w, pad, label_w) } else { pad };
+        let label_y = body_y + (geometry().row_height - 12.0) / 2.0;
+        svg.push_str(&format!(
+            "<text class=\"sb-label\" x=\"0\" y=\"13\" {} transform=\"translate({} {})\">{}</text>",
+            label_fill(theme, &colors.text), label_x, label_y, escape_text(label)
+        ));
+    }
 
     let tail_h = inset(40.0, 30.0) - inset(11.0, 8.0);
     let adjusted_body = (body_h + s(3.0)).max(tail_h) - s(2.0);
@@ -472,7 +500,7 @@ fn render_c_block(block: &BlockSpec, theme: &str, cap: bool) -> (String, f32, f3
         // So visual center = line_y + 16.5. Target = arm_y + 17.5.
         // => line_y = arm_y + 1.0
         let else_text_line_y = arm_y + inset(1.0, 0.5);
-        svg.push_str(&render_segments_in(block, &block.else_segments, theme, colors.text, 0.0, 32.0, else_text_line_y, Some(outer_w)));
+        svg.push_str(&render_segments_in(block, &block.else_segments, theme, &colors.text, 0.0, 32.0, else_text_line_y, Some(outer_w)));
 
         // Place else body blocks at the top of the else section interior.
         // Analogy to the first body: body_y = header_h - 1 (i.e. notch_y - 1).
@@ -566,7 +594,7 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
         // Scratchblocks notch alignment: align the first non-label, non-icon
         // input so its left edge clears the notch area (right of notch is ~48px).
         if is_notch_block && !first_non_label_aligned && !matches!(segment, SegmentSpec::Text { .. }) && !matches!(segment, SegmentSpec::Icon { .. }) {
-            let cmw = 48.0 - pad_left;
+            let cmw = geometry().notch_end - pad_left;
             if x < cmw {
                 x = cmw;
             }
@@ -610,7 +638,12 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
                     let is_round = input == "number" || input == "color" || input == "string" || input == "dropdown";
                     let is_square_dropdown = input == "dropdown-field";
                     let rx = if is_round {
-                        (input_h / 2.0).max(8.0)
+                        // Scratch's fields are pills; Blockly's are boxes with
+                        // a small radius, so the profile decides.
+                        match geometry().field_radius {
+                            Some(radius) => radius,
+                            None => (input_h / 2.0).max(8.0),
+                        }
                     } else if is_square_dropdown {
                         inset(4.0, 3.0)
                     } else {
@@ -632,22 +665,22 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
                             color.as_str()
                         }
                     } else if is_dropdown {
-                        if is_square_dropdown { cat_colors.fill } else { if custom_fill { cat_colors.fill } else { cat_colors.alt } }
+                        if is_square_dropdown { cat_colors.fill.as_str() } else if custom_fill { cat_colors.fill.as_str() } else { cat_colors.alt.as_str() }
                     } else if custom_fill {
-                        cat_colors.fill
+                        cat_colors.fill.as_str()
                     } else {
                         "#ffffff"
                     };
                     let stroke = if input == "boolean" {
-                        if theme == "print" || theme == "high-contrast" { cat_colors.stroke } else { "rgba(0,0,0,0.2)" }
+                        if theme == "print" || theme == "high-contrast" { cat_colors.stroke.as_str() } else { "rgba(0,0,0,0.2)" }
                     } else if is_square_dropdown {
-                        cat_colors.stroke
+                        cat_colors.stroke.as_str()
                     } else if is_dropdown {
-                        cat_colors.stroke
+                        cat_colors.stroke.as_str()
                     } else if custom_fill {
-                        cat_colors.stroke
+                        cat_colors.stroke.as_str()
                     } else {
-                        if theme == "print" || theme == "high-contrast" { cat_colors.stroke } else { "rgba(0,0,0,0.15)" }
+                        if theme == "print" || theme == "high-contrast" { cat_colors.stroke.as_str() } else { "rgba(0,0,0,0.15)" }
                     };
                     let opacity_fill = if theme == "print" || theme == "high-contrast" { "#ffffff" } else { "rgba(0,0,0,0.15)" };
                     let opacity_stroke = if theme == "print" || theme == "high-contrast" { "#000000" } else { "rgba(0,0,0,0.2)" };
@@ -655,7 +688,7 @@ fn render_segments_in(block: &BlockSpec, segments: &[SegmentSpec], theme: &str, 
                         svg.push_str(&format!("<path d=\"{}\" fill=\"{}\" stroke=\"{}\" transform=\"translate({} {})\"/>", boolean_path(w, input_h), opacity_fill, opacity_stroke, place(x, w), child_y));
                     } else if is_dropdown {
                         // Dropdown: rounded rect + text left-aligned + real dropdown arrow
-                        let text_fill = if theme == "print" || theme == "high-contrast" { "#000000" } else { cat_colors.text };
+                        let text_fill = if theme == "print" || theme == "high-contrast" { "#000000" } else { cat_colors.text.as_str() };
                         let dropdown_fill = if theme == "print" && is_round {
                             "#ffffff"
                         } else if theme == "print" {
@@ -798,9 +831,9 @@ fn collect_block_line_markers(block: &BlockSpec, y: f32, out: &mut Vec<LineMarke
     let has_else = !block.else_body.is_empty() || !block.else_segments.is_empty();
     let header_nested_h = max_nested_height(block);
     let header_h = if header_nested_h > 32.0 {
-        48.0 + (header_nested_h - 32.0)
+        geometry().row_height + (header_nested_h - geometry().content_height)
     } else {
-        48.0
+        geometry().row_height
     };
     let body_origin = y + header_h - 1.0;
     collect_script_line_markers(&block.body, body_origin, out);
@@ -823,9 +856,9 @@ fn block_text_baseline(block: &BlockSpec, block_height: f32) -> f32 {
     let line_height = if matches!(block.shape.as_str(), "c-block" | "c-block cap") {
         let header_nested_h = max_nested_height(block);
         if header_nested_h > 32.0 {
-            48.0 + (header_nested_h - 32.0)
+            geometry().row_height + (header_nested_h - geometry().content_height)
         } else {
-            48.0
+            geometry().row_height
         }
     } else {
         block_height
@@ -971,6 +1004,9 @@ mod tests {
                     body: vec![],
                     else_body: vec![],
                     else_segments: vec![],
+                mouth: None,
+                slots: Vec::new(),
+                inline: None,
                 }
             ],
             else_body: vec![
@@ -982,9 +1018,15 @@ mod tests {
                     body: vec![],
                     else_body: vec![],
                     else_segments: vec![],
+                mouth: None,
+                slots: Vec::new(),
+                inline: None,
                 }
             ],
             else_segments: vec![SegmentSpec::Text { value: "sonst".to_string() }],
+            mouth: None,
+            slots: Vec::new(),
+            inline: None,
         };
         let (svg, width, height) = render_c_block(&block, "normal", false);
         // Check that the else segment appears in SVG
@@ -1000,6 +1042,7 @@ mod tests {
     fn test_render_document_with_line_numbers() {
         let doc = DocumentSpec {
             rtl: false,
+            profile: None,
             scale: Some(1.0),
             theme: Some("normal".to_string()),
             line_numbers: true,
@@ -1026,6 +1069,9 @@ mod tests {
                     body: vec![],
                     else_body: vec![],
                     else_segments: vec![],
+                mouth: None,
+                slots: Vec::new(),
+                inline: None,
                 }],
             }],
         };
@@ -1039,6 +1085,7 @@ mod tests {
     fn test_render_document_line_numbers_start_from_second_block() {
         let doc = DocumentSpec {
             rtl: false,
+            profile: None,
             scale: Some(1.0),
             theme: Some("normal".to_string()),
             line_numbers: true,
@@ -1057,6 +1104,9 @@ mod tests {
                         body: vec![],
                         else_body: vec![],
                         else_segments: vec![],
+                    mouth: None,
+                    slots: Vec::new(),
+                    inline: None,
                     },
                     BlockSpec {
                         shape: "stack".to_string(),
@@ -1074,6 +1124,9 @@ mod tests {
                         body: vec![],
                         else_body: vec![],
                         else_segments: vec![],
+                    mouth: None,
+                    slots: Vec::new(),
+                    inline: None,
                     },
                 ],
             }],

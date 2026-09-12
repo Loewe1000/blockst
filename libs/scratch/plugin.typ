@@ -53,6 +53,7 @@
   code,
   language: "en",
   inline: false,
+  profile: "scratch",
 ) = context {
   let options = get-options()
   let theme = get-theme(options)
@@ -71,6 +72,7 @@
     line_number_first_block: get-line-number-first-block(options),
     line_number_gutter: get-line-number-gutter(options),
     inset_scale: _to-inset-scale-number(get-inset-scale(options)),
+    profile: profile,
   )
 
   // Try to extract texts, measure, and use measured widths
@@ -82,8 +84,12 @@
     // Step 2: Measure each text with Typst's actual font
     let widths = (:)
 
+    // Blockly labels are 11pt regular, Scratch's 12pt medium; the widths
+    // have to be measured the way the SVG will draw them.
+    let blockly = profile.starts-with("blockly") or profile.starts-with("jwinf")
+    let (label-size, label-weight) = if blockly { (11pt, 400) } else { (12pt, 500) }
     for t in texts {
-      let m = measure(text(font: font-family, size: 12pt, weight: 500)[#t])
+      let m = measure(text(font: font-family, size: label-size, weight: label-weight)[#t])
       // Convert Typst pt to SVG user units (CSS px at 96dpi: 1pt = 96/72 px)
       widths.insert(t, m.width / 1pt * 96.0 / 72.0)
     }
@@ -97,6 +103,8 @@
     // back to the ambient Typst font — monospace inside a raw block, which is
     // how #show: raw-scratch() ended up with clipped labels. Pin the ambient
     // font to the family the widths were measured with.
+    // Only the family: the ambient size would change the line box the
+    // image sits in, and the SVG carries its own font size anyway.
     set text(font: font-family)
     image(
       scratchblocks-renderer.render_code_json(bytes(json.encode(render-payload))),

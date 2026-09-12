@@ -24,7 +24,7 @@
 // Execution:
 //   #scratch-run.stage("pen down\nrepeat (4)\nmove (70) steps\nturn cw (90) degrees\nend")
 
-#import "libs/scratch/api.typ": blockst, set-blockst, scratch, scratch-parse, scratch-labels, blockst-labels, raw-scratch
+#import "libs/scratch/api.typ": blockst, set-blockst, scratch, scratch-parse, scratch-labels, blockst-labels, raw-scratch, blockly, blockly-parse, raw-blockly
 #import "libs/nepo/api.typ": nepo, nepo-parse, raw-nepo
 #import "libs/scratch/run.typ" as scratch-run
 #import "libs/scratch/sb3.typ" as sb3

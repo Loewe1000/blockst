@@ -8,8 +8,7 @@
 //
 //   typst compile examples/nepo/beispielprogramme.typ --root .
 //
-// Relativ importiert, weil NEPO noch nicht Teil eines Releases ist.
-#import "../../lib.typ": nepo, set-blockst
+#import "@preview/blockst:0.4.0": nepo, set-blockst
 
 #set page(
   paper: "a4",
