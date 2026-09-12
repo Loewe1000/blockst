@@ -1,0 +1,113 @@
+{
+  "_source": "Read out of Blockly 12.3.1 with the thrasos renderer on https://blockly-demo.appspot.com/static/tests/playground.html on 2026-09-12: renderer.getConstants(), makeRenderInfo_(block).measure() rows, and each block's svgPath_. Text widths are the browser's 11pt sans-serif.",
+  "constants": {
+    "TAB_HEIGHT": 15,
+    "TAB_OFFSET_FROM_TOP": 5,
+    "TAB_WIDTH": 8,
+    "NOTCH_WIDTH": 15,
+    "NOTCH_HEIGHT": 4,
+    "NOTCH_OFFSET_LEFT": 15,
+    "CORNER_RADIUS": 8,
+    "MIN_BLOCK_WIDTH": 12,
+    "STATEMENT_INPUT_PADDING_LEFT": 20,
+    "STATEMENT_INPUT_NOTCH_OFFSET": 15,
+    "ADD_START_HATS": false,
+    "FIELD_TEXT_FONTSIZE": 11,
+    "FIELD_TEXT_FONTWEIGHT": "normal",
+    "FIELD_TEXT_HEIGHT": 18,
+    "FIELD_BORDER_RECT_RADIUS": 4,
+    "FIELD_BORDER_RECT_X_PADDING": 5,
+    "EMPTY_INLINE_INPUT_PADDING": 14.5,
+    "EMPTY_INLINE_INPUT_HEIGHT": 26,
+    "EMPTY_STATEMENT_INPUT_HEIGHT": 24,
+    "EXTERNAL_VALUE_INPUT_PADDING": 2,
+    "TOP_ROW_MIN_HEIGHT": 5,
+    "TOP_ROW_PRECEDES_STATEMENT_MIN_HEIGHT": 10,
+    "BOTTOM_ROW_MIN_HEIGHT": 5,
+    "BOTTOM_ROW_AFTER_STATEMENT_MIN_HEIGHT": 10,
+    "TALL_INPUT_FIELD_OFFSET_Y": 5,
+    "SMALL_PADDING": 3,
+    "MEDIUM_PADDING": 5,
+    "MEDIUM_LARGE_PADDING": 8,
+    "LARGE_PADDING": 10,
+    "PUZZLE_TAB.pathDown": "c 0,10 -8,-8 -8,7.5 s 8,-2.5 8,7.5",
+    "NOTCH.pathLeft": "l 6,4 3,0 6,-4",
+    "OUTSIDE_CORNERS.topLeft": "m 0,8 a 8 8 0 0,1 8,-8",
+    "INSIDE_CORNERS.pathTop": "a 8 8 0 0,0 -8,8",
+    "stroke": "colourTertiary = fill mixed 30% towards white (#5b80a5 -> #8ca6c0), 1px; no dark path, no highlight; right corners square, left corners rounded where nothing is attached; value blocks square all round"
+  },
+  "rows": {
+    "note": "block = top row 5 (10 if the first input row has a statement) + input rows with spacer rows between + bottom row 5 (10 after a statement); the notch adds 4 below. Spacers: 10 between two plain rows, 4 before a statement row, 10 between two statement rows, 5 after a statement row before a plain one, 0 after the top row. Input row height = tallest element: text/field 18, icon 17, empty inline socket 26, filled inline socket = child height, empty external input 15, filled external input = child height - 10, empty statement 24, filled statement = child stack height incl. notch. Text centreline = row centre, except in a row with an inline socket or a statement: top + 9 + 5.",
+    "spacing": "start: 10 before a label or icon, 5 before an editable field, 8 before an inline socket, 20 before an unlabelled statement. Between: label/field 5, field/label 5, label/label 10, field/field 10, label->inline 8, label->external 8, field->inline 3, field->external 3, inline->label 10, inline->field 5, label->statement 10, field->statement 5. End: 10 after a label or an inline socket, 5 after a field, 0 after an external or statement input. External input element = 8 tab + 2 padding; a row stretched to the block width gets its slack before the external input.",
+    "children": "external child at (right edge - 8, row top - 5), i.e. its body starts at the parent's right edge and its own 5px top row sits above the parent's row; inline child at (cut-out left, cut-out top); statement child at (statement edge, row top); next block at y = body height (no dark-path pixel)."
+  },
+  "blocks": {
+    "variables_set": {
+      "text": "set x to 0",
+      "h": 32,
+      "w": 128.7,
+      "d": "m 0,0 m 0,8 a 8 8 0 0,1 8,-8 h 7 l 6,4 3,0 6,-4 h 70.548 v 5 V 5 H 100.548 c 0,10 -8,-8 -8,7.5 s 8,-2.5 8,7.5 v 3 V 23 V 28 h -70.548 l -6,4 -3,0 -6,-4 h -7 a 8 8 0 0,1 -8,-8 z",
+      "rows": "top 5 | input 18 (set, x▾, to, external 0) | bottom 5(+4)",
+      "child": "math_number at (92.55, 0)"
+    },
+    "math_number": {
+      "text": "0",
+      "h": 28,
+      "w": 36.15,
+      "d": "m 8,0 h 28.153 v 5 V 5 V 23 V 23 V 28 h -28.153 H 8 V 20 c 0,-10 -8,8 -8,-7.5 s 8,2.5 8,-7.5 z",
+      "field": "rect 18.15x18 rx 4 at (13,5), text at x+5"
+    },
+    "controls_if_compare": {
+      "text": "if (1 = 2) do [set x to 7]",
+      "h": 83,
+      "w": 196.61,
+      "d": "m 0,0 m 0,8 a 8 8 0 0,1 8,-8 h 7 l 6,4 3,0 6,-4 h 36.306 v 5 V 5 H 66.306 c 0,10 -8,-8 -8,7.5 s 8,-2.5 8,7.5 v 13 V 37 H 66.306 l -6,4 -3,0 -6,-4 h -7 a 8 8 0 0,0 -8,8 v 16 a 8 8 0 0,0 8,8 H 66.306 V 69 V 79 h -36.306 l -6,4 -3,0 -6,-4 h -7 a 8 8 0 0,1 -8,-8 z",
+      "rows": "top 5 | input 28 (icon, if, external with 38-child: 38-10) | spacer 4 | statement 32 (do, child 28+4) | bottom 10(+4)",
+      "children": "logic_compare at (58.31, 0); variables_set at (36.31, 37)"
+    },
+    "logic_compare": {
+      "text": "1 = 2",
+      "h": 38,
+      "w": 138.3,
+      "d": "m 8,0 h 130.303 v 5 V 5 V 33 V 33 V 38 h -130.303 H 8 V 20 c 0,-10 -8,8 -8,-7.5 s 8,2.5 8,-7.5 z M 24,5 v 5 c 0,10 -8,-8 -8,7.5 s 8,-2.5 8,7.5 v 8 h 28.153 v -28 z M 100.150,5 v 5 c 0,10 -8,-8 -8,7.5 s 8,-2.5 8,7.5 v 8 h 28.153 v -28 z",
+      "rows": "top 5 | input 28 (socket 36.15x28, dropdown, socket) | bottom 5",
+      "children": "math_number at (16,5) and (92.15,5); dropdown rect at (57.15,10)"
+    },
+    "controls_repeat_ext": {
+      "text": "repeat 4 times do [print]",
+      "h": 83,
+      "w": 150.75,
+      "d": "m 0,0 m 0,8 a 8 8 0 0,1 8,-8 h 7 l 6,4 3,0 6,-4 h 120.746 v 5 V 5 V 33 V 37 H 66.306 l -6,4 -3,0 -6,-4 h -7 a 8 8 0 0,0 -8,8 v 16 a 8 8 0 0,0 8,8 H 150.746 V 69 V 79 h -120.746 l -6,4 -3,0 -6,-4 h -7 a 8 8 0 0,1 -8,-8 z M 67.568,5 v 5 c 0,10 -8,-8 -8,7.5 s 8,-2.5 8,7.5 v 8 h 28.153 v -28 z",
+      "rows": "top 5 | inline 28 | spacer 4 | statement 32 | bottom 10(+4)",
+      "children": "math_number at (59.57,5); text_print at (36.31,37)"
+    },
+    "controls_if_else_empty": {
+      "text": "if [not ?] do ? else ?",
+      "h": 99,
+      "w": 125.27,
+      "d": "m 0,0 m 0,8 a 8 8 0 0,1 8,-8 h 7 l 6,4 3,0 6,-4 h 46.893 v 5 V 5 H 76.893 c 0,10 -8,-8 -8,7.5 s 8,-2.5 8,7.5 v 3 V 27 H 76.893 l -6,4 -3,0 -6,-4 h -7 a 8 8 0 0,0 -8,8 v 8 a 8 8 0 0,0 8,8 H 76.893 V 61 H 76.893 l -6,4 -3,0 -6,-4 h -7 a 8 8 0 0,0 -8,8 v 8 a 8 8 0 0,0 8,8 H 76.893 V 85 V 95 h -46.893 l -6,4 -3,0 -6,-4 h -7 a 8 8 0 0,1 -8,-8 z",
+      "rows": "top 5 | input 18 | spacer 4 | statement 24 | spacer 10 | statement 24 | bottom 10(+4); one statement edge (else is wider than do)"
+    },
+    "controls_repeat_empty_with_two_children": {
+      "text": "repeat ? times do [print, print]",
+      "h": 109,
+      "d": "… V 5 V 31 V 35 H 66.306 … v 44 … H 137.093 V 95 V 105 …",
+      "rows": "top 5 | inline 26 (empty socket) | spacer 4 | statement 60 (28+28+4) | bottom 10(+4)"
+    },
+    "text_print_stack": {
+      "text": "print ? / print ?",
+      "d": "… V 23 V 28 h -26.518 l -6,4 -3,0 -6,-4 h -15 H 0 z",
+      "note": "square bottom-left when a next block is attached; next block at y = 28"
+    },
+    "logic_ternary": {
+      "text": "three external rows",
+      "h": 84,
+      "d": "m 8,0 h 70.369 v 5 V 5 H 78.369 tab v 3 V 33 H 78.369 tab v 3 V 61 H 78.369 tab v 3 V 79 V 84 h -70.369 H 8 V 20 c … z",
+      "rows": "top 5 | 18 | spacer 10 | 18 | spacer 10 | 18 | bottom 5"
+    },
+    "procedures_defreturn": {
+      "h": 87,
+      "rows": "top 5 | 18 | spacer 4 | statement 32 | spacer 5 | external 18 | bottom 5; no notches, rounded left corners"
+    }
+  }
+}

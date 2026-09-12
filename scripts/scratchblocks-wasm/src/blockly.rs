@@ -12,7 +12,9 @@
 //! hands over at the block level.
 //!
 //! Every constant and rule here was read out of the running editor on
-//! jwinf.de (`tests/fixtures/jwinf-reference.json`), not estimated.
+//! jwinf.de (`tests/fixtures/jwinf-reference.json`), not estimated. This
+//! is the pre-2019 renderer; today's Blockly lays rows out differently and
+//! lives in `blockly_modern.rs`, which shares the row plan built here.
 
 use crate::geometry::{geometry, Geometry};
 use crate::measure::text_width;
@@ -35,32 +37,32 @@ const TAB_UP: &str = "c 0,-10 -8,8 -8,-7.5 s 8,2.5 8,-7.5";
 const EMPTY_SOCKET_W: f32 = 14.5;
 /// Narrowest arm beside a mouth (no label).
 const STATEMENT_EDGE_MIN: f32 = 20.0;
-const DROPDOWN_ARROW: &str = " ▾";
+pub(crate) const DROPDOWN_ARROW: &str = " ▾";
 
-enum Item {
+pub(crate) enum Item {
     Label(String),
     Field { text: String, dropdown: bool },
     /// A value input. `None` is an empty hole; `Some` is the block plugged in.
     Socket(Option<BlockSpec>),
 }
 
-struct Row {
-    items: Vec<Item>,
+pub(crate) struct Row {
+    pub(crate) items: Vec<Item>,
     /// A value input that ends the row and is cut into the block's right edge.
-    external: Option<Option<BlockSpec>>,
+    pub(crate) external: Option<Option<BlockSpec>>,
 }
 
-struct Mouth {
-    label: Option<String>,
-    body: Vec<BlockSpec>,
+pub(crate) struct Mouth {
+    pub(crate) label: Option<String>,
+    pub(crate) body: Vec<BlockSpec>,
 }
 
-struct Plan {
-    rows: Vec<Row>,
-    mouths: Vec<Mouth>,
-    is_value: bool,
-    top_notch: bool,
-    bottom_notch: bool,
+pub(crate) struct Plan {
+    pub(crate) rows: Vec<Row>,
+    pub(crate) mouths: Vec<Mouth>,
+    pub(crate) is_value: bool,
+    pub(crate) top_notch: bool,
+    pub(crate) bottom_notch: bool,
 }
 
 fn is_operator(text: &str) -> bool {
@@ -103,7 +105,7 @@ fn shadow(value: &str, kind: &str) -> BlockSpec {
     }
 }
 
-fn plan(block: &BlockSpec) -> Plan {
+pub(crate) fn plan(block: &BlockSpec) -> Plan {
     let mut items = Vec::new();
     let mut slot = 0usize;
     for segment in &block.segments {
@@ -254,6 +256,9 @@ fn body_height(block: &BlockSpec) -> f32 {
 
 /// The block's own outline: width, and height without the bottom notch.
 pub fn size(block: &BlockSpec) -> (f32, f32) {
+    if geometry().spacer_rows {
+        return crate::blockly_modern::size(block);
+    }
     if let Some(inner) = unwrapped(block) {
         return size(&inner);
     }
@@ -302,7 +307,7 @@ fn mouth_height(mouth: &Mouth) -> f32 {
     }
 }
 
-fn field_advance(text: &str, dropdown: bool) -> f32 {
+pub(crate) fn field_advance(text: &str, dropdown: bool) -> f32 {
     text_width(text) + if dropdown { text_width(DROPDOWN_ARROW) } else { 0.0 }
 }
 
@@ -360,6 +365,9 @@ fn socket_size(child: Option<&BlockSpec>) -> (f32, f32) {
 /// Size of a stack of blocks laid out one under the other, including
 /// whatever hangs off their right edges or sits in their mouths.
 pub fn stack_size(blocks: &[BlockSpec]) -> (f32, f32) {
+    if geometry().spacer_rows {
+        return crate::blockly_modern::stack_size(blocks);
+    }
     let mut width: f32 = 0.0;
     let mut height: f32 = 0.0;
     for block in blocks {
@@ -373,6 +381,9 @@ pub fn stack_size(blocks: &[BlockSpec]) -> (f32, f32) {
 /// The full footprint of a block: its outline plus external children and
 /// the blocks in its mouths.
 pub fn extent(block: &BlockSpec) -> (f32, f32) {
+    if geometry().spacer_rows {
+        return crate::blockly_modern::extent(block);
+    }
     if let Some(inner) = unwrapped(block) {
         return extent(&inner);
     }
@@ -427,6 +438,9 @@ fn lighten(hex: &str, amount: f32) -> String {
 /// attached above and below it, because that decides which left corners are
 /// rounded.
 pub fn render_stack(blocks: &[BlockSpec], theme: &str) -> (String, f32, f32) {
+    if geometry().spacer_rows {
+        return crate::blockly_modern::render_stack(blocks, theme);
+    }
     let mut svg = String::new();
     let mut y: f32 = 0.0;
     let mut width: f32 = 0.0;
@@ -458,7 +472,7 @@ fn adopt(mut block: BlockSpec) -> BlockSpec {
 /// arrives as a stack wrapped around the value block, with the category
 /// suffix on the wrapper. There is no such stack in Blockly: use the value
 /// itself, and let it take the wrapper's category if it has none.
-fn unwrapped(block: &BlockSpec) -> Option<BlockSpec> {
+pub(crate) fn unwrapped(block: &BlockSpec) -> Option<BlockSpec> {
     if block.shape != "stack" || block.segments.len() != 1 {
         return None;
     }
@@ -476,6 +490,9 @@ fn unwrapped(block: &BlockSpec) -> Option<BlockSpec> {
 }
 
 pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> (String, f32, f32) {
+    if geometry().spacer_rows {
+        return crate::blockly_modern::render_block(block, theme, first, last);
+    }
     if let Some(inner) = unwrapped(block) {
         return render_block(&inner, theme, first, last);
     }
@@ -745,12 +762,12 @@ pub fn render_block(block: &BlockSpec, theme: &str, first: bool, last: bool) -> 
     (svg, extent_w, body_h)
 }
 
-fn notch(g: &Geometry, dir: f32) -> String {
+pub(crate) fn notch(g: &Geometry, dir: f32) -> String {
     let ramp = (g.notch_end - g.notch_start - g.notch_inner) / 2.0;
     format!("l {},{} {},0 {},-{}", dir * ramp, g.notch_depth, dir * g.notch_inner, dir * ramp, g.notch_depth)
 }
 
-fn label(colors: &CategoryColors, text: &str, x: f32, baseline: f32, theme: &str) -> String {
+pub(crate) fn label(colors: &CategoryColors, text: &str, x: f32, baseline: f32, theme: &str) -> String {
     let fill = if theme == "grayscale" { format!("style=\"fill:{}\"", colors.text) } else { format!("fill=\"{}\"", colors.text) };
     format!("<text class=\"sb-label\" x=\"{x}\" y=\"{baseline}\" {fill}>{}</text>", escape_text(text))
 }
