@@ -1,12 +1,19 @@
 name: Build & Deploy Manual
 
+# Das Handbuch jeder Paketversion bleibt auf der Website erreichbar:
+# der Branch gh-pages hält pro Version einen Ordner (0.3.0/, 0.4.0/, …),
+# jeder Lauf ersetzt nur den Ordner der Version aus typst.toml und
+# veröffentlicht den ganzen Branch. Die Wurzel leitet auf die neueste
+# Version weiter, jedes Handbuch trägt eine Versionsleiste
+# (scripts/manual-site.py).
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -20,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # docs/docs.typ importiert @schule/schuldocs:0.2.0. Das Paket steht nicht
+      # docs/docs.typ importiert @schule/schuldocs:0.3.0. Das Paket steht nicht
       # im offiziellen Verzeichnis, sondern im Schwesterrepo Typst-Schule.
       - name: Check out Typst-Schule (schuldocs)
         uses: actions/checkout@v4
@@ -29,12 +36,12 @@ jobs:
           path: typst-schule
 
       # --package-path erwartet <pfad>/<namensraum>/<name>/<version>; im
-      # Schwesterrepo liegt das Paket flach unter schuldocs/0.2.0.
+      # Schwesterrepo liegt das Paket flach unter schuldocs/0.3.0.
       - name: Arrange local package path
         run: |
           mkdir -p typst-packages/schule
           cp -R typst-schule/schuldocs typst-packages/schule/schuldocs
-          test -f typst-packages/schule/schuldocs/0.2.0/typst.toml
+          test -f typst-packages/schule/schuldocs/0.3.0/typst.toml
 
       - name: Install Typst
         uses: typst-community/setup-typst@v4
@@ -43,12 +50,12 @@ jobs:
           # kann sich mit jeder Version ändern.
           version: '0.15.0'
 
-      # Ein Lauf, drei Dateien: public/index.html, public/docs.css,
-      # public/blockst.pdf.
+      # Ein Lauf, drei Dateien: build/index.html, build/docs.css,
+      # build/blockst.pdf.
       - name: Build manual and website
         run: |
-          mkdir -p public
-          typst compile docs/docs.typ public \
+          mkdir -p build
+          typst compile docs/docs.typ build \
             --format bundle \
             --features bundle,html \
             --root . \
@@ -56,14 +63,54 @@ jobs:
 
       - name: Check bundle output
         run: |
-          test -f public/index.html
-          test -f public/docs.css
-          test -f public/blockst.pdf
+          test -f build/index.html
+          test -f build/docs.css
+          test -f build/blockst.pdf
+
+      - name: Read package version
+        id: version
+        run: |
+          version=$(sed -n 's/^version *= *"\(.*\)"/\1/p' typst.toml | head -1)
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # Der Branch gh-pages ist der Speicher der Website. Fehlt er noch,
+      # beginnt die Website mit dieser Version.
+      - name: Check out the website (gh-pages)
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null; then
+            git fetch --depth=1 origin gh-pages
+            git worktree add site origin/gh-pages
+          else
+            git worktree add --detach site
+            git -C site checkout --orphan gh-pages
+            git -C site rm -rfq . || true
+          fi
+
+      - name: Add this version to the website
+        run: |
+          python3 scripts/manual-site.py \
+            --site site \
+            --version "${{ steps.version.outputs.version }}" \
+            --build build
+
+      - name: Commit the website
+        run: |
+          cd site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "website unchanged"
+          else
+            git commit -m "manual: ${{ steps.version.outputs.version }} from ${{ github.sha }}"
+            git push origin HEAD:gh-pages
+          fi
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: site
 
   deploy:
     environment:

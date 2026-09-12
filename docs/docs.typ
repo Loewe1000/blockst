@@ -2,7 +2,7 @@
 //
 //     typst compile docs/docs.typ public --format bundle --features bundle,html --root .
 
-#import "@schule/schuldocs:0.2.0": docs
+#import "@schule/schuldocs:0.3.0": docs
 
 #show: docs.with(
   toml: toml("../typst.toml"),
