@@ -113,6 +113,9 @@ struct ParseRequest {
     rtl: Option<bool>,
     #[serde(default)]
     profile: Option<String>,
+    /// Category colours the document overrides, `category -> "#rrggbb"`.
+    #[serde(default)]
+    colors: std::collections::BTreeMap<String, String>,
 }
 
 fn default_language() -> String {
@@ -233,6 +236,7 @@ pub fn render_request_json(input: &str) -> Result<String, String> {
         // The caller may force a direction; otherwise the locale decides.
         rtl: request.rtl.unwrap_or_else(|| language_is_rtl(&request.language)),
         profile: request.profile.clone(),
+        colors: request.colors.clone(),
         scripts: scripts
             .into_iter()
             .map(|blocks| ScriptSpec {

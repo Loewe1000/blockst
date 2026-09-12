@@ -198,7 +198,7 @@ impl Geometry {
 pub fn for_profile(name: Option<&str>) -> Geometry {
     match name.unwrap_or("scratch") {
         "blockly" | "blockly-modern" => Geometry::blockly_modern(),
-        "blockly-klassisch" | "blockly-classic" | "jwinf" => Geometry::blockly_classic(),
+        "blockly-klassisch" | "blockly-classic" | "jwinf" | "jwinf-turtle" => Geometry::blockly_classic(),
         _ => Geometry::scratch(),
     }
 }

@@ -264,7 +264,7 @@ Arabic short vowels are optional and their order is not canonical, so blocks mat
 
 = Blockly and jwinf
 
-`blockly()` renders Blockly blocks from the notation `scratch()` uses, drawn with Blockly's shapes. A profile chooses look and vocabulary: `"blockly"` (the default, today's flat look), `"blockly-klassisch"` (before 2019), or `"jwinf"` — the Jugendwettbewerb Informatik's classic geometry, palette, and robot and turtle blocks.
+`blockly()` renders Blockly blocks from the notation `scratch()` uses, drawn with Blockly's shapes. A profile chooses look and vocabulary: `"blockly"` (the default, today's flat look), `"blockly-klassisch"` (before 2019), `"jwinf"` — the Jugendwettbewerb Informatik's classic geometry, the palette of its robot training tasks, and its robot and turtle blocks — or `"jwinf-turtle"`, the same with the colours of the Freie Turtle-Umgebung.
 
 #show-code(```typst
 #blockly("
@@ -281,6 +281,8 @@ ende
 On jwinf a block's text changes from task to task, so unknown labels are drawn as written and take their category from a `::kategorie` suffix. Known blocks — loops, conditions, variables, the world commands — need none. `ende` closes a C-block, `sonst` opens its else branch, and `<…>` equals `(…)`: Blockly has no hexagonal boolean.
 
 `raw-blockly()` renders ````blockly` and ````jwinf` fences; `blockly-parse()` returns the AST. `set-blockst(profile: …)` sets the default profile for `blockly()` only. Themes apply as for Scratch, with `grayscale` derived from the profile's palette.
+
+jwinf colours its categories per task family. Where a task deviates from both profiles, `colors` lays the document's own category colours over the palette — `set-blockst(colors: (logik: "#73cc47"))` for the document, or `colors:` on `blockly()`, `scratch()` and `blockst()` for a single block or group. A hex string or a Typst colour per category; the derived shades (bevel, stroke, `high-contrast`, `grayscale`) follow the new fill.
 
 = Labels and Line Numbers
 

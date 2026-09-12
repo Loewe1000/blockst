@@ -306,3 +306,59 @@ fn every_mouth_of_a_block_shares_one_statement_edge_and_a_full_width_arm() {
         assert_eq!(*e, right, "{d}");
     }
 }
+
+// ---------------------------------------------------------------------------
+// Colours per task family: the jwinf-turtle profile, and a document's own
+// overrides on top of any profile.
+// ---------------------------------------------------------------------------
+
+fn render_with(code: &str, profile: &str, colors: serde_json::Value, theme: &str) -> String {
+    let payload = serde_json::json!({
+        "code": code, "language": "de", "inline": false, "profile": profile, "colors": colors, "theme": theme,
+    });
+    render_request_json(&payload.to_string()).expect("render failed")
+}
+
+/// The turtle sandbox colours loops #47cccc where the robot tasks use #2fb5bd; the rest is inherited from jwinf.
+#[test]
+fn the_turtle_profile_recolours_three_categories_and_inherits_the_rest() {
+    let turtle = render("wiederhole (4) mal:\nende", "jwinf-turtle");
+    assert!(turtle.contains("#47cccc"), "{turtle}");
+    let robot = render("wiederhole (4) mal:\nende", "jwinf");
+    assert!(robot.contains("#2fb5bd") && !robot.contains("#47cccc"));
+    let vars = render("setze [x v] auf (0)", "jwinf-turtle");
+    assert!(vars.contains("#a5416b"), "variables keep jwinf's colour: {vars}");
+    let d = outline("gehe (3) Schritte");
+    let d_turtle = {
+        let svg = render("gehe (3) Schritte", "jwinf-turtle");
+        svg.split("</defs>").nth(1).unwrap().split("<path d=\"").nth(2).unwrap().split('"').next().unwrap().to_string()
+    };
+    assert_eq!(d, d_turtle, "same classic geometry");
+}
+
+/// `colors: (logik: "#73cc47")` replaces one category of the profile's palette.
+#[test]
+fn a_document_can_override_a_category_colour() {
+    let svg = render_with("falls <auf Kiste>\nende", "jwinf", serde_json::json!({"logik": "#73cc47"}), "normal");
+    assert!(svg.contains("#73cc47") && !svg.contains("#81b31d"), "{svg}");
+    // the bevel shades are derived from the new fill, not the old
+    assert!(svg.contains("#5ca339"), "dark copy of #73cc47: {svg}");
+}
+
+/// The override takes part in the greyscale ranking like any profile colour.
+#[test]
+fn an_override_is_drawn_in_grayscale_too() {
+    let svg = render_with("falls <auf Kiste>\nende", "jwinf", serde_json::json!({"logik": "#73cc47"}), "grayscale");
+    assert!(!svg.contains("#73cc47") && !svg.contains("#81b31d"), "{svg}");
+}
+
+/// Scratch documents can override too; the untouched categories keep their tables.
+#[test]
+fn scratch_takes_overrides_as_well() {
+    let payload = serde_json::json!({
+        "code": "move (10) steps\nsay [hi]", "language": "en", "inline": false, "profile": "scratch", "colors": {"motion": "#123456"},
+    });
+    let svg = render_request_json(&payload.to_string()).unwrap();
+    assert!(svg.contains("#123456"), "{svg}");
+    assert!(svg.contains("#9966ff") || svg.contains("#9966FF"), "looks keeps its colour: {svg}");
+}

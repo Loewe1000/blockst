@@ -71,9 +71,11 @@ pub(crate) const DIALECT_LOCALE_DATA: &[(&str, &str)] = &[
 const PROFILE_BLOCKLY_MODERN: &str = include_str!("../../data/dialects/profiles/blockly-modern.toml");
 const PROFILE_BLOCKLY_KLASSISCH: &str = include_str!("../../data/dialects/profiles/blockly-klassisch.toml");
 const PROFILE_JWINF: &str = include_str!("../../data/dialects/profiles/jwinf.toml");
+const PROFILE_JWINF_TURTLE: &str = include_str!("../../data/dialects/profiles/jwinf-turtle.toml");
 
 pub(crate) const PROFILE_DATA: &[(&str, &str)] = &[
         ("blockly-modern", PROFILE_BLOCKLY_MODERN),
         ("blockly-klassisch", PROFILE_BLOCKLY_KLASSISCH),
         ("jwinf", PROFILE_JWINF),
+        ("jwinf-turtle", PROFILE_JWINF_TURTLE),
 ];
