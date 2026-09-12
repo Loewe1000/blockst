@@ -907,10 +907,14 @@ fn render_block_in(block: &BlockSpec, theme: &str, _first: bool, _last: bool, pa
                 ElemKind::Button => {
                     let cx = e.x + BUTTON / 2.0;
                     let is_add = matches!(row.source, Source::AddRow);
-                    content.push_str(&format!("<circle cx=\"{cx}\" cy=\"{centre}\" r=\"10\" fill=\"#ffffff\" fill-opacity=\"0.9\"/>"));
-                    content.push_str(&format!("<path d=\"M {},{centre} h 10\" stroke=\"{fill}\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>", cx - 5.0));
+                    // a white disc with the glyph in the block colour; on a
+                    // white print block the disc gets an outline instead
+                    let glyph = if plain_theme { fill.clone() } else { colors.text.clone() };
+                    let outline = if plain_theme { "none".to_string() } else { colors.text.clone() };
+                    content.push_str(&format!("<circle cx=\"{cx}\" cy=\"{centre}\" r=\"10\" fill=\"#ffffff\" fill-opacity=\"0.9\" stroke=\"{outline}\"/>"));
+                    content.push_str(&format!("<path d=\"M {},{centre} h 10\" stroke=\"{glyph}\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>", cx - 5.0));
                     if is_add {
-                        content.push_str(&format!("<path d=\"M {cx},{} v 10\" stroke=\"{fill}\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>", centre - 5.0));
+                        content.push_str(&format!("<path d=\"M {cx},{} v 10\" stroke=\"{glyph}\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>", centre - 5.0));
                     }
                 }
                 ElemKind::Inline => {

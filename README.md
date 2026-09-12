@@ -62,6 +62,7 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - [SB3 Import via Typst Plugin WASM](#sb3-import-via-typst-plugin-wasm)
 - [Right-to-Left Languages](#right-to-left-languages)
 - [Blockly and jwinf](#blockly-and-jwinf)
+- [MakeCode](#makecode)
 - [Catalog](#catalog)
 - [Contributing](#contributing)
 
@@ -73,7 +74,9 @@ Starting with version 0.2.0, Blockst uses only the WASM-based text parser and re
 - **Right-to-left languages** (Arabic, Hebrew, Persian): the block layout is
   mirrored automatically — notch, hat, C-block mouth, loop arrow and label
   order all follow the reading direction
-- **Blockly** and **Open Roberta (NEPO)** as further block languages, with a **jwinf** profile
+- **Blockly**, **MakeCode** (micro:bit, Calliope mini) and **Open Roberta
+  (NEPO)** as further block languages, each drawn the way its editor draws
+  it, with a **jwinf** profile for Blockly
 - Category suffixes via `::motion`, `::control`, ... (scratchblocks-style)
 - Optional line numbers and `#label` references for line-aware worksheets
 - Optional compact block geometry with `inset-scale` (text size unchanged, e.g. `60%`, `90%`, `125%`)
