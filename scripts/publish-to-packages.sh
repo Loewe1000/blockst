@@ -60,18 +60,18 @@ git fetch upstream
 
 PR_BRANCH="add-blockst-$VERSION"
 
-if git show-ref --verify --quiet "refs/heads/$PR_BRANCH"; then
-  echo "Branch '$PR_BRANCH' already exists in packages repo. Switching to it."
-  git checkout "$PR_BRANCH"
-else
-  echo "Creating branch '$PR_BRANCH' from upstream/main …"
-  git checkout -b "$PR_BRANCH" upstream/main
-fi
+# Always start from the current upstream/main, also on a repeat run: a branch
+# left over from an earlier attempt sits on an older upstream, and a commit
+# made on top of it deletes every package added upstream since — the diff
+# looked like 119 deleted files of other people's packages once.
+echo "Resetting branch '$PR_BRANCH' to upstream/main …"
+git checkout -q -B "$PR_BRANCH" upstream/main
 
 # ── Copy files ───────────────────────────────────────────────────────────────
 
 if [[ -d "$TARGET_DIR" ]]; then
   echo "Target directory $TARGET_DIR already exists – overwriting."
+  rm -rf "$TARGET_DIR"
 fi
 
 mkdir -p "$TARGET_DIR"
@@ -92,12 +92,24 @@ rsync -a --delete --delete-excluded \
 
 cd "$PACKAGES_REPO"
 git add -A
+
+# Nothing outside the package's own directory may change — a stray deletion
+# here would remove somebody else's package from the registry.
+STRAY="$(git diff --cached --name-status upstream/main \
+  | grep -v $'\tpackages/preview/blockst/'"$VERSION"'/' || true)"
+if [[ -n "$STRAY" ]]; then
+  echo "Error: the branch touches files outside packages/preview/blockst/$VERSION:" >&2
+  echo "$STRAY" | head -20 >&2
+  exit 1
+fi
+
 if git diff --cached --quiet; then
   echo "No changes to commit in packages repo."
 else
   git commit -m "Add blockst $VERSION"
   echo ""
   echo "✓ Committed to branch '$PR_BRANCH' in $PACKAGES_REPO"
+  git --no-pager diff --stat upstream/main | tail -1
 fi
 
 echo ""
