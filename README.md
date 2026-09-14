@@ -655,7 +655,7 @@ category names (`motion`, `looks`, …).
 
 Block texts and colours are generated from the published sources — Blockly
 (Apache-2.0) and France-IOI's bebras-modules (MIT) — by
-[scripts/blockly-data](scripts/blockly-data/README.md), which also reports
+[scripts/blockly-data](https://github.com/Loewe1000/blockst/tree/main/scripts/blockly-data), which also reports
 the gaps in the upstream translations.
 
 ## MakeCode
@@ -692,7 +692,7 @@ ende
 
 The block texts are the editors' own — read off makecode.microbit.org and
 makecode.calliope.cc in German and English by
-[scripts/makecode-data](scripts/makecode-data/README.md), and for the
+[scripts/makecode-data](https://github.com/Loewe1000/blockst/tree/main/scripts/makecode-data), and for the
 other 34 editor languages taken from the translation service the editors
 load at run time (cdn.makecode.com, approved strings only). `language:` is
 any language the editors offer: `"de"` (the default), `"en"`, `"fr"`,
@@ -849,9 +849,12 @@ Source: [examples/catalog/operators.typ](examples/catalog/operators.typ)
 
 Contributions are welcome: bug reports, missing blocks, parser improvements, rendering polish, docs, and new localizations.
 
-The renderers are Rust plugins compiled to WASM. Rebuild them from source
-with `./scripts/build-plugins.sh` (it pins the rustup toolchain; a Homebrew
-rust lacks the wasm target) and check that the committed binaries still
-reproduce with `./scripts/build-plugins.sh --check`.
+The renderers are Rust plugins compiled to WASM. Their sources and the
+build scripts live in `scripts/` in the
+[repository](https://github.com/Loewe1000/blockst) and are not part of the
+published package. Rebuild the plugins from source with
+`./scripts/build-plugins.sh` (it pins the rustup toolchain; a Homebrew rust
+lacks the wasm target) and check that the committed binaries still reproduce
+with `./scripts/build-plugins.sh --check`.
 `./scripts/compare-examples.sh baseline|check` renders every example and
 compares it pixel by pixel with the recorded baseline.
