@@ -4,7 +4,7 @@
 // to task, so unknown labels are drawn as written and take their category
 // from a `::kategorie` suffix; loops, conditions, variables and the world
 // commands are recognised without one.
-#import "@preview/blockst:0.4.0": blockly, raw-blockly
+#import "@preview/blockst:0.4.1": blockly, raw-blockly
 
 #set page(width: auto, height: auto, margin: 4mm, fill: none)
 #set text(font: ("Helvetica Neue", "Helvetica", "Arial"))

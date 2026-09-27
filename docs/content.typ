@@ -41,7 +41,7 @@ All four share one text notation: a block per line, `(…)` for a value, `[… v
 == Quick start
 
 #show-code(```typ
-#import "@preview/blockst:0.4.0": scratch, blockly, makecode, nepo
+#import "@preview/blockst:0.4.1": scratch, blockly, makecode, nepo
 
 #scratch("
 when green flag clicked
@@ -96,7 +96,7 @@ Every function takes the same rendering options — theme, scale, font, line num
 
 == Package information
 
-- *Version:* 0.4.0
+- *Version:* 0.4.1
 - *License:* MIT
 - *Repository:* #link("https://github.com/Loewe1000/blockst")[github.com/Loewe1000/blockst]
 - *Compiler requirement:* Typst 0.15.0+
@@ -551,7 +551,7 @@ Start
   side-by-side: true,
 )
 
-`raw-nepo()` renders `nepo` fences, `nepo-parse()` returns the block tree. The renderer is a prototype: the set of blocks is the beginner set of the three platforms, and `examples/nepo` in the repository holds the programme collection and the comparison sheet against Open Roberta's own drawings.
+`raw-nepo()` renders `nepo` fences, `nepo-parse()` returns the block tree. The set of blocks is the beginner set of the three platforms, plus the logic, loop, radio and sensor blocks of the lab's expert toolbox: negation, the counting loop with a step, the accelerometer, the radio blocks and the Calliope mini's Grove sensors. Units follow the sensor's mode and ports come from the robot configuration, as in the lab. `examples/nepo` in the repository holds the programme collection, a sheet of every block added after 0.4.0, and the comparison against Open Roberta's own drawings.
 
 = Labels and line numbers
 
@@ -599,7 +599,7 @@ blockst includes an execution engine that runs Scratch programs visually — for
 == scratch-run Module
 
 #show-code(```typ
-#import "@preview/blockst:0.4.0": scratch-run, set-scratch-run
+#import "@preview/blockst:0.4.1": scratch-run, set-scratch-run
 
 #scratch-run.stage("...", scale: 2)
 #scratch-run.grid("...", grid: true)

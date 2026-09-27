@@ -10,7 +10,7 @@
 //
 // Relativ importiert, bis die Zählschleife, „nicht“, der Funk und die
 // Grove-Sensoren in einem Release sind; 0.4.0 kennt sie noch nicht.
-#import "../../lib.typ": nepo, set-blockst
+#import "@preview/blockst:0.4.1": nepo, set-blockst
 
 #set page(
   paper: "a4",

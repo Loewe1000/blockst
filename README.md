@@ -32,6 +32,17 @@ e.g. [/0.3.0/](https://loewe1000.github.io/blockst/0.3.0/), and as a PDF in each
 > syntax is removed. Blockst uses only the text-to-WASM pipeline; documents
 > written for the old syntax must be migrated.
 
+### New in 0.4.1
+
+- **Ten more NEPO blocks**, contributed by [@lkoehl](https://github.com/lkoehl):
+  negation (`nicht`), the counting loop with a step (`Zähle i von 0 solange
+  Zähler < 10 mit Schrittweite 2`), the accelerometer, the radio blocks
+  (send, receive, set channel) and the Grove sensors of the Calliope mini
+  (ultrasonic, humidity, moisture, colour). All taken from the Open Roberta
+  lab's expert toolbox. See [NEPO (Open Roberta)](#nepo-open-roberta)
+- Units follow the sensor's mode, ports come from the robot configuration,
+  and `nicht` binds tighter than `und`/`oder`, as in the lab
+
 ### New in 0.4.0
 
 - **Blockly** as a second block language: `blockly()` renders the same text
@@ -747,9 +758,11 @@ Start
 ![NEPO example](examples/example-nepo.svg)
 
 `#show: raw-nepo()` renders ````nepo` fences; `nepo-parse()` returns the block
-tree. The renderer is a prototype covering the beginner block set of the three
-platforms — [examples/nepo](examples/nepo/README.md) holds the programme
-collection and the comparison sheet against Open Roberta's own drawings.
+tree. The renderer covers the beginner block set of the three platforms, plus
+the logic, loop, radio and sensor blocks of the lab's expert toolbox —
+[examples/nepo](examples/nepo/README.md) holds the programme collection, a
+sheet of every block added after 0.4.0, and the comparison against Open
+Roberta's own drawings.
 
 ## Scratch block catalog
 
