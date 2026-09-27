@@ -20,8 +20,8 @@ either way.
 |---|---|
 | `calliope-prototype.typ` | The original visual reference set, plus empty sockets |
 | `beispielprogramme.typ` | Programme collection: every block and every nesting the renderer knows, from one line to full lessons |
+| `neue-bloecke.typ` | The blocks added after 0.4.0 (counting loop, `nicht`, radio, accelerometer, Grove sensors), each variant with its source, for checking against the lab |
 | `conditions-reference.typ` / `inline-sockets-reference.typ` | Focused fixtures for nested conditions and inline sockets |
-| `fehler-comparison.typ` | Six lesson examples, each beside its Open-Roberta screenshot (requires the local lesson assets) |
 | `mixed-document.typ` | Scratch and NEPO in one document |
 | `comparisons/index.html` | Reference \| Blockst \| overlay, per block |
 | `comparisons/blocks.typ` | One block per page, source for the candidate SVGs |

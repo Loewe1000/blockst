@@ -69,6 +69,12 @@ pub struct FieldDef {
     /// `setAlign(Blockly.ALIGN_RIGHT)` on the row this field owns.
     #[serde(default)]
     pub align: Option<String>,
+    /// For a `label`: the dropdown whose selection picks the text. A sensor's
+    /// unit is one — `updateShape_` swaps "%" for "°" when the mode changes —
+    /// so the locale lists one label per option of that dropdown, in step.
+    /// Without it the label is the locale's first entry.
+    #[serde(default)]
+    pub label_from: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -252,12 +258,66 @@ fn selected_label(
 ) -> String {
     match bindings.get(field) {
         Some(Binding::Dropdown(text)) => text.clone(),
-        _ => language
-            .dropdown_options(id, field)
-            .first()
-            .cloned()
-            .unwrap_or_default(),
+        _ => default_option(id, field, language),
     }
+}
+
+/// What a dropdown shows when the source did not choose: the catalog's
+/// `default` if it names one — the toolbox hands out the radio block at full
+/// strength, `<field name="POWER">7</field>` — and otherwise the first option,
+/// which is what a freshly created Blockly field holds.
+fn default_option(id: &str, field: &str, language: &Language) -> String {
+    let options = language.dropdown_options(id, field);
+    catalog()
+        .blocks
+        .get(id)
+        .and_then(|def| def.fields.get(field))
+        .and_then(|def| def.default.as_ref())
+        .filter(|wanted| options.contains(wanted))
+        .or_else(|| options.first())
+        .cloned()
+        .unwrap_or_default()
+}
+
+/// Select a type dropdown the source left out from the value it types.
+///
+/// `Sende Nachricht "Hallo"` names no type, but the text block plugged in
+/// says `String`, and a socket whose check follows that dropdown would
+/// otherwise demand a `Number` it was never given. Only a dropdown that
+/// carries type ids (`values`) is inferred, and only from a value that
+/// reports exactly one type.
+fn infer_selections(
+    id: &str,
+    def: &BlockDef,
+    language: &Language,
+    bindings: &HashMap<String, Binding>,
+) -> HashMap<String, Binding> {
+    let mut inferred = bindings.clone();
+    for (name, field) in &def.fields {
+        let Some(source) = field.check_from.as_deref() else {
+            continue;
+        };
+        if inferred.contains_key(source) {
+            continue;
+        }
+        let Some(Binding::Value(child)) = bindings.get(name) else {
+            continue;
+        };
+        let [only] = child.check.as_slice() else {
+            continue;
+        };
+        let Some(index) = def
+            .fields
+            .get(source)
+            .and_then(|dropdown| dropdown.values.iter().position(|value| value == only))
+        else {
+            continue;
+        };
+        if let Some(label) = language.dropdown_options(id, source).get(index) {
+            inferred.insert(source.to_string(), Binding::Dropdown(label.clone()));
+        }
+    }
+    inferred
 }
 
 /// The *id* behind that label — `'Number'` behind "Zahl". Blockly stores the
@@ -298,6 +358,7 @@ pub fn build_block(
         .specs
         .get(id)
         .ok_or_else(|| format!("nepo: block '{id}' has no {} pattern", language.code))?;
+    let bindings = &infer_selections(id, def, language, bindings);
 
     // Every id a dropdown in this block has selected, so that a socket with
     // `check_from` can be typed no matter which row it sits in.
@@ -336,15 +397,48 @@ pub fn build_block(
                     }
                     match field.kind.as_str() {
                         "dropdown" => {
+                            let selected = selected_label(id, name, language, bindings);
+                            fields.push(SegmentSpec::Dropdown { value: selected });
+                        }
+                        // A sensor port that comes from the robot configuration.
+                        // Blockly fills the menu with the names the
+                        // configuration gave its blocks (`getConfigPorts`), so
+                        // like a variable its entries belong to the document;
+                        // the locale supplies the name the lab gives a freshly
+                        // added sensor.
+                        "config_port" => {
                             let selected = match bindings.get(name) {
-                                Some(Binding::Dropdown(text)) => text.clone(),
-                                _ => language
-                                    .dropdown_options(id, name)
-                                    .first()
-                                    .cloned()
-                                    .unwrap_or_default(),
+                                Some(Binding::Variable(text)) => text.clone(),
+                                _ => default_option(id, name, language),
                             };
                             fields.push(SegmentSpec::Dropdown { value: selected });
+                        }
+                        // A label whose text follows another dropdown: the
+                        // unit of a sensor with several modes. Blockly never
+                        // lets a label disappear — an empty one still paints a
+                        // no-break space and takes its separator — so the
+                        // locale writes " " where a mode has no unit.
+                        "label" => {
+                            let index = field
+                                .label_from
+                                .as_deref()
+                                .and_then(|source| {
+                                    let chosen = selected_label(id, source, language, bindings);
+                                    language
+                                        .dropdown_options(id, source)
+                                        .iter()
+                                        .position(|option| *option == chosen)
+                                })
+                                .unwrap_or(0);
+                            let text = language
+                                .dropdown_options(id, name)
+                                .get(index)
+                                .cloned()
+                                .unwrap_or_else(|| " ".to_string());
+                            fields.push(SegmentSpec::Text {
+                                value: text,
+                                monospace: false,
+                            });
                         }
                         // `FieldVariable` inherits from FieldDropdown in
                         // Blockly, but its entries belong to the document

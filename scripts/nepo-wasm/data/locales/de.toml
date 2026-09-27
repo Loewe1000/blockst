@@ -29,10 +29,20 @@ robSensors_timer_getSample = "gib %MODE ms Zeitgeber %PORT"
 robSensors_temperature_getSample = "gib %MODE ° Temperatursensor"
 robSensors_light_getSample = "gib %MODE % Lichtsensor"
 mbedSensors_timer_reset = "Setze Zeitgeber %PORT zurück"
+# SENSOR_GET + MODE_* + SENSOR_UNIT_* + SENSOR_<TITLE> + port + slot, in the
+# order robSensors.js appends them. A hidden port or slot paints nothing.
+robSensors_accelerometer_getSample = "gib %MODE %UNIT Beschleunigungssensor %SLOT"
+robSensors_ultrasonic_getSample = "gib %MODE %UNIT Ultraschallsensor %PORT"
+robSensors_humidity_getSample = "gib %MODE %UNIT Luftfeuchtigkeitsensor %PORT"
+robSensors_moisture_getSample = "gib %MODE %UNIT Feuchtigkeitsensor %PORT"
+robSensors_colourtcs3472_getSample = "gib %MODE %UNIT Farbsensor TCS3472 %PORT"
 # LOOP_FOREVER / CONTROLS_*
 robControls_loopForever = "Wiederhole unendlich oft | mache %DO"
 controls_repeat_ext = "Wiederhole %TIMES mal | mache %DO"
 controls_whileUntil = "Wiederhole %MODE %BOOL | mache %DO"
+# CONTROLS_FOR_TITLE + CONTROLS_FOR_INPUT_DO. "Zähler" is a literal in the
+# message, not the variable's name.
+robControls_for = "Zähle %VAR von %FROM solange Zähler < %TO mit Schrittweite %BY | mache %DO"
 robControls_if = "%MUTATOR wenn %IF0 | mache %DO0"
 robControls_ifElse = "%MUTATOR wenn %IF0 | mache %DO0 | sonst %ELSE"
 # WAIT / WAIT_UNTIL
@@ -44,6 +54,8 @@ math_number = "%NUM"
 logic_boolean = "%BOOL"
 logic_compare = "%A %OP %B"
 logic_operation = "%A %OP %B"
+# LOGIC_NEGATE_TITLE
+logic_negate = "nicht %BOOL"
 math_arithmetic = "%A %OP %B"
 math_random_int = "ganzzahliger Zufallswert zwischen %FROM bis %TO"
 mbedColour_picker = "%COLOUR"
@@ -70,6 +82,12 @@ robLists_indexOf = "von der Liste %VALUE %END %FIND"
 robLists_getIndex = "von der Liste %VALUE %MODE %WHERE %AT"
 # LISTS_SET_INDEX_INPUT_TO closes the row: "... ein <Wert>".
 robLists_setIndex = "von der Liste %LIST %MODE %WHERE %AT ein %TO"
+# CONNECTION_SEND_DATA + type | CONNECTION_POWER + strength
+mbedCommunication_sendBlock = "Sende Nachricht %TYPE %sendData | mit Stärke %POWER"
+# CONNECTION_RECEIVED_DATA + type
+mbedCommunication_receiveBlock = "Empfange Nachricht %TYPE"
+# CONNECTION_SET_CHANNEL
+mbedCommunication_setChannel = "setze Kanal auf %CONNECTION"
 
 [dropdowns]
 mbedActions_display_text.TYPE = ["Text", "Zeichen"]
@@ -90,6 +108,30 @@ robSensors_temperature_getSample.MODE = ["Wert"]
 robSensors_light_getSample.MODE = ["Wert"]
 robSensors_timer_getSample.PORT = ["1"]
 mbedSensors_timer_reset.PORT = ["1"]
+robSensors_accelerometer_getSample.MODE = ["Wert"]
+robSensors_accelerometer_getSample.UNIT = ["milli-g"]
+# The slots are labelled by Blockly.Msg lookups that only "STRENGTH" survives.
+robSensors_accelerometer_getSample.SLOT = ["x", "y", "z", "Stärke"]
+robSensors_ultrasonic_getSample.MODE = ["Abstand"]
+robSensors_ultrasonic_getSample.UNIT = ["cm"]
+robSensors_humidity_getSample.MODE = ["Luftfeuchtigkeit", "Temperatur"]
+robSensors_humidity_getSample.UNIT = ["%", "°"]
+robSensors_moisture_getSample.MODE = ["Wert"]
+robSensors_moisture_getSample.UNIT = ["%"]
+robSensors_colourtcs3472_getSample.MODE = ["Farbe", "Licht", "RGB"]
+# The colour and RGB modes have no unit; Blockly paints the empty label as a
+# no-break space, which is what " " becomes.
+robSensors_colourtcs3472_getSample.UNIT = [" ", "%", " "]
+# The name the lab gives a newly configured sensor: the capital initial of
+# its German title (robConfig.js). The source may name any other.
+robSensors_ultrasonic_getSample.PORT = ["U"]
+robSensors_humidity_getSample.PORT = ["L"]
+robSensors_moisture_getSample.PORT = ["F"]
+robSensors_colourtcs3472_getSample.PORT = ["F"]
+# VARIABLES_TYPE_*; POWER is 0 to 7.
+mbedCommunication_sendBlock.TYPE = ["Zahl", "logischer Wert", "Zeichenkette"]
+mbedCommunication_sendBlock.POWER = ["0", "1", "2", "3", "4", "5", "6", "7"]
+mbedCommunication_receiveBlock.TYPE = ["Zahl", "logischer Wert", "Zeichenkette"]
 mbedImage_get_image.IMAGE = ["Herz", "Lächeln", "Strichmännchen", "Giraffe", "Regenschirm"]
 controls_whileUntil.MODE = ["bis", "solange"]
 # Blockly.TYPE_DROPDOWN('calliope') — the order is the one blocks.toml pairs
@@ -128,3 +170,16 @@ robLists_create_with = [
   "Liste : %LIST_TYPE <- %N0 %ADD0 | %N1 %ADD1 | %N2 %ADD2 | %N3 %ADD3 | %N4 %ADD4 | %N5 %ADD5",
   "Liste %LIST_TYPE mit %N0 %ADD0 | %N1 %ADD1 | %N2 %ADD2 | %N3 %ADD3 | %N4 %ADD4 | %N5 %ADD5",
 ]
+# "bis" is what a worksheet says; the arrow of `solange Zähler <` is not.
+robControls_for = [
+  "Zähle %VAR von %FROM bis %TO mit Schrittweite %BY | mache %DO",
+  "Zähle %VAR von %FROM bis %TO | mache %DO",
+]
+# Without a strength the block keeps the toolbox's 7; without a type it takes
+# the one the plugged-in value reports.
+mbedCommunication_sendBlock = [
+  "Sende Nachricht %TYPE %sendData",
+  "Sende Nachricht %sendData mit Stärke %POWER",
+  "Sende Nachricht %sendData",
+]
+mbedCommunication_receiveBlock = ["Empfange Nachricht"]

@@ -29,6 +29,10 @@
 #   matrix    the 5x5 LED grid (expanded by src/matrix.rs)
 #   image     a compact predefined 5x5-image dropdown
 #   spacer    a label that exists only to take up room
+#   label     a label whose text follows another dropdown (`label_from`),
+#             one locale entry per option of it — a sensor's unit
+#   config_port a sensor port named by the robot configuration; a dropdown
+#             whose entries, like a variable's, come from the document
 #   value     a socket for a reporting block, typed by `check`
 #   inline_value a socket inside a row, for reporter composition
 #   statement a mouth holding a stack of blocks
@@ -40,6 +44,8 @@
 #             on a block, type its output that way. `check_prefix` turns
 #             "Number" into "Array_Number", which is how a list block reports
 #             the type of what it holds.
+#   default   for a dropdown, the option it shows when the source names none
+#             (otherwise the first, as on a fresh Blockly field)
 #   optional  drop the row entirely when nothing is bound to it
 #   align     "right", for the ruler-style rows a list block stacks up
 #   connection (block level) the name Blockly's setPreviousStatement gives this
@@ -176,6 +182,69 @@ shape = "statement"
 category = "sensor"
 fields.PORT = { kind = "dropdown" }
 
+# sensors.accelerometer.calliope: one mode, a slot per axis plus the total
+# ("Stärke"), and an inbuilt port that `hidePortIfOnlyInbuilt` hides. The unit
+# is SENSOR_UNIT_MILLIG, which no locale translates.
+#
+# The unit is a field of its own (`appendField(…, 'UNIT')`), not part of the
+# title, so it is a `label` here too: two fields are a separator apart, where
+# one literal "milli-g Beschleunigungssensor" would only be a space apart.
+[blocks.robSensors_accelerometer_getSample]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "sensor"
+check = "Number"
+fields.MODE = { kind = "mode" }
+fields.UNIT = { kind = "label" }
+fields.SLOT = { kind = "dropdown" }
+
+# ----- Grove sensors ------------------------------------------------------
+# The sensors a Calliope takes on its Grove sockets (A0, A1). Unlike the
+# inbuilt ones their port is not hidden: `ports: 'CONFIGURATION'` fills the
+# menu with whatever the robot configuration named them, so the block shows
+# the name ("U", "L", …) and the lab's default for a newly added sensor is
+# what the locale offers.
+
+[blocks.robSensors_ultrasonic_getSample]
+platforms = ["calliope", "calliopev3"]
+shape = "value"
+category = "sensor"
+check = "Number"
+fields.MODE = { kind = "mode" }
+fields.UNIT = { kind = "label" }
+fields.PORT = { kind = "config_port" }
+
+# Two modes with different units. `updateShape_` rewrites the UNIT label when
+# the mode changes, which is what `label_from` stands for.
+[blocks.robSensors_humidity_getSample]
+platforms = ["calliope", "calliopev3"]
+shape = "value"
+category = "sensor"
+check = "Number"
+fields.MODE = { kind = "dropdown" }
+fields.UNIT = { kind = "label", label_from = "MODE" }
+fields.PORT = { kind = "config_port" }
+
+[blocks.robSensors_moisture_getSample]
+platforms = ["calliope", "calliopev3"]
+shape = "value"
+category = "sensor"
+check = "Number"
+fields.MODE = { kind = "mode" }
+fields.UNIT = { kind = "label" }
+fields.PORT = { kind = "config_port" }
+
+# Each mode reports its own type — a colour, a percentage, a list of three
+# numbers — and `updateShape_` re-types the output plug to match.
+[blocks.robSensors_colourtcs3472_getSample]
+platforms = ["calliope", "calliopev3"]
+shape = "value"
+category = "sensor"
+check_from = "MODE"
+fields.MODE = { kind = "dropdown", values = ["Colour", "Number", "Array_Number"] }
+fields.UNIT = { kind = "label", label_from = "MODE" }
+fields.PORT = { kind = "config_port" }
+
 # ===== TOOLBOX_CONTROL ===================================================
 
 [blocks.robControls_loopForever]
@@ -203,6 +272,20 @@ shape = "statement"
 category = "control"
 fields.MODE = { kind = "dropdown" }
 fields.BOOL = { kind = "value", check = "Boolean" }
+fields.DO = { kind = "statement" }
+
+# `blocks/loops.js`, the Roberta version of `controls_for`. The counter is
+# named in a FieldTextInput — the loop declares it, as the Start block
+# declares a global — and `inputsInline` puts the three bounds in one row.
+# The counter is always a Number (`declarationType_`), see src/variables.rs.
+[blocks.robControls_for]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "control"
+fields.VAR = { kind = "variable_name", default = "i" }
+fields.FROM = { kind = "inline_value", check = "Number" }
+fields.TO = { kind = "inline_value", check = "Number" }
+fields.BY = { kind = "inline_value", check = "Number" }
 fields.DO = { kind = "statement" }
 
 [blocks.robControls_if]
@@ -281,6 +364,15 @@ check = "Boolean"
 fields.A = { kind = "inline_value", check = "Boolean" }
 fields.OP = { kind = "dropdown" }
 fields.B = { kind = "inline_value", check = "Boolean" }
+
+# `blocks/logic.js`: jsonInit with one input and no dummy after it, so
+# `getInputsInline` leaves the socket external, on the block's right edge.
+[blocks.logic_negate]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "logic"
+check = "Boolean"
+fields.BOOL = { kind = "value", check = "Boolean" }
 
 [blocks.math_arithmetic]
 platforms = ["calliope", "calliopev3", "microbit"]
@@ -487,3 +579,30 @@ fields.MODE = { kind = "dropdown" }
 fields.WHERE = { kind = "dropdown" }
 fields.AT = { kind = "inline_value", check = "Number" }
 fields.TO = { kind = "inline_value" }
+
+# ===== TOOLBOX_COMMUNICATION =============================================
+# `blocks/mbedCommunication.js`: the radio between Calliope minis and
+# micro:bits. The type dropdown re-checks the socket (`updateType_`), and the
+# block is explicitly not inline, so the strength sits on a right-aligned row
+# of its own.
+[blocks.mbedCommunication_sendBlock]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "communication"
+fields.TYPE = { kind = "dropdown", values = ["Number", "Boolean", "String"] }
+fields.sendData = { kind = "value", check_from = "TYPE", align = "right" }
+fields.POWER = { kind = "dropdown", default = "7", align = "right" }
+
+# The same type dropdown, typing the output plug instead of a socket.
+[blocks.mbedCommunication_receiveBlock]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "value"
+category = "communication"
+check_from = "TYPE"
+fields.TYPE = { kind = "dropdown", values = ["Number", "Boolean", "String"] }
+
+[blocks.mbedCommunication_setChannel]
+platforms = ["calliope", "calliopev3", "microbit"]
+shape = "statement"
+category = "communication"
+fields.CONNECTION = { kind = "value", check = "Number" }

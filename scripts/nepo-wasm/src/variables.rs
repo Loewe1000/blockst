@@ -18,6 +18,11 @@ use std::collections::HashMap;
 
 pub const DECLARE: &str = "robGlobalVariables_declare";
 
+/// The counting loop declares its own variable: `robControls_for` sets
+/// `declarationType_ = 'Number'`, so the counter is a number wherever it is
+/// read.
+const COUNTING_LOOP: &str = "robControls_for";
+
 /// Type every variable use in the document, from the declarations it contains.
 ///
 /// Declarations are global — Blockly puts them in the Start block, not in the
@@ -109,6 +114,11 @@ fn collect(blocks: &[BlockSpec], types: &mut HashMap<String, String>) {
                 types.insert(name, kind);
             }
         }
+        if block.id == COUNTING_LOOP {
+            if let Some(name) = declared_name(block) {
+                types.insert(name, "Number".to_string());
+            }
+        }
         for row in &block.rows {
             for field in &row.fields {
                 match field {
@@ -127,7 +137,8 @@ fn collect(blocks: &[BlockSpec], types: &mut HashMap<String, String>) {
     }
 }
 
-/// The name field of a declaration: its one editable text box.
+/// The name field of a declaration: its one editable text box. The counting
+/// loop has one too, ahead of its three sockets.
 fn declared_name(block: &BlockSpec) -> Option<String> {
     block.rows.iter().flat_map(|row| &row.fields).find_map(|f| {
         match f {

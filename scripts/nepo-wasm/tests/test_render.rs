@@ -347,3 +347,38 @@ fn a_font_name_cannot_break_out_of_the_stylesheet() {
         "the name survives as text: {svg}"
     );
 }
+
+#[test]
+fn radio_blocks_are_drawn_in_the_communication_pink() {
+    // CAT_COMMUNICATION_RGB
+    let svg = render("Sende Nachricht 1\nsetze Kanal auf 0");
+    assert!(svg.contains("fill=\"#FF69B4\""), "communication body");
+}
+
+#[test]
+fn the_new_blocks_render() {
+    for source in [
+        "nicht wahr",
+        "Zähle i von 0 solange Zähler < 10 mit Schrittweite 1\n  Zeige Text i",
+        "gib Wert milli-g Beschleunigungssensor x",
+        "gib Abstand cm Ultraschallsensor U",
+        "gib Temperatur ° Luftfeuchtigkeitsensor L",
+        "gib Wert % Feuchtigkeitsensor F",
+        "gib Farbe Farbsensor TCS3472 F",
+        "Sende Nachricht Zeichenkette \"Hallo\" mit Stärke 7",
+        "Zeige Text Empfange Nachricht Zahl",
+        "setze Kanal auf 0",
+    ] {
+        let svg = render(source);
+        assert!(svg.contains("<path"), "no outline for {source:?}");
+        for bad in ["NaN", "%UNIT", "%PORT", "%sendData"] {
+            assert!(!svg.contains(bad), "{bad} in {source:?}");
+        }
+    }
+}
+
+#[test]
+fn the_colour_sensor_plugs_in_as_a_colour() {
+    let svg = render("gib Farbe Farbsensor TCS3472 F");
+    assert!(svg.contains("fill=\"#EBC300\""), "Colour plug");
+}

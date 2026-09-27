@@ -19,15 +19,32 @@ remaining mutator branches (a second `wenn` condition, `sonst wenn`) are not.
 | Start | `robControls_start` | `Start`, with the declaration mouth its plus mutator opens |
 | Display & sound | `mbedActions_display_text`, `mbedActions_display_image`, `mbedActions_display_clear`, `mbedActions_play_note` | `Zeige Text …`, `Zeige Bild …`, `Lösche Bildschirm`, `Spiele Viertelnote C4` |
 | Calliope RGB LED | `actions_rgbLed_hidden_on_calliope`, `actions_rgbLed_hidden_off_calliope` | `Schalte RGB LED an Farbe …`, `Schalte RGB LED aus` |
-| Sensor | `robSensors_key_getSample`, `robSensors_pintouch_getSample`, `robSensors_gesture_getSample`, `robSensors_compass_getSample`, `robSensors_sound_getSample`, `robSensors_timer_getSample`, `robSensors_temperature_getSample`, `robSensors_light_getSample`, `mbedSensors_timer_reset` | `Taste A gedrückt?`, `Pin 0 gedrückt?`, `gib …`, `Setze Zeitgeber 1 zurück` |
-| Control | `robControls_loopForever`, `controls_repeat_ext`, `robControls_if`, `robControls_ifElse`, `robControls_wait_time`, `robControls_wait_for` | `Wiederhole … mal`, `wenn …`, `Warte ms …`, `Warte bis …` |
-| Logic & math | `logic_boolean`, `logic_compare`, `logic_operation`, `math_number`, `math_arithmetic`, `math_random_int` | `wahr`, `1 + 2`, `Taste A gedrückt? und wahr`, `1 ≤ 2`, `ganzzahliger Zufallswert zwischen 1 bis 10` |
+| Sensor | `robSensors_key_getSample`, `robSensors_pintouch_getSample`, `robSensors_gesture_getSample`, `robSensors_compass_getSample`, `robSensors_sound_getSample`, `robSensors_timer_getSample`, `robSensors_temperature_getSample`, `robSensors_light_getSample`, `robSensors_accelerometer_getSample`, `mbedSensors_timer_reset` | `Taste A gedrückt?`, `Pin 0 gedrückt?`, `gib …`, `gib Wert milli-g Beschleunigungssensor x`, `Setze Zeitgeber 1 zurück` |
+| Grove sensors (Calliope only) | `robSensors_ultrasonic_getSample`, `robSensors_humidity_getSample`, `robSensors_moisture_getSample`, `robSensors_colourtcs3472_getSample` | `gib Abstand cm Ultraschallsensor U`, `gib Temperatur ° Luftfeuchtigkeitsensor L`, `gib Wert % Feuchtigkeitsensor F`, `gib Farbe Farbsensor TCS3472 F` |
+| Control | `robControls_loopForever`, `controls_repeat_ext`, `controls_whileUntil`, `robControls_for`, `robControls_if`, `robControls_ifElse`, `robControls_wait_time`, `robControls_wait_for` | `Wiederhole … mal`, `Zähle i von 0 solange Zähler < 10 mit Schrittweite 1`, `wenn …`, `Warte ms …`, `Warte bis …` |
+| Logic & math | `logic_boolean`, `logic_compare`, `logic_operation`, `logic_negate`, `math_number`, `math_arithmetic`, `math_random_int` | `wahr`, `1 + 2`, `Taste A gedrückt? und wahr`, `nicht Taste A gedrückt?`, `1 ≤ 2`, `ganzzahliger Zufallswert zwischen 1 bis 10` |
 | Text, colour & image reporters | `text`, `text_comment`, `mbedColour_picker`, `mbedImage_image`, `mbedImage_get_image` | quoted text, `Kommentar "Notiz"`, colours, editable 5×5 LED matrices, `Herz`/`Lächeln`/… |
 | Variables | `robGlobalVariables_declare`, `variables_set`, `variables_get`, `robMath_change` | `Variable Punkte : Zahl ← 0`, `Schreibe Punkte 0`, `Punkte`, `erhöhe Punkte um 1` |
+| Radio | `mbedCommunication_sendBlock`, `mbedCommunication_receiveBlock`, `mbedCommunication_setChannel` | `Sende Nachricht Zahl 5 mit Stärke 7`, `Empfange Nachricht Zahl`, `setze Kanal auf 0` |
 | Lists | `robLists_create_with`, `robLists_repeat`, `robLists_length`, `robLists_isEmpty`, `robLists_indexOf`, `robLists_getIndex`, `robLists_setIndex` | `Liste : Zahl ← 1 2 3`, `Länge von Werte`, `von der Liste Werte nimm #tes 2` |
 
 The parser continues to accept the prototype's shorter RGB-LED wording
 (`Schalte RGB LED an …`) and renders Open Roberta's canonical `Farbe` label.
+
+A few blocks accept a shorter wording and fill in the rest the way the lab
+would:
+
+- `nicht` binds tighter than `und`/`oder`: `nicht a und b` is
+  `(nicht a) und b`. Brackets say otherwise.
+- The counting loop also reads `Zähle i von 0 bis 10 mit Schrittweite 2`;
+  its counter is typed `Zahl` wherever it is used.
+- A sensor's unit may be left out; it follows the selected mode
+  (`Luftfeuchtigkeit` → `%`, `Temperatur` → `°`).
+- A Grove sensor's port is the name the robot configuration gives it. It
+  starts with a capital letter or `_`, and without one the block shows the
+  lab's default for a newly added sensor (`U`, `L`, `F`).
+- `Sende Nachricht "Hallo"` takes its type from the value (`Zeichenkette`)
+  and the toolbox's strength 7.
 
 ## Variables
 
@@ -79,7 +96,7 @@ prototype had to demonstrate:
 | Field box, baseline, dropdown arrow | `core/field.js`, `core/field_dropdown.js` |
 | Pixel cell | `core/field_pixelbox.js` |
 | Label font | `core/css.js` (`.blocklyText`, 11pt sans-serif) |
-| Block structure | `blocks/mbedControls.js`, `blocks/mbedActions.js`, `blocks/mbedImage.js`, `blocks/robControls.js`, `blocks/robSensorDefinitions.js`, `blocks/variables.js`, `blocks/lists.js`, `blocks/math.js` |
+| Block structure | `blocks/mbedControls.js`, `blocks/mbedActions.js`, `blocks/mbedImage.js`, `blocks/mbedCommunication.js`, `blocks/robControls.js`, `blocks/loops.js`, `blocks/logic.js`, `blocks/robSensors.js`, `blocks/robSensorDefinitions.js`, `blocks/robConfigDefinitions.js`, `blocks/variables.js`, `blocks/lists.js`, `blocks/math.js` |
 | Mutator icons, icon spacing | `core/mutatorPlus.js`, `core/mutatorMinus.js`, `core/icon.js` |
 | Variable types | `core/constants.js` (`Blockly.TYPE_DROPDOWN`) |
 | German text | `msg/js/de.js` |

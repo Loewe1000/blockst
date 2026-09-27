@@ -472,3 +472,236 @@ fn a_condition_without_a_sonst_line_stays_a_plain_if() {
     assert_eq!(script[0]["id"], "robControls_ifElse");
     assert_eq!(script[0]["rows"][2]["body"][0]["id"], "mbedActions_display_text");
 }
+
+fn parse_on(source: &str, language: &str, platform: &str) -> Result<Value, String> {
+    let request = serde_json::json!({
+        "code": source,
+        "language": language,
+        "platform": platform,
+    });
+    parser::parse_request(&request.to_string()).map(|json| serde_json::from_str(&json).unwrap())
+}
+
+/// The text of every field on a block's rows, in reading order, with the
+/// id of a plugged-in reporter standing in for its socket.
+fn labels(block: &Value) -> Vec<String> {
+    let mut out = Vec::new();
+    for row in block["rows"].as_array().unwrap() {
+        for field in row["fields"].as_array().unwrap() {
+            match &field["value"] {
+                Value::String(text) => out.push(text.clone()),
+                Value::Object(child) => out.push(child["id"].as_str().unwrap().to_string()),
+                _ => out.push(format!("<{}>", field["kind"].as_str().unwrap())),
+            }
+        }
+    }
+    out
+}
+
+#[test]
+fn nicht_negates_what_follows_it() {
+    let script = blocks("nicht Taste A gedrückt?");
+    assert_eq!(script[0]["id"], "logic_negate");
+    assert_eq!(script[0]["check"], serde_json::json!(["Boolean"]));
+    // jsonInit with a single input and nothing after it: an external socket.
+    let row = &script[0]["rows"][0];
+    assert_eq!(row["kind"], "value");
+    assert_eq!(row["check"], serde_json::json!(["Boolean"]));
+    assert_eq!(row["value"]["id"], "robSensors_key_getSample");
+}
+
+#[test]
+fn nicht_binds_tighter_than_und_but_takes_a_comparison() {
+    let script = blocks("nicht Taste A gedrückt? und wahr");
+    assert_eq!(script[0]["id"], "logic_operation");
+    assert_eq!(script[0]["rows"][0]["fields"][0]["value"]["id"], "logic_negate");
+
+    let bracketed = blocks("nicht (Taste A gedrückt? und wahr)");
+    assert_eq!(bracketed[0]["id"], "logic_negate");
+    assert_eq!(bracketed[0]["rows"][0]["value"]["id"], "logic_operation");
+
+    let script = blocks("wenn nicht Punkte > 3\n  Lösche Bildschirm");
+    let negate = &script[0]["rows"][0]["value"];
+    assert_eq!(negate["id"], "logic_negate");
+    assert_eq!(negate["rows"][0]["value"]["id"], "logic_compare");
+}
+
+#[test]
+fn the_counting_loop_names_its_counter_and_takes_three_bounds() {
+    let script =
+        blocks("Zähle i von 0 solange Zähler < 10 mit Schrittweite 2\n  Zeige Text i\nEnde");
+    let block = &script[0];
+    assert_eq!(block["id"], "robControls_for");
+    assert_eq!(
+        labels(block),
+        vec![
+            "Zähle", "i", "von", "math_number", "solange Zähler <", "math_number",
+            "mit Schrittweite", "math_number", "mache",
+        ]
+    );
+    // The counter is typed in, not picked: no dropdown arrow.
+    assert_eq!(block["rows"][0]["fields"][1]["kind"], "input");
+    let body = block["rows"][1]["body"].as_array().unwrap();
+    assert_eq!(body[0]["id"], "mbedActions_display_text");
+}
+
+#[test]
+fn the_counting_loop_accepts_the_worksheet_wording() {
+    let script = blocks("Zähle x von 1 bis 5 mit Schrittweite 1\n  Lösche Bildschirm");
+    assert_eq!(script[0]["id"], "robControls_for");
+    // …and prints Open Roberta's own.
+    assert_eq!(script[0]["rows"][0]["fields"][4]["value"], "solange Zähler <");
+
+    let without_step = blocks("Zähle x von 1 bis 5\n  Lösche Bildschirm");
+    let step = &without_step[0]["rows"][0]["fields"][7];
+    assert_eq!(step["kind"], "inline_value");
+    assert!(step["value"].is_null(), "an unwritten step is an empty socket");
+}
+
+#[test]
+fn the_counter_is_a_number_wherever_it_is_read() {
+    let script = blocks("Zähle i von 0 bis 3\n  Zeige Text i");
+    let getter = &script[0]["rows"][1]["body"][0]["rows"][0]["value"];
+    assert_eq!(getter["id"], "variables_get");
+    assert_eq!(getter["check"], serde_json::json!(["Number"]));
+}
+
+#[test]
+fn the_accelerometer_reads_one_axis_in_milli_g() {
+    let script = blocks("gib Wert milli-g Beschleunigungssensor z\ngib Wert Beschleunigungssensor Stärke");
+    assert_eq!(script[0]["id"], "robSensors_accelerometer_getSample");
+    assert_eq!(script[0]["check"], serde_json::json!(["Number"]));
+    // Unit and title are two fields, a separator apart, as in robSensors.js.
+    assert_eq!(
+        labels(&script[0]),
+        vec!["gib", "Wert", "milli-g", "Beschleunigungssensor", "z"]
+    );
+    // The unit may be left out; the block still paints it.
+    assert_eq!(
+        labels(&script[1]),
+        vec!["gib", "Wert", "milli-g", "Beschleunigungssensor", "Stärke"]
+    );
+}
+
+#[test]
+fn grove_sensors_keep_their_official_ids() {
+    let script = blocks(
+        "gib Abstand cm Ultraschallsensor U\ngib Luftfeuchtigkeit % Luftfeuchtigkeitsensor L\ngib Wert % Feuchtigkeitsensor F\ngib Farbe Farbsensor TCS3472 F",
+    );
+    let ids: Vec<&str> = script.iter().map(|b| b["id"].as_str().unwrap()).collect();
+    assert_eq!(
+        ids,
+        vec![
+            "robSensors_ultrasonic_getSample",
+            "robSensors_humidity_getSample",
+            "robSensors_moisture_getSample",
+            "robSensors_colourtcs3472_getSample",
+        ]
+    );
+}
+
+#[test]
+fn a_grove_port_is_the_configured_name_or_the_labs_default() {
+    let named = blocks("gib Abstand cm Ultraschallsensor Vorne");
+    assert_eq!(labels(&named[0]).last().unwrap(), "Vorne");
+    assert_eq!(named[0]["rows"][0]["fields"][4]["kind"], "dropdown");
+
+    let unnamed = blocks("gib Abstand cm Ultraschallsensor");
+    assert_eq!(labels(&unnamed[0]).last().unwrap(), "U");
+}
+
+#[test]
+fn a_port_name_does_not_swallow_the_next_word() {
+    let script = blocks("gib Wert % Feuchtigkeitsensor und wahr");
+    assert_eq!(script[0]["id"], "logic_operation");
+    let sensor = &script[0]["rows"][0]["fields"][0]["value"];
+    assert_eq!(sensor["id"], "robSensors_moisture_getSample");
+    assert_eq!(labels(sensor).last().unwrap(), "F");
+}
+
+#[test]
+fn the_unit_follows_the_mode() {
+    let humidity = blocks("gib Luftfeuchtigkeit Luftfeuchtigkeitsensor");
+    assert_eq!(labels(&humidity[0])[2], "%");
+    let temperature = blocks("gib Temperatur Luftfeuchtigkeitsensor");
+    assert_eq!(labels(&temperature[0])[2], "°");
+}
+
+#[test]
+fn the_colour_sensor_reports_what_its_mode_measures() {
+    for (mode, check, unit) in [
+        ("Farbe", "Colour", " "),
+        ("Licht", "Number", "%"),
+        ("RGB", "Array_Number", " "),
+    ] {
+        let script = blocks(&format!("gib {mode} Farbsensor TCS3472"));
+        assert_eq!(script[0]["check"], serde_json::json!([check]), "{mode}");
+        assert_eq!(labels(&script[0])[2], unit, "{mode}");
+    }
+}
+
+#[test]
+fn grove_sensors_are_calliope_only() {
+    let error = parse_on("gib Abstand cm Ultraschallsensor", "de", "microbit").unwrap_err();
+    assert!(error.contains("no block on platform 'microbit'"), "{error}");
+    assert!(parse_on("gib Wert Beschleunigungssensor x", "de", "microbit").is_ok());
+}
+
+#[test]
+fn sending_by_radio_types_the_socket_and_keeps_full_strength() {
+    let script = blocks("Sende Nachricht Zahl 5 mit Stärke 3");
+    let block = &script[0];
+    assert_eq!(block["id"], "mbedCommunication_sendBlock");
+    assert_eq!(block["rows"][0]["kind"], "value");
+    assert_eq!(block["rows"][0]["check"], serde_json::json!(["Number"]));
+    assert_eq!(block["rows"][1]["align"], "right");
+    assert_eq!(labels(block), vec!["Sende Nachricht", "Zahl", "mit Stärke", "3"]);
+
+    // No type: the text plugged in says String. No strength: the toolbox's 7.
+    let short = blocks("Sende Nachricht \"Hallo\"");
+    assert_eq!(labels(&short[0]), vec!["Sende Nachricht", "Zeichenkette", "mit Stärke", "7"]);
+    assert_eq!(short[0]["rows"][0]["check"], serde_json::json!(["String"]));
+}
+
+#[test]
+fn receiving_by_radio_reports_the_chosen_type() {
+    let script = blocks("Zeige Text Empfange Nachricht Zeichenkette\nsetze Kanal auf 7");
+    let receive = &script[0]["rows"][0]["value"];
+    assert_eq!(receive["id"], "mbedCommunication_receiveBlock");
+    assert_eq!(receive["check"], serde_json::json!(["String"]));
+    assert_eq!(script[1]["id"], "mbedCommunication_setChannel");
+    assert_eq!(script[1]["rows"][0]["check"], serde_json::json!(["Number"]));
+
+    let untyped = blocks("Empfange Nachricht");
+    assert_eq!(untyped[0]["check"], serde_json::json!(["Number"]));
+}
+
+#[test]
+fn the_new_blocks_speak_english_too() {
+    let parsed = parse_on(
+        "count with i from 0 while counter < 10 by 1\n  send message i\nnot button A pressed?\nget temperature humidity sensor\nset channel to 3\nget value accelerometer y",
+        "en",
+        "calliope",
+    )
+    .unwrap();
+    let ids: Vec<&str> = parsed
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|script| script.as_array().unwrap())
+        .map(|block| block["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        ids,
+        vec![
+            "robControls_for",
+            "logic_negate",
+            "robSensors_humidity_getSample",
+            "mbedCommunication_setChannel",
+            "robSensors_accelerometer_getSample",
+        ]
+    );
+    let send = &parsed[0][0]["rows"][1]["body"][0];
+    // The counter is a Number, so the untyped send picks "Number".
+    assert_eq!(labels(send)[1], "Number");
+}

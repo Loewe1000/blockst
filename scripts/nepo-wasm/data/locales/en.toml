@@ -19,9 +19,15 @@ robSensors_timer_getSample = "get %MODE ms timer %PORT"
 robSensors_temperature_getSample = "get %MODE ° temperature sensor"
 robSensors_light_getSample = "get %MODE % light sensor"
 mbedSensors_timer_reset = "reset timer %PORT"
+robSensors_accelerometer_getSample = "get %MODE %UNIT accelerometer %SLOT"
+robSensors_ultrasonic_getSample = "get %MODE %UNIT ultrasonic sensor %PORT"
+robSensors_humidity_getSample = "get %MODE %UNIT humidity sensor %PORT"
+robSensors_moisture_getSample = "get %MODE %UNIT moisture sensor %PORT"
+robSensors_colourtcs3472_getSample = "get %MODE %UNIT colour sensor TCS3472 %PORT"
 robControls_loopForever = "repeat indefinitely | do %DO"
 controls_repeat_ext = "repeat %TIMES times | do %DO"
 controls_whileUntil = "repeat %MODE %BOOL | do %DO"
+robControls_for = "count with %VAR from %FROM while counter < %TO by %BY | do %DO"
 robControls_if = "%MUTATOR if %IF0 | do %DO0"
 robControls_ifElse = "%MUTATOR if %IF0 | do %DO0 | else %ELSE"
 robControls_wait_time = "wait ms %WAIT"
@@ -31,6 +37,7 @@ math_number = "%NUM"
 logic_boolean = "%BOOL"
 logic_compare = "%A %OP %B"
 logic_operation = "%A %OP %B"
+logic_negate = "not %BOOL"
 math_arithmetic = "%A %OP %B"
 math_random_int = "random integer from %FROM to %TO"
 mbedColour_picker = "%COLOUR"
@@ -48,6 +55,9 @@ robLists_isEmpty = "%VALUE is empty"
 robLists_indexOf = "in list %VALUE %END %FIND"
 robLists_getIndex = "in list %VALUE %MODE %WHERE %AT"
 robLists_setIndex = "in list %LIST %MODE %WHERE %AT as %TO"
+mbedCommunication_sendBlock = "send message %TYPE %sendData | with strength %POWER"
+mbedCommunication_receiveBlock = "receive message %TYPE"
+mbedCommunication_setChannel = "set channel to %CONNECTION"
 
 [dropdowns]
 mbedActions_display_text.TYPE = ["text", "character"]
@@ -68,6 +78,24 @@ robSensors_temperature_getSample.MODE = ["value"]
 robSensors_light_getSample.MODE = ["value"]
 robSensors_timer_getSample.PORT = ["1"]
 mbedSensors_timer_reset.PORT = ["1"]
+robSensors_accelerometer_getSample.MODE = ["value"]
+robSensors_accelerometer_getSample.UNIT = ["milli-g"]
+robSensors_accelerometer_getSample.SLOT = ["x", "y", "z", "strength"]
+robSensors_ultrasonic_getSample.MODE = ["distance"]
+robSensors_ultrasonic_getSample.UNIT = ["cm"]
+robSensors_humidity_getSample.MODE = ["humidity", "temperature"]
+robSensors_humidity_getSample.UNIT = ["%", "°"]
+robSensors_moisture_getSample.MODE = ["value"]
+robSensors_moisture_getSample.UNIT = ["%"]
+robSensors_colourtcs3472_getSample.MODE = ["colour", "light", "RGB"]
+robSensors_colourtcs3472_getSample.UNIT = [" ", "%", " "]
+robSensors_ultrasonic_getSample.PORT = ["U"]
+robSensors_humidity_getSample.PORT = ["H"]
+robSensors_moisture_getSample.PORT = ["M"]
+robSensors_colourtcs3472_getSample.PORT = ["C"]
+mbedCommunication_sendBlock.TYPE = ["Number", "Boolean", "String"]
+mbedCommunication_sendBlock.POWER = ["0", "1", "2", "3", "4", "5", "6", "7"]
+mbedCommunication_receiveBlock.TYPE = ["Number", "Boolean", "String"]
 mbedImage_get_image.IMAGE = ["Heart", "Smile", "Stick figure", "Giraffe", "Umbrella"]
 controls_whileUntil.MODE = ["until", "while"]
 robGlobalVariables_declare.TYPE = [
@@ -98,3 +126,13 @@ robGlobalVariables_declare = [
   "declare %TYPE %VAR = %VALUE",
   "variable %VAR : %TYPE %VALUE",
 ]
+robControls_for = [
+  "count with %VAR from %FROM to %TO by %BY | do %DO",
+  "count with %VAR from %FROM to %TO | do %DO",
+]
+mbedCommunication_sendBlock = [
+  "send message %TYPE %sendData",
+  "send message %sendData with strength %POWER",
+  "send message %sendData",
+]
+mbedCommunication_receiveBlock = ["receive message"]

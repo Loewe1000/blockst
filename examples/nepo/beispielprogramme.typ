@@ -8,7 +8,9 @@
 //
 //   typst compile examples/nepo/beispielprogramme.typ --root .
 //
-#import "@preview/blockst:0.4.0": nepo, set-blockst
+// Relativ importiert, bis die Zählschleife, „nicht“, der Funk und die
+// Grove-Sensoren in einem Release sind; 0.4.0 kennt sie noch nicht.
+#import "../../lib.typ": nepo, set-blockst
 
 #set page(
   paper: "a4",
@@ -161,6 +163,18 @@ Start
 ```]
 
 #programm[
+  Zählschleife mit Schrittweite. Die Schleife legt ihre Zählvariable selbst
+  an; sie ist immer eine Zahl, deshalb steckt der Block `i` mit dem blauen
+  Stecker einer Zahl im Anschluss.
+][```nepo
+Start
+  Zähle i von 0 solange Zähler < 10 mit Schrittweite 2
+    Zeige Text i
+    Warte ms 500
+  Ende
+```]
+
+#programm[
   Verzweigung mit zwei Ausgängen.
 ][```nepo
 Start
@@ -204,6 +218,67 @@ Start
 ```]
 
 #programm[
+  Der Beschleunigungssensor misst in milli-g, wahlweise je Achse oder als
+  Gesamtstärke. Hier als Wasserwaage: liegt der Calliope waagerecht, ist die
+  x-Beschleunigung nahe null.
+][```nepo
+Start
+  Wiederhole unendlich oft
+    wenn gib Wert milli-g Beschleunigungssensor x < -100
+      Zeige Text "<"
+    sonst
+      wenn gib Wert milli-g Beschleunigungssensor x > 100
+        Zeige Text ">"
+      sonst
+        Zeige Text "="
+      Ende
+    Ende
+  Ende
+```]
+
+= Grove-Sensoren
+
+#programm[
+  Sensoren an den Grove-Buchsen tragen den Namen, den ihnen die
+  Roboterkonfiguration gibt — voreingestellt der Anfangsbuchstabe. Der
+  Luftfeuchtigkeitssensor misst auch die Temperatur; die Einheit folgt dem
+  gewählten Modus.
+][```nepo
+Start
+  Zeige Text gib Abstand cm Ultraschallsensor U
+  Zeige Text gib Luftfeuchtigkeit % Luftfeuchtigkeitsensor L
+  Zeige Text gib Temperatur ° Luftfeuchtigkeitsensor L
+  Zeige Text gib Wert % Feuchtigkeitsensor F
+  Zeige Text gib Licht % Farbsensor TCS3472 F
+```]
+
+#programm[
+  *Einparkhilfe.* Je näher ein Hindernis, desto schneller piept es.
+][```nepo
+Start
+  Wiederhole unendlich oft
+    wenn gib Abstand cm Ultraschallsensor U < 10
+      Spiele Achtelnote C4
+    sonst
+      wenn gib Abstand cm Ultraschallsensor U < 30
+        Spiele Viertelnote C4
+        Warte ms 300
+      Ende
+    Ende
+  Ende
+```]
+
+#programm[
+  Der Farbsensor liefert im Modus „Farbe“ eine Farbe — sie passt deshalb
+  direkt in die RGB-LED.
+][```nepo
+Start
+  Wiederhole unendlich oft
+    Schalte RGB LED an Farbe gib Farbe Farbsensor TCS3472 F
+  Ende
+```]
+
+#programm[
   Bedingungen aus Sensoren: Tasten, Pins und Lagesensor.
 ][```nepo
 Start
@@ -244,6 +319,17 @@ Start
 ```]
 
 #programm[
+  „nicht“ kehrt eine Bedingung um. Es bindet stärker als „und“: im zweiten
+  Block gilt es nur für die Taste.
+][```nepo
+Start
+  Warte bis nicht Taste A gedrückt?
+  wenn nicht Taste A gedrückt? und gib Wert % Lichtsensor < 20
+    Schalte RGB LED an Farbe (#0000ff)
+  Ende
+```]
+
+#programm[
   Ein Zufallswert als Würfel.
 ][```nepo
 Start
@@ -277,6 +363,34 @@ Start
   Spiele halbe Note E4
   Spiele Viertelnote G4
   Spiele Achtelnote A4
+```]
+
+= Funk
+
+#programm[
+  Zwei Calliopes auf demselben Kanal. Der Sender verschickt eine Zahl, sobald
+  Taste A gedrückt wird — mit voller Stärke 7, wenn nichts anderes angegeben
+  ist.
+][```nepo
+Start
+  setze Kanal auf 12
+  Wiederhole unendlich oft
+    Warte bis Taste A gedrückt?
+    Sende Nachricht Zahl ganzzahliger Zufallswert zwischen 1 bis 6
+  Ende
+```]
+
+#programm[
+  Der Empfänger zeigt an, was ankommt. Der Datentyp im Empfangsblock muss zu
+  dem des Senders passen.
+][```nepo
+Start
+  Variable Wert : Zahl ← 0
+  setze Kanal auf 12
+  Wiederhole unendlich oft
+    Schreibe Wert Empfange Nachricht Zahl
+    Zeige Text Wert
+  Ende
 ```]
 
 = Listen

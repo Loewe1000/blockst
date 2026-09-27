@@ -351,7 +351,9 @@ fn candidates<'a>(language: &'a Language, platform: &str) -> Vec<(&'a str, &'a P
 type Rank<'a> = (
     // A bare variable getter is a catch-all for any identifier. Every
     // concrete Blockly block wins against it, so `wahr`, `Herz` and aliases
-    // such as `Programmstart` keep their own meaning.
+    // such as `Programmstart` keep their own meaning. The setter is one too:
+    // "set channel to 3" is the radio block, not a variable named `channel`
+    // (which can still be written "write channel 3").
     bool,
     // Open Roberta's own wording beats an alias.
     bool,
@@ -382,7 +384,7 @@ fn match_line(
         {
             if text[consumed..].trim().is_empty() {
                 let rank: Rank<'_> = (
-                    id != "variables_get",
+                    !matches!(id, "variables_get" | "variables_set"),
                     canonical,
                     tokens.len(),
                     std::cmp::Reverse(pattern.rows.len()),
@@ -437,6 +439,8 @@ fn match_tokens(
                 let matched = match field.kind.as_str() {
                     "dropdown" | "mode" | "image" => match_dropdown(text, pos, id, name, language),
                     "variable" | "variable_name" => match_variable(text, pos),
+                    "config_port" => match_config_port(text, pos),
+                    "label" => match_dropdown(text, pos, id, name, language),
                     "text" => match_text(text, pos),
                     "number" => match_number(text, pos),
                     "colour" => match_colour(text, pos),
@@ -455,6 +459,10 @@ fn match_tokens(
                     // a worksheet shows which type belongs in a hole. Every
                     // other field kind has to match.
                     None if matches!(field.kind.as_str(), "value" | "inline_value") => {}
+                    // A unit is Open Roberta's to paint, and a port the
+                    // configuration names; either may be left out, and the
+                    // block shows what the lab would.
+                    None if matches!(field.kind.as_str(), "label" | "config_port") => {}
                     None => return None,
                 }
             }
@@ -496,6 +504,11 @@ fn precedence_level(id: &str) -> u8 {
 fn inline_budget(id: &str, language: &Language) -> u8 {
     if leads_with_inline(id, language) {
         precedence_level(id).saturating_sub(1)
+    } else if id == "logic_negate" {
+        // A prefix operator, and one that binds tighter than `und`: "nicht
+        // a und b" is "(nicht a) und b", as everywhere else. A comparison may
+        // still follow it unbracketed — "nicht Punkte > 3".
+        precedence_level("logic_operation") - 1
     } else {
         TOP_LEVEL
     }
@@ -594,6 +607,20 @@ fn match_variable(text: &str, pos: usize) -> Option<(Binding, usize)> {
         .map(|ch| ch.is_alphabetic() || ch == '_')
         .unwrap_or(false);
     valid_start.then_some((Binding::Variable(name.to_string()), pos + end))
+}
+
+/// A port name from the robot configuration: `U`, `L`, `F2`, `_A`.
+///
+/// The lab names a new sensor after the capital initial of its title, and
+/// an inbuilt one after `_` and that initial. Insisting on that first
+/// character is what keeps a port apart from the words around it — without
+/// it, "… Feuchtigkeitsensor und wahr" would read `und` as the port.
+fn match_config_port(text: &str, pos: usize) -> Option<(Binding, usize)> {
+    let first = text[pos..].chars().next()?;
+    if !(first.is_uppercase() || first == '_') {
+        return None;
+    }
+    match_variable(text, pos)
 }
 
 /// A quoted or bracketed literal: `"Hallo"`, `'Hallo'` or `[Hallo]`.
