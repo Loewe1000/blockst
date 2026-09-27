@@ -109,7 +109,7 @@ e.g. [/0.3.0/](https://loewe1000.github.io/blockst/0.3.0/), and as a PDF in each
 ## Install and Import
 
 ```typst
-#import "@preview/blockst:0.4.0": scratch, blockly, makecode, nepo, blockst, set-blockst
+#import "@preview/blockst:0.4.1": scratch, blockly, makecode, nepo, blockst, set-blockst
 ```
 
 `raw-scratch`, `raw-blockly`, `raw-makecode` and `raw-nepo` add the code
