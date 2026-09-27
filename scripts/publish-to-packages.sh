@@ -95,8 +95,12 @@ git add -A
 
 # Nothing outside the package's own directory may change — a stray deletion
 # here would remove somebody else's package from the registry.
-STRAY="$(git diff --cached --name-status upstream/main \
-  | grep -v $'\tpackages/preview/blockst/'"$VERSION"'/' || true)"
+# `-z` gives NUL-separated, unquoted paths: a name with an umlaut arrives as
+# itself, not as "…L\303\266sung.sb3", which the plain listing quotes and the
+# filter below would then read as a stray file.
+STRAY="$(git diff --cached --name-only -z upstream/main \
+  | tr '\0' '\n' \
+  | grep -v "^packages/preview/blockst/$VERSION/" || true)"
 if [[ -n "$STRAY" ]]; then
   echo "Error: the branch touches files outside packages/preview/blockst/$VERSION:" >&2
   echo "$STRAY" | head -20 >&2
