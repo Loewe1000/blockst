@@ -76,6 +76,18 @@ fi
 
 mkdir -p "$TARGET_DIR"
 
+# Eine Import-Zeile, die eine ältere Version nennt, lehnt der Prüfbot von
+# Typst Universe ab ("This import seems to use an older version"). Sie hier
+# zu finden spart eine Runde über den Pull Request.
+STALE="$(grep -rn "@preview/blockst:" "$BLOCKST_DIR/README.md" "$BLOCKST_DIR/docs" "$BLOCKST_DIR/examples" \
+  --include="*.md" --include="*.typ" 2>/dev/null \
+  | grep -v "@preview/blockst:$VERSION" || true)"
+if [[ -n "$STALE" ]]; then
+  echo "Error: these import lines do not name $VERSION:" >&2
+  echo "$STALE" | sed "s|$BLOCKST_DIR/||" | head -20 >&2
+  exit 1
+fi
+
 rsync -a --delete --delete-excluded \
   --exclude=".git" \
   --exclude=".gitignore" \
