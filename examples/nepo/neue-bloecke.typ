@@ -3,7 +3,7 @@
 //
 //   typst compile examples/nepo/neue-bloecke.typ --root .
 // Relativ importiert: diese Blöcke sind neuer als das letzte Release.
-#import "../../lib.typ": nepo, set-blockst
+#import "@preview/blockst:0.4.1": nepo, set-blockst
 
 #set page(paper: "a4", margin: (x: 16mm, y: 16mm), fill: white, numbering: "1")
 #set text(font: "Helvetica Neue", size: 10pt, lang: "de", fallback: true)

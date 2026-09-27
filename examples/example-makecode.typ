@@ -4,7 +4,7 @@
 // German (default) or English; `ende` closes a C-block, `ansonsten` opens
 // the else branch. Unknown labels are drawn as written with the category
 // from a `::kategorie` suffix.
-#import "@preview/blockst:0.4.0": makecode, raw-makecode
+#import "@preview/blockst:0.4.1": makecode, raw-makecode
 
 #set page(width: auto, height: auto, margin: 4mm, fill: none)
 #show: raw-makecode(language: "en")
