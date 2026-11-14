@@ -61,11 +61,11 @@ pub fn current_inset_scale() -> f32 {
     INSET_SCALE.with(|s| *s.borrow())
 }
 
-fn s(value: f32) -> f32 {
+pub fn s(value: f32) -> f32 {
     value * current_inset_scale()
 }
 
-fn inset(base: f32, min: f32) -> f32 {
+pub fn inset(base: f32, min: f32) -> f32 {
     (base * current_inset_scale()).max(min)
 }
 
@@ -478,4 +478,14 @@ pub fn fit(text: &str) -> String {
         return String::new();
     }
     format!(" textLength=\"{}\" lengthAdjust=\"spacingAndGlyphs\"", w)
+}
+
+/// Tail height, "plus" and "minus" of a C-block's arms. The layout
+/// (`c_block_size`), the renderer and the outline (`svg::mouth_path`) all
+/// have to use these same values, or the outline drifts away from the
+/// blocks it surrounds. They depend on the inset scale only, never on the
+/// header height: a taller header (a nested predicate) must not stretch
+/// the arms below it.
+pub fn c_arm_metrics() -> (f32, f32, f32) {
+    (inset(40.0, 30.0) - inset(11.0, 8.0), s(3.0), s(2.0))
 }

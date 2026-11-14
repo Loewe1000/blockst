@@ -400,3 +400,44 @@ fn test_french_when_flag_block_variants() {
     assert_eq!(parsed[0].get("id").unwrap(), "EVENT_WHENFLAGCLICKED",
         "Alias fr when-flag should match EVENT_WHENFLAGCLICKED, got: {}", parsed[0].get("id").unwrap());
 }
+
+/// Regression test for issue #41: with a tall header (a nested predicate) the
+/// outline's arm metrics used to scale with the header height, so the else
+/// arm sat below the else body and the outline ran past the SVG's bottom edge.
+#[test]
+fn test_if_else_outline_matches_layout() {
+    let input = r#"{
+        "code": "if <(x position) > (5)> then\n  say [yes]\nelse\n  move (10) steps\nend",
+        "language": "en",
+        "inline": false
+    }"#;
+    let svg = render_request_json(input).expect("render failed");
+    let height: f32 = svg
+        .split("height=\"").nth(1).unwrap()
+        .split('"').next().unwrap().parse().unwrap();
+    // The C-block outline is the path with the most line segments.
+    let d = svg
+        .split("<path d=\"").skip(1)
+        .map(|p| p.split('"').next().unwrap())
+        .max_by_key(|p| p.matches('L').count())
+        .unwrap();
+    let ys: Vec<f32> = d
+        .split(" L ")
+        .skip(1)
+        .filter_map(|seg| seg.split_whitespace().nth(1)?.parse().ok())
+        .collect();
+    let bottom = ys.iter().cloned().fold(0.0, f32::max);
+    // Bottom edge plus the 8px notch must stay inside the SVG.
+    assert!(bottom + 8.0 <= height, "outline bottom {bottom} + notch exceeds svg height {height}");
+    // The else arm (the 2nd-to-last arm line) must meet the end of the else body:
+    // the else body starts at its translate and the arm lines are 40px+ apart.
+    let arm_tops: Vec<f32> = d.split(" L ").skip(1)
+        .filter(|seg| seg.starts_with("18.") )
+        .filter_map(|seg| seg.split_whitespace().nth(1)?.parse().ok()).collect();
+    assert_eq!(arm_tops.len(), 2);
+    let else_body_y: f32 = svg.split("translate(18.666666 ").nth(2).unwrap()
+        .split(')').next().unwrap().parse().unwrap();
+    // The else body is placed one px above the interior of the else section.
+    let else_interior_top = ys.iter().cloned().filter(|y| (*y - else_body_y - 1.0).abs() < 0.01).count();
+    assert!(else_interior_top >= 1, "else body at {else_body_y} does not line up with the outline {ys:?}");
+}
