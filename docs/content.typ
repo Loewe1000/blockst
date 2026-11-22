@@ -41,7 +41,7 @@ All four share one text notation: a block per line, `(…)` for a value, `[… v
 == Quick start
 
 #show-code(```typ
-#import "@preview/blockst:0.4.2": scratch, blockly, makecode, nepo
+#import "@preview/blockst:0.4.3": scratch, blockly, makecode, nepo
 
 #scratch("
 when green flag clicked
@@ -96,7 +96,7 @@ Every function takes the same rendering options — theme, scale, font, line num
 
 == Package information
 
-- *Version:* 0.4.2
+- *Version:* 0.4.3
 - *License:* MIT
 - *Repository:* #link("https://github.com/Loewe1000/blockst")[github.com/Loewe1000/blockst]
 - *Compiler requirement:* Typst 0.15.0+
@@ -599,7 +599,7 @@ blockst includes an execution engine that runs Scratch programs visually — for
 == scratch-run Module
 
 #show-code(```typ
-#import "@preview/blockst:0.4.2": scratch-run, set-scratch-run
+#import "@preview/blockst:0.4.3": scratch-run, set-scratch-run
 
 #scratch-run.stage("...", scale: 2)
 #scratch-run.grid("...", grid: true)

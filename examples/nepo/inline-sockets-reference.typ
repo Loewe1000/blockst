@@ -1,5 +1,5 @@
 // Compact fixtures matching extra_block_1.svg and extra_block_5.svg.
-#import "@preview/blockst:0.4.2": nepo, set-blockst
+#import "@preview/blockst:0.4.3": nepo, set-blockst
 
 #set page(width: auto, height: auto, margin: 0pt, fill: none)
 #set text(font: "Helvetica Neue", fallback: true)

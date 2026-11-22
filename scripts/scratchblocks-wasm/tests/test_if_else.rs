@@ -441,3 +441,22 @@ fn test_if_else_outline_matches_layout() {
     let else_interior_top = ys.iter().cloned().filter(|y| (*y - else_body_y - 1.0).abs() < 0.01).count();
     assert!(else_interior_top >= 1, "else body at {else_body_y} does not line up with the outline {ys:?}");
 }
+
+/// Issue #43: `<var [name]>` is the boolean counterpart of `(var [name])`.
+#[test]
+fn test_custom_arg_boolean_reporter() {
+    for (code, lang) in [
+        ("define test <var [full]>\nif <var [full]> then\n  stamp\nend", "en"),
+        ("définir test <var [plein]>\nsi <var [plein]> alors\n  estampiller\nfin", "fr"),
+    ] {
+        let input = serde_json::json!({ "code": code, "language": lang, "inline": false }).to_string();
+        let output = parse_request_json(&input).expect("parse failed");
+        let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
+        println!("{output}");
+        for block in [&parsed[0], &parsed[1]] {
+            let nested = block.to_string();
+            assert!(nested.contains("argument_reporter_boolean"), "{lang}: {nested}");
+            assert!(nested.contains("custom-arg"), "{lang}: {nested}");
+        }
+    }
+}
