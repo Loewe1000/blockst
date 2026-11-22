@@ -7,7 +7,7 @@
 //
 // The Arabic and Hebrew scripts need fonts that cover them; see README-rtl.md.
 
-#import "@preview/blockst:0.4.2": scratch
+#import "@preview/blockst:0.4.3": scratch
 
 #set page(width: auto, height: auto, margin: 4mm, fill: none)
 #set text(font: ("Noto Sans Arabic", "Noto Sans Hebrew", "DejaVu Sans"))

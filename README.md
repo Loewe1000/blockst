@@ -32,7 +32,16 @@ e.g. [/0.3.0/](https://loewe1000.github.io/blockst/0.3.0/), and as a PDF in each
 > syntax is removed. Blockst uses only the text-to-WASM pipeline; documents
 > written for the old syntax must be migrated.
 
-### New in 0.4.2
+### New in 0.4.3
+
+- **Boolean parameters of custom blocks** (issue #43). `<var [name]>` is the
+  boolean counterpart of `(var [name])` and renders as a pink argument
+  reporter, in the `define` hat and wherever the parameter is used, for
+  example `define square (side) <var [filled]>` and `if <var [filled]> then`.
+  A plain `<name>` is unchanged. The `.sb3` import now writes boolean
+  parameters in this form, so imported projects keep them.
+
+### In 0.4.2
 
 - **`if … else … end` is drawn correctly again** (issue #41). The closing arm
   of the `else` branch no longer leaves a white gap under the last inner block,
@@ -116,7 +125,7 @@ e.g. [/0.3.0/](https://loewe1000.github.io/blockst/0.3.0/), and as a PDF in each
 ## Install and Import
 
 ```typst
-#import "@preview/blockst:0.4.2": scratch, blockly, makecode, nepo, blockst, set-blockst
+#import "@preview/blockst:0.4.3": scratch, blockly, makecode, nepo, blockst, set-blockst
 ```
 
 `raw-scratch`, `raw-blockly`, `raw-makecode` and `raw-nepo` add the code
@@ -673,7 +682,7 @@ category names (`motion`, `looks`, …).
 
 Block texts and colours are generated from the published sources — Blockly
 (Apache-2.0) and France-IOI's bebras-modules (MIT) — by
-[scripts/blockly-data](https://github.com/Loewe1000/blockst/tree/0.4.2/scripts/blockly-data), which also reports
+[scripts/blockly-data](https://github.com/Loewe1000/blockst/tree/0.4.3/scripts/blockly-data), which also reports
 the gaps in the upstream translations.
 
 ## MakeCode
@@ -710,7 +719,7 @@ ende
 
 The block texts are the editors' own — read off makecode.microbit.org and
 makecode.calliope.cc in German and English by
-[scripts/makecode-data](https://github.com/Loewe1000/blockst/tree/0.4.2/scripts/makecode-data), and for the
+[scripts/makecode-data](https://github.com/Loewe1000/blockst/tree/0.4.3/scripts/makecode-data), and for the
 other 34 editor languages taken from the translation service the editors
 load at run time (cdn.makecode.com, approved strings only). `language:` is
 any language the editors offer: `"de"` (the default), `"en"`, `"fr"`,

@@ -1384,6 +1384,35 @@ impl<'a> Parser<'a> {
         if inner.is_empty() {
             return Ok(Child::Input(InputNode { shape: "boolean".to_string(), value: String::new(), nested: None }));
         }
+
+        // Custom-arg boolean: <var [name]>, the boolean counterpart of the
+        // (var [name]) pattern in parse_reporter. A plain <name> stays an
+        // unknown predicate, so existing documents render as before.
+        if inner.len() == 2 {
+            if let (Child::Label(label_first), Child::Input(input)) = (&inner[0], &inner[1]) {
+                if label_first == "var" && input.nested.is_none() {
+                    let child_block = ParsedBlock {
+                        id: "argument_reporter_boolean".to_string(),
+                        selector: String::new(),
+                        shape: "boolean".to_string(),
+                        category: "custom-arg".to_string(),
+                        language: self.languages[0].code.clone(),
+                        children: vec![Child::Label(input.value.clone())],
+                        body: Vec::new(),
+                        else_body: Vec::new(),
+                        has_else: false,
+                        line_number: None,
+                        line_label: None,
+                    };
+                    return Ok(Child::Input(InputNode {
+                        shape: "boolean".to_string(),
+                        value: String::new(),
+                        nested: Some(Box::new(child_block)),
+                    }));
+                }
+            }
+        }
+
         let nested_block = self.paint_block("boolean", inner)?;
         Ok(Child::Input(InputNode { shape: "boolean".to_string(), value: String::new(), nested: Some(Box::new(nested_block)) }))
     }

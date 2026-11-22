@@ -314,6 +314,35 @@ fn resolve_procedure_signature(
   (proccode, arg_names)
 }
 
+/// Fills the `%s` / `%b` placeholders of a proccode in the order they appear,
+/// writing a boolean parameter as `<var [name]>` so it renders as a custom
+/// argument instead of an unknown condition.
+fn fill_definition_placeholders(proccode: &str, arg_names: &[String]) -> String {
+  let mut out = String::new();
+  let mut names = arg_names.iter();
+  let mut rest = proccode;
+  while let Some(pos) = rest.find('%') {
+    let (head, tail) = rest.split_at(pos);
+    out.push_str(head);
+    match tail.chars().nth(1) {
+      Some(kind @ ('s' | 'b')) => {
+        match names.next() {
+          Some(name) if kind == 'b' => out.push_str(&format!("<var [{}]>", name.trim())),
+          Some(name) => out.push_str(&procedure_slot_token(name)),
+          None => out.push_str(&tail[..2]),
+        }
+        rest = &tail[2..];
+      }
+      _ => {
+        out.push('%');
+        rest = &tail[1..];
+      }
+    }
+  }
+  out.push_str(rest);
+  out
+}
+
 fn fill_procedure_placeholders(proccode: &str, values: &[String]) -> String {
   let mut out = proccode.to_string();
 
@@ -492,7 +521,7 @@ fn render_expression_by_id(blocks: &Map<String, Value>, block_id: &str, seen: &m
     }
     "argument_reporter_boolean" => {
       let arg_name = get_field_value(block, "VALUE", "condition");
-      crate::locales::fmt_locale(&lang, "ARGUMENT_REPORTER_BOOLEAN", &[arg_name], "<%1>")
+      crate::locales::fmt_locale(&lang, "ARGUMENT_REPORTER_BOOLEAN", &[arg_name], "<var [%1]>")
     }
     "control_get_counter" => crate::locales::fmt_locale(&lang, "CONTROL_GET_COUNTER", &[], "counter"),
     "looks_backdropnumbername" => {
@@ -1134,11 +1163,9 @@ fn render_statement(
     "control_delete_this_clone" => vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "CONTROL_DELETETHISCLONE", &[], "delete this clone"))],
     "procedures_definition" => {
       let (proccode, arg_names) = resolve_procedure_signature(blocks, block);
-      let rendered_slots: Vec<String> = arg_names
-        .iter()
-        .map(|name| procedure_slot_token(name))
-        .collect();
-      let label = fill_procedure_placeholders(&proccode, &rendered_slots);
+      // The parameters of a define hat are argument reporters: a boolean one
+      // (%b in the proccode) is written <var [name]>, a text/number one as before.
+      let label = fill_definition_placeholders(&proccode, &arg_names);
       vec![format!("{indent}{}", crate::locales::fmt_locale(&lang, "PROCEDURES_DEFINITION", &[label], "define %1"))]
     }
     "procedures_call" => {
